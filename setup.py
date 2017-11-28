@@ -4,11 +4,12 @@ setup(
     name='mu',
     version='0.0.01',
     license='GPL',
-    description='Python-representation of classical musical content, e.g. Harmony, Melodies and Rhythm.',
+    description='Python-representation of classical musical content.',
     author='Levin Eric Zimmermann',
     author_email='levin-eric.zimmermann@folkwang-uni.de',
     url='https://github.com/uummoo/',
-    packages=['mu'],
+    packages=['mu', 'mu.mel', 'mu.abjadAPI'],
     setup_requires=[''],
-    tests_require=['noisetests'],
+    tests_require=['nosetests'],
+    python_requires='>=3.6'
 )

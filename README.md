@@ -1,6 +1,6 @@
-#mu
+# mu
 
-Python-representation of classical musical content, e.g. Harmony, Melodies and Rhythm.
+Python-representation of classical musical content, e.g. Harmony, Melody and Rhythm.
 Might be useful for algorithmic composition.
 
 Current state:

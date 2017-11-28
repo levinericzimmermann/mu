@@ -2,6 +2,7 @@ from mu.mel import abstract
 from fractions import Fraction
 import pyprimes
 import functools
+import itertools
 from typing import get_type_hints
 
 
@@ -91,10 +92,12 @@ class Monzo(tuple):
         monzo = [0] * pyprimes.prime_count(biggest_prime)
 
         for num, fac in gen_pos:
-            monzo[pyprimes.prime_count(num) - 1] += fac
+            if num > 1:
+                monzo[pyprimes.prime_count(num) - 1] += fac
 
         for num, fac in gen_neg:
-            monzo[pyprimes.prime_count(num) - 1] -= fac
+            if num > 1:
+                monzo[pyprimes.prime_count(num) - 1] -= fac
 
         return Monzo(monzo[val_shift:])
 
@@ -125,7 +128,7 @@ class Monzo(tuple):
         minima = min(self)
         if (maxima > 0 and minima >= 0) or (
                 maxima > 0 and self.index(maxima) > self.index(minima)):
-                return 1
+            return 1
         elif maxima <= 0 and minima < 0 or (
                 minima < 0 and self.index(minima) > self.index(maxima)):
             return -1
@@ -308,12 +311,18 @@ class JITone(Monzo, abstract.AbstractTone):
         obj.multiply = multiply
         return obj
 
+    @classmethod
+    def from_monzo(cls, *arg: int, multiply=1) -> "JITone":
+        obj = cls(arg, cls.val_shift)
+        obj.multiply = multiply
+        return obj
+
 
 class JIContainer:
     def __init__(self, iterable, multiply=1):
         super(type(self), self).__init__(iterable)
         self.multiply = multiply
-        self.__val_shift = 0
+        self._val_shift = 0
 
     @classmethod
     def mk_line(cls, reference, count):
@@ -329,10 +338,6 @@ class JIContainer:
                   for r, p, f in zip(self, self.primes, self.freq))
         return tuple(sorted(r, key=lambda t: t[2]))
 
-    def set_multiply(self, arg):
-        for t in self:
-            t.multiply = arg
-
 
 class JIMel(JITone.mk_iterable(abstract.AbstractMelody), JIContainer):
     def __init__(self, iterable, multiply=1):
@@ -345,6 +350,11 @@ class JIMel(JITone.mk_iterable(abstract.AbstractMelody), JIContainer):
     def freq(self) -> tuple:
         return self.calc()
 
+    @property
+    def intervals(self):
+        """return intervals between single notes"""
+        return self[1:] - self[:-1]
+
     def __add__(self, other: "JIMel"):
         return JIMel(m0 + m1 for m0, m1 in zip(self, other))
 
@@ -353,13 +363,24 @@ class JIMel(JITone.mk_iterable(abstract.AbstractMelody), JIContainer):
 
     @property
     def val_shift(self) -> int:
-        return self.__val_shift
+        return self._val_shift
 
     @val_shift.setter
     def val_shift(self, arg) -> None:
         for f in self:
             f.val_shift = arg
-        self.__val_shift = arg
+        self._val_shift = arg
+
+    def subvert(self):
+        return type(self)(functools.reduce(
+            lambda x, y: x + y, tuple(t.subvert() for t in self)))
+
+    def accumulate(self):
+        return type(self)(tuple(itertools.accumulate(self)))
+
+    def separate(self):
+        return type(self)(JIMel((
+            self[0],)) & self.intervals.subvert()).accumulate()
 
 
 class JIHarmony(JITone.mk_iterable(abstract.AbstractHarmony), JIContainer):
