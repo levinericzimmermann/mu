@@ -1,6 +1,7 @@
 from mu.mel import abstract
 from fractions import Fraction
 import pyprimes
+from pyprimes import factors
 import functools
 import itertools
 
@@ -55,12 +56,6 @@ class Monzo:
         return self._vec.index(arg)
 
     @staticmethod
-    def decompose(num: int) -> tuple:
-        """written-out prime-number-decomposition"""
-        writtenout = ([x] * y for x, y in pyprimes.factorise(num))
-        return tuple(functools.reduce(lambda x, y: x + y, writtenout))
-
-    @staticmethod
     def adjusted_monzos(m0, m1) -> tuple:
         m0, m1 = list(m0), list(m1)
         while len(m1) < len(m0):
@@ -105,11 +100,11 @@ class Monzo:
 
     @staticmethod
     def ratio2monzo(ratio: Fraction, val_shift=0) -> "Monzo":
-        gen_pos = pyprimes.factorise(ratio.numerator)
-        gen_neg = pyprimes.factorise(ratio.denominator)
+        gen_pos = factors.factors(ratio.numerator)
+        gen_neg = factors.factors(ratio.denominator)
 
-        biggest_prime = max(Monzo.decompose(
-            ratio.numerator) + Monzo.decompose(ratio.denominator))
+        biggest_prime = max(factors.factorise(
+            ratio.numerator) + factors.factorise(ratio.denominator))
         monzo = [0] * pyprimes.prime_count(biggest_prime)
 
         for num, fac in gen_pos:
@@ -183,7 +178,7 @@ class Monzo:
 
     @property
     def primes(self) -> tuple:
-        p = Monzo.decompose(self.ratio.numerator * self.ratio.denominator)
+        p = factors.factorise(self.ratio.numerator * self.ratio.denominator)
         return tuple(set(p))[self._val_shift:]
 
     @property

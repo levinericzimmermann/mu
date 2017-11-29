@@ -4,9 +4,6 @@ from fractions import Fraction
 
 
 class MonzoTest(unittest.TestCase):
-    def test_prime_decomposition(self):
-        self.assertEqual(ji.Monzo.decompose(45), (3, 3, 5))
-
     def test_ratio(self):
         m0 = ji.Monzo([0, 1], 2)
         m1 = ji.Monzo([0, 0, -1], 2)
