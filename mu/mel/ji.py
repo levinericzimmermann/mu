@@ -35,7 +35,7 @@ class Monzo:
     def __getitem__(self, idx):
         res = self._vec[idx]
         if type(idx) == slice:
-            return Monzo(res, self.val_border)
+            return type(self)(res, self.val_border)
         else:
             return res
 
@@ -181,29 +181,6 @@ class Monzo:
         p = factors.factorise(self.ratio.numerator * self.ratio.denominator)
         return tuple(set(p))[self._val_shift:]
 
-    @property
-    def wilson(self) -> int:
-        num = self.ratio.numerator
-        de = self.ratio.denominator
-        while num % 2 == 0:
-            num /= 2
-        while de % 2 == 0:
-            de /= 2
-        return int(sum(filter(lambda x: x > 1, (num, de))))
-
-    @property
-    def vogel(self) -> int:
-        num = self.ratio.numerator
-        de = self.ratio.denominator
-        fac0 = 0
-        while num % 2 == 0:
-            num /= 2
-            fac0 += 1
-        while de % 2 == 0:
-            de /= 2
-            fac0 += 1
-        return int(sum(filter(lambda x: x > 1, (num, de))) + fac0)
-
     @comparable_bool_decorator
     def is_related(self: "Monzo", other: "Monzo") -> bool:
         for p in self.primes:
@@ -253,9 +230,27 @@ class Monzo:
     def __sub__(self, other: "Monzo") -> "Monzo":
         return self.__math(other, lambda x, y: x - y)
 
-    def __mul__(self, fac: int) -> "Monzo":
-        return self.__math(Monzo([fac] * len(self), self.val_border),
-                           lambda x, y: x * y)
+    def __mul__(self, other) -> "Monzo":
+        return self.__math(other, lambda x, y: x * y)
+
+    def __div__(self, other) -> "Monzo":
+        return self.__math(other, lambda x, y: x / y)
+
+    def scalar(self, factor):
+        """Return the scalar-product of a Monzo and its factor."""
+        return self * type(self)((factor,) * len(self), self.val_border)
+
+    def dot(self, other) -> float:
+        """Return the dot-product of two Monzos."""
+        return sum(a * b for a, b in zip(self, other))
+
+    def matrix(self, other):
+        """Return the matrix-product of two Monzos."""
+        m0 = tuple(type(self)(tuple(arg * arg2 for arg2 in other),
+                              self.val_border) for arg in self)
+        m1 = tuple(type(self)(tuple(arg * arg2 for arg2 in self),
+                              self.val_border) for arg in other)
+        return m0 + m1
 
     def inverse(self) -> "Monzo":
         return type(self)(list(map(lambda x: -x, self)), self.val_border)
@@ -303,14 +298,16 @@ class JITone(Monzo, abstract.AbstractTone):
         return JITone(self, self.val_border, self.multiply)
 
     @classmethod
-    def from_ratio(cls, num: int, den: int, multiply=1) -> "JITone":
+    def from_ratio(cls, num: int, den: int, val_border=1, multiply=1
+                   ) -> "JITone":
         obj = cls(JITone.ratio2monzo(Fraction(num, den), cls._val_shift))
+        obj.val_border = val_border
         obj.multiply = multiply
         return obj
 
     @classmethod
-    def from_monzo(cls, *arg: int, multiply=1) -> "JITone":
-        obj = cls(arg, cls._val_shift)
+    def from_monzo(cls, *arg, val_border=1, multiply=1) -> "JITone":
+        obj = cls(arg, val_border)
         obj.multiply = multiply
         return obj
 
@@ -323,7 +320,7 @@ class JIContainer:
 
     @classmethod
     def mk_line(cls, reference, count):
-        return cls([reference * (counter + 1) for counter in range(count)])
+        return cls([reference.scalar(i + 1) for i in range(count)])
 
     @classmethod
     def mk_line_and_inverse(cls, reference, count):
@@ -334,6 +331,16 @@ class JIContainer:
         r = tuple((r, p, round(f, 2))
                   for r, p, f in zip(self, self.primes, self.freq))
         return tuple(sorted(r, key=lambda t: t[2]))
+
+    def dot_sum(self):
+        """Return the sum of the dot-product of each Monzo
+        with each other Monzo in the Container"""
+        d = 0
+        for m_out in self:
+            for m_in in self:
+                if m_in != m_out:
+                    d += m_out.dot(m_in)
+        return d
 
 
 class JIMel(JITone.mk_iterable(abstract.AbstractMelody), JIContainer):
@@ -364,6 +371,12 @@ class JIMel(JITone.mk_iterable(abstract.AbstractMelody), JIContainer):
 
     def __sub__(self, other: "JIMel"):
         return JIMel((m0 - m1 for m0, m1 in zip(self, other)))
+
+    def __mul__(self, other: "JIMel"):
+        return JIMel((m0 * m1 for m0, m1 in zip(self, other)))
+
+    def __div__(self, other: "JIMel"):
+        return JIMel((m0 / m1 for m0, m1 in zip(self, other)))
 
     @property
     def val_border(self) -> int:
@@ -409,3 +422,16 @@ class JIHarmony(JITone.mk_iterable(abstract.AbstractHarmony), JIContainer):
         for f in self:
             f.val_border = arg
         self._val_border = arg
+
+
+"""
+    syntactic sugar for creating JITone - Objects:
+"""
+
+
+def r(num, den, val_border=1, multiply=1):
+    return JITone.from_ratio(num, den, val_border, multiply)
+
+
+def m(*num, val_border=1, multiply=1):
+    return JITone.from_monzo(*num, val_border=val_border, multiply=multiply)

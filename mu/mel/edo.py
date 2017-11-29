@@ -8,12 +8,14 @@ class EdoTone(abstract.AbstractTone):
     _concert_pitch = None
     _concert_pitch_shift = 0
     __multiply = 1
+    __pitchclass = 0
 
-    def __init__(self, pitch: float):
-        self.pitch = pitch
+    def __init__(self, pitchclass: float, multiply=1):
+        self.pitchclass = pitchclass
+        self.multiply = multiply
 
     def __repr__(self):
-        return str(self.pitch)
+        return str((self.pitchclass, self.multiply))
 
     @staticmethod
     def isPower(num, base):
@@ -29,6 +31,19 @@ class EdoTone(abstract.AbstractTone):
         if num < base:
             power -= 1
         return base ** power == num
+
+    @property
+    def pitchclass(self):
+        return self.__pitchclass
+
+    @pitchclass.setter
+    def pitchclass(self, arg):
+        if arg < self.steps and arg >= 0:
+            self.__pitchclass = arg
+        else:
+            msg = "Pitchclass can only be between 0 - {0}".format(
+                self.steps - 1)
+            raise ValueError(msg)
 
     @property
     def multiply(self):
@@ -52,8 +67,8 @@ class EdoTone(abstract.AbstractTone):
         return self._concert_pitch / pow(self.factor,
                                          self._concert_pitch_shift)
 
-    def calc(self, factor=1):
-        return (self.factor ** self.pitch) * self.multiply * factor * self.p0
+    def calc(self):
+        return (self.factor ** self.pitchclass) * self.multiply * self.p0
 
     @classmethod
     def mk_new_edo_class(cls, frame, steps, concert_pitch=None,
@@ -80,5 +95,6 @@ class EDO2_12Harmony(EDO2_12Tone.mk_iterable(abstract.AbstractHarmony)):
         return sorted(self.calc())
 
     @classmethod
-    def make_scale(cls, step, octaves=1, start=0):
-        return cls(EDO2_12Tone(num) for num in range(0, 12*octaves, step))
+    def make_scale(cls, step, octaves=1, start=1):
+        return cls(EDO2_12Tone(num, oc + 1) for num, oc in zip(
+            tuple(range(0, 12, step)) * octaves, range(0, octaves)))

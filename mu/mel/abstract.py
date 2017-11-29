@@ -105,3 +105,6 @@ class AbstractHarmony(set):
 
     def __hash__(self):
         return hash((hash(t) for t in self))
+
+    def sorted(self):
+        return sorted(self.calc())

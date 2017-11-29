@@ -86,14 +86,42 @@ class MonzoTest(unittest.TestCase):
         m3 = ji.Monzo([0, 1, 2])
         m4 = ji.Monzo([0, 0, 2])
         m5 = ji.Monzo([0, 0, 3])
+        m6 = ji.Monzo([2, 2, 2])
+        m7 = ji.Monzo([3, 3, 3])
         self.assertEqual(m0 + m1 + m2, m3)
         self.assertEqual(m3 - m0 - m1, m2)
-        self.assertEqual(m1 * 2, m4)
-        self.assertEqual(m1 * 3, m5)
+        self.assertEqual(m1 * m6, m4)
+        self.assertEqual(m1 * m7, m5)
 
     def test_sum(self):
         m0 = ji.Monzo([0, -1, 1, 3, 2, -3])
         self.assertEqual(m0.summed(), 10)
+
+    def test_scalar(self):
+        m0 = ji.Monzo([0, -1, 1])
+        m1 = ji.Monzo([0, -2, 2])
+        self.assertEqual(m0.scalar(2), m1)
+
+    def test_dot(self):
+        m0 = ji.Monzo([0, -1, 1])
+        m1 = ji.Monzo([0, -2, 2])
+        self.assertEqual(m0.dot(m0), 2)
+        self.assertEqual(m0.dot(m1), 4)
+        self.assertEqual(m1.dot(m1), 8)
+
+    def test_matrix(self):
+        m0 = ji.Monzo([0, -1, 1])
+        m1 = ji.Monzo([0, -2, 2])
+        m2 = ji.Monzo([0, 0, 0])
+        m3 = ji.Monzo([0, 1, -1])
+        m4 = ji.Monzo([0, -1, 1])
+        m5 = ji.Monzo([0, 2, -2])
+        m6 = ji.Monzo([0, -2, 2])
+        m7 = ji.Monzo([0, 4, -4])
+        m8 = ji.Monzo([0, -4, 4])
+        self.assertEqual(m0.matrix(m0), (m2, m3, m4) * 2)
+        self.assertEqual(m0.matrix(m1), (m2, m5, m6) * 2)
+        self.assertEqual(m1.matrix(m1), (m2, m7, m8) * 2)
 
     def test_float(self):
         m0 = ji.Monzo((-1, 1))
@@ -144,22 +172,6 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m2.gender, -1)
         self.assertEqual(m3.gender, 1)
         self.assertEqual(m4.gender, 0)
-
-    def test_wilson(self):
-        m0 = ji.Monzo([0, 1])
-        m1 = ji.Monzo([0, 1, 1])
-        m2 = ji.Monzo([0, 1, -2])
-        self.assertEqual(m0.wilson, 3)
-        self.assertEqual(m1.wilson, 15)
-        self.assertEqual(m2.wilson, 28)
-
-    def test_vogel(self):
-        m0 = ji.Monzo([1], 2)
-        m1 = ji.Monzo([1, 1], 2)
-        m2 = ji.Monzo([1, -2], 2)
-        self.assertEqual(m0.vogel, 4)
-        self.assertEqual(m1.vogel, 18)
-        self.assertEqual(m2.vogel, 32)
 
     def test_harmonic(self):
         m0 = ji.Monzo([1], 2)
@@ -294,6 +306,39 @@ class JIMelTest(unittest.TestCase):
                               ji.JITone.from_ratio(9, 5),
                               ji.JITone.from_ratio(9, 25)))
         self.assertEqual(test_mel0.separate(), test_mel1)
+
+    def test_dot_sum(self):
+        t0 = ji.JITone((0, 1, -1))
+        t1 = ji.JITone((-1, 1))
+        t2 = ji.JITone((2, -1))
+        test_mel0 = ji.JIMel.mk_line(t0, 2)
+        test_mel1 = ji.JIMel.mk_line(t0.inverse(), 2)
+        test_mel2 = ji.JIMel.mk_line_and_inverse(t0, 2)
+        test_mel3 = ji.JIMel.mk_line(t0, 2) & ji.JIMel.mk_line(t1, 2)
+        test_mel4 = ji.JIMel.mk_line(t0, 2) & ji.JIMel.mk_line(t2, 2)
+        self.assertEqual(test_mel0.dot_sum(), 8)
+        self.assertEqual(test_mel1.dot_sum(), 8)
+        self.assertEqual(test_mel2.dot_sum(), -20)
+        self.assertEqual(test_mel3.dot_sum(), 34)
+        self.assertEqual(test_mel4.dot_sum(), 10)
+
+
+class jiModule(unittest.TestCase):
+    def test_m(self):
+        n0 = ji.JITone([-1, 1], 2)
+        n0.multiply = 200
+        n1 = ji.m(-1, 1, val_border=2, multiply=200)
+        self.assertEqual(n0, n1)
+        self.assertEqual(n1.multiply, 200)
+        self.assertEqual(n1.val_border, 2)
+
+    def test_r(self):
+        n0 = ji.JITone([-1, 1], 2)
+        n0.multiply = 200
+        n1 = ji.r(5, 3, multiply=200, val_border=2)
+        self.assertEqual(n0, n1)
+        self.assertEqual(n1.multiply, 200)
+        self.assertEqual(n1.val_border, 2)
 
 
 if __name__ == "__main__":
