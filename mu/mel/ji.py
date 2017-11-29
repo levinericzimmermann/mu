@@ -3,7 +3,6 @@ from fractions import Fraction
 import pyprimes
 import functools
 import itertools
-from typing import get_type_hints
 
 
 def comparable_bool_decorator(func):
@@ -24,14 +23,36 @@ def comparable_monzo_decorator(func):
     return wrap
 
 
-class Monzo(tuple):
-    val_shift = 0
+class Monzo:
+    _val_shift = 0
 
-    def __new__(cls, iterable, *args, **kwargs):
-        return tuple.__new__(cls, iterable)
+    def __init__(self, iterable, val_border=1):
+        self._vector = Monzo._shift_vector(
+            tuple(iterable), pyprimes.prime_count(val_border))
+        self.val_border = val_border
 
-    def __init__(self, iter, val_shift=0):
-        self.val_shift = val_shift
+    def __getitem__(self, idx):
+        res = self._vec[idx]
+        if type(idx) == slice:
+            return Monzo(res, self.val_border)
+        else:
+            return res
+
+    def __iter__(self):
+        return iter(self._vec)
+
+    @property
+    def _vec(self):
+        return self._vector[self._val_shift:]
+
+    def __repr__(self):
+        return repr(self._vec)
+
+    def __len__(self):
+        return len(self._vec)
+
+    def index(self, arg):
+        return self._vec.index(arg)
 
     @staticmethod
     def decompose(num: int) -> tuple:
@@ -51,7 +72,7 @@ class Monzo(tuple):
     @staticmethod
     def is_comparable(m0: "Monzo", m1: "Monzo") -> bool:
         try:
-            return m0.val_shift == m1.val_shift
+            return m0._val_shift == m1._val_shift
         except AttributeError:
             return False
 
@@ -101,18 +122,32 @@ class Monzo(tuple):
 
         return Monzo(monzo[val_shift:])
 
+    @staticmethod
+    def _shift_vector(vec, shiftval) -> tuple:
+        if shiftval > 0:
+            m = [0] * shiftval + list(vec)
+        else:
+            m = vec[abs(shiftval):]
+        return tuple(m)
+
     @property
     def val(self) -> tuple:
         return tuple(pyprimes.nprimes(
-            len(self) + self.val_shift))[self.val_shift:]
+            len(self) + self._val_shift))[self._val_shift:]
 
     @property
-    def val_border(self) -> tuple:
-        if self.val_shift == 0:
+    def val_border(self) -> int:
+        if self._val_shift == 0:
             return 1
         else:
             return tuple(pyprimes.nprimes(
-                len(self) + self.val_shift))[self.val_shift - 1]
+                len(self) + self._val_shift))[self._val_shift - 1]
+
+    @val_border.setter
+    def val_border(self, v):
+        difference = pyprimes.prime_count(
+            v) - pyprimes.prime_count(self.val_border)
+        self._val_shift += difference
 
     @property
     def ratio(self) -> Fraction:
@@ -149,7 +184,7 @@ class Monzo(tuple):
     @property
     def primes(self) -> tuple:
         p = Monzo.decompose(self.ratio.numerator * self.ratio.denominator)
-        return tuple(set(p))[self.val_shift:]
+        return tuple(set(p))[self._val_shift:]
 
     @property
     def wilson(self) -> int:
@@ -190,7 +225,7 @@ class Monzo(tuple):
 
     @comparable_bool_decorator
     def __eq__(self: "Monzo", other: "Monzo") -> bool:
-        return tuple.__eq__(self, other)
+        return tuple.__eq__(self._vector, other._vector)
 
     def summed(self) -> int:
         return sum(map(lambda x: abs(x), self))
@@ -201,7 +236,7 @@ class Monzo(tuple):
                 return 1
             else:
                 return -1
-        sep = [tuple(type(self)([0] * counter + [ispos(vec)])
+        sep = [tuple(type(self)([0] * counter + [ispos(vec)], self.val_border)
                      for i in range(abs(vec)))
                for counter, vec in enumerate(self) if vec != 0]
         res = [a for sub in sep for a in sub]
@@ -210,12 +245,12 @@ class Monzo(tuple):
         return res
 
     def copy(self) -> "Monzo":
-        return Monzo(self, self.val_shift)
+        return Monzo(self, self.val_border)
 
     @comparable_monzo_decorator
     def __math(self, other, operation) -> "Monzo":
         m0, m1 = Monzo.adjusted_monzos(self, other)
-        return Monzo(Monzo.calc_iterables(m0, m1, operation), self.val_shift)
+        return Monzo(Monzo.calc_iterables(m0, m1, operation), self.val_border)
 
     def __add__(self, other: "Monzo") -> "Monzo":
         return self.__math(other, lambda x, y: x + y)
@@ -224,57 +259,24 @@ class Monzo(tuple):
         return self.__math(other, lambda x, y: x - y)
 
     def __mul__(self, fac: int) -> "Monzo":
-        return self.__math(Monzo([fac] * len(self), val_shift=self.val_shift),
+        return self.__math(Monzo([fac] * len(self), self.val_border),
                            lambda x, y: x * y)
 
     def inverse(self) -> "Monzo":
-        return Monzo(list(map(lambda x: -x, self)), self.val_shift)
+        return type(self)(list(map(lambda x: -x, self)), self.val_border)
 
     def shift(self, shiftval: int) -> "Monzo":
-        if shiftval > 0:
-            m = [0] * shiftval + list(self)
-        else:
-            m = self[abs(shiftval):]
-        return Monzo(m, self.val_shift)
+        return type(self)(Monzo._shift_vector(
+            self, shiftval), self.val_border)
 
 
 class JITone(Monzo, abstract.AbstractTone):
     multiply = 1
 
-    def __new__(cls, iterable, *args, **kwargs):
-        def is_changeable(method):
-            if callable(method):
-                try:
-                    res = get_type_hints(method)["return"]
-                    return res == Monzo
-                except KeyError:
-                    return False
-            else:
-                return False
-
-        def adjust_methods(m):
-            def decorator(func):
-                def wrap(*args, **kwargs):
-                    return JITone(func(*args, **kwargs))
-                w = wrap
-                w.__annotations__.update({"return": type(res)})
-                return w
-            return tuple((key, decorator(func)) for key, func in m)
-
-        if not iterable:
-            iterable = (0,)
-
-        res = Monzo.__new__(cls, iterable)
-        keys = tuple(key for key in dir(res) if not abstract.is_private(key))
-        methods = tuple(getattr(res, key) for key in keys)
-        filtered = ((key, method) for key, method in zip(keys, methods)
-                    if is_changeable(method))
-        for key, func in adjust_methods(filtered):
-            setattr(res, key, func)
-        return res
-
-    def __init__(self, iterable, val_shift=0, multiply=1):
-        self.val_shift = val_shift
+    def __init__(self, iterable, val_border=1, multiply=1):
+        self._vector = tuple(Monzo._shift_vector(
+            iterable, pyprimes.prime_count(val_border)))
+        self.val_border = val_border
         self.multiply = multiply
 
     def __eq__(self, other) -> bool:
@@ -288,13 +290,13 @@ class JITone(Monzo, abstract.AbstractTone):
         return tuple(self)
 
     def __add__(self, other) -> "JITone":
-        return JITone(Monzo.__add__(self, other))
+        return JITone(Monzo.__add__(self, other), self.val_border)
 
     def __sub__(self, other) -> "JITone":
-        return JITone(Monzo.__sub__(self, other))
+        return JITone(Monzo.__sub__(self, other), self.val_border)
 
     def __mul__(self, other) -> "JITone":
-        return JITone(Monzo.__mul__(self, other))
+        return JITone(Monzo.__mul__(self, other), self.val_border)
 
     def __hash__(self):
         return abstract.AbstractTone.__hash__(self)
@@ -303,26 +305,26 @@ class JITone(Monzo, abstract.AbstractTone):
         return float(self.ratio * self.multiply * factor)
 
     def copy(self) -> "JITone":
-        return JITone(self, self.val_shift, self.multiply)
+        return JITone(self, self.val_border, self.multiply)
 
     @classmethod
     def from_ratio(cls, num: int, den: int, multiply=1) -> "JITone":
-        obj = cls(JITone.ratio2monzo(Fraction(num, den), cls.val_shift))
+        obj = cls(JITone.ratio2monzo(Fraction(num, den), cls._val_shift))
         obj.multiply = multiply
         return obj
 
     @classmethod
     def from_monzo(cls, *arg: int, multiply=1) -> "JITone":
-        obj = cls(arg, cls.val_shift)
+        obj = cls(arg, cls._val_shift)
         obj.multiply = multiply
         return obj
 
 
 class JIContainer:
-    def __init__(self, iterable, multiply=1):
+    def __init__(self, iterable, multiply=260):
         super(type(self), self).__init__(iterable)
         self.multiply = multiply
-        self._val_shift = 0
+        self._val_border = 1
 
     @classmethod
     def mk_line(cls, reference, count):
@@ -340,7 +342,7 @@ class JIContainer:
 
 
 class JIMel(JITone.mk_iterable(abstract.AbstractMelody), JIContainer):
-    def __init__(self, iterable, multiply=1):
+    def __init__(self, iterable, multiply=260):
         return JIContainer.__init__(self, iterable, multiply)
 
     def calc(self, factor=1) -> tuple:
@@ -355,36 +357,45 @@ class JIMel(JITone.mk_iterable(abstract.AbstractMelody), JIContainer):
         """return intervals between single notes"""
         return self[1:] - self[:-1]
 
+    def __getitem__(self, idx):
+        res = abstract.AbstractMelody.__getitem__(self, idx)
+        if type(res) == type(self):
+            res.multiply = self.multiply
+            res.val_border = self.val_border
+        return res
+
     def __add__(self, other: "JIMel"):
-        return JIMel(m0 + m1 for m0, m1 in zip(self, other))
+        return JIMel((m0 + m1 for m0, m1 in zip(self, other)))
 
     def __sub__(self, other: "JIMel"):
-        return JIMel(m0 - m1 for m0, m1 in zip(self, other))
+        return JIMel((m0 - m1 for m0, m1 in zip(self, other)))
 
     @property
-    def val_shift(self) -> int:
-        return self._val_shift
+    def val_border(self) -> int:
+        return self[0].val_border
 
-    @val_shift.setter
-    def val_shift(self, arg) -> None:
+    @val_border.setter
+    def val_border(self, arg) -> None:
         for f in self:
-            f.val_shift = arg
-        self._val_shift = arg
+            f.val_border = arg
+        self._val_border = arg
 
     def subvert(self):
         return type(self)(functools.reduce(
-            lambda x, y: x + y, tuple(t.subvert() for t in self)))
+            lambda x, y: x + y, tuple(t.subvert() for t in self)),
+            self.multiply)
 
     def accumulate(self):
-        return type(self)(tuple(itertools.accumulate(self)))
+        return type(self)(tuple(itertools.accumulate(self)),
+                          self.multiply)
 
     def separate(self):
-        return type(self)(JIMel((
-            self[0],)) & self.intervals.subvert()).accumulate()
+        subverted = JIMel((self[0],)) & self.intervals.subvert()
+        return type(self)(subverted, self.multiply).accumulate()
 
 
 class JIHarmony(JITone.mk_iterable(abstract.AbstractHarmony), JIContainer):
-    def __init__(self, iterable, multiply=1):
+    def __init__(self, iterable, multiply=260):
         return JIContainer.__init__(self, iterable, multiply)
 
     def calc(self, factor=1) -> tuple:
@@ -395,11 +406,11 @@ class JIHarmony(JITone.mk_iterable(abstract.AbstractHarmony), JIContainer):
         return self.calc()
 
     @property
-    def val_shift(self) -> int:
-        return self.__val_shift
+    def val_border(self) -> int:
+        return self._val_border
 
-    @val_shift.setter
-    def val_shift(self, arg) -> None:
+    @val_border.setter
+    def val_border(self, arg) -> None:
         for f in self:
-            f.val_shift = arg
-        self.__val_shift = arg
+            f.val_border = arg
+        self._val_border = arg

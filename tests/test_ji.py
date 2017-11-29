@@ -8,10 +8,10 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(ji.Monzo.decompose(45), (3, 3, 5))
 
     def test_ratio(self):
-        m0 = ji.Monzo([0, 1], 1)
-        m1 = ji.Monzo([0, 0, -1], 1)
-        m2 = ji.Monzo([2, 0, -1], 1)
-        m3 = ji.Monzo([2], 1)
+        m0 = ji.Monzo([0, 1], 2)
+        m1 = ji.Monzo([0, 0, -1], 2)
+        m2 = ji.Monzo([2, 0, -1], 2)
+        m3 = ji.Monzo([2], 2)
         self.assertEqual(m0.ratio, Fraction(5, 4))
         self.assertEqual(m1.ratio, Fraction(8, 7))
         self.assertEqual(m2.ratio, Fraction(9, 7))
@@ -97,19 +97,19 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m2.wilson, 28)
 
     def test_vogel(self):
-        m0 = ji.Monzo([1], 1)
-        m1 = ji.Monzo([1, 1], 1)
-        m2 = ji.Monzo([1, -2], 1)
+        m0 = ji.Monzo([1], 2)
+        m1 = ji.Monzo([1, 1], 2)
+        m2 = ji.Monzo([1, -2], 2)
         self.assertEqual(m0.vogel, 4)
         self.assertEqual(m1.vogel, 18)
         self.assertEqual(m2.vogel, 32)
 
     def test_harmonic(self):
-        m0 = ji.Monzo([1], 1)
-        m1 = ji.Monzo([0, 1], 1)
-        m2 = ji.Monzo([0, 0, -1, 1], 1)
-        m3 = ji.Monzo([-1], 1)
-        m4 = ji.Monzo([0, 0, -1], 1)
+        m0 = ji.Monzo([1], 2)
+        m1 = ji.Monzo([0, 1], 2)
+        m2 = ji.Monzo([0, 0, -1, 1], 2)
+        m3 = ji.Monzo([-1], 2)
+        m4 = ji.Monzo([0, 0, -1], 2)
         m5 = ji.Monzo([])
         self.assertEqual(m0.harmonic, 3)
         self.assertEqual(m1.harmonic, 5)
@@ -119,8 +119,8 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m5.harmonic, 1)
 
     def test_primes(self):
-        m0 = ji.Monzo([1], 1)
-        m1 = ji.Monzo([-2, 1], 1)
+        m0 = ji.Monzo([1], 2)
+        m1 = ji.Monzo([-2, 1], 2)
         self.assertEqual(m0.primes, (3,))
         self.assertEqual(m1.primes, (3, 5))
 
@@ -179,8 +179,8 @@ class JIMelTest(unittest.TestCase):
         self.assertEqual(mel0 - mel1, mel3)
 
     def test_calc(self):
-        n0 = ji.JITone([1], 1)
-        n1 = ji.JITone([0, 1], 1)
+        n0 = ji.JITone([1], 2)
+        n1 = ji.JITone([0, 1], 2)
         n0.multiply = 2
         m_fac = 200
         mel0 = ji.JIMel([n0, n1], m_fac)
