@@ -17,9 +17,50 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m2.ratio, Fraction(9, 7))
         self.assertEqual(m3.ratio, Fraction(9, 8))
 
-    def test_variable_val(self):
-        m0 = ji.Monzo([-1, 1], 0)
+    def test__vector(self):
+        m0 = ji.Monzo([0, 1], 1)
+        m1 = ji.Monzo([0, 0, -1], 2)
+        m2 = ji.Monzo([2, 0, -1], 3)
+        m3 = ji.Monzo([2], 5)
+        self.assertEqual(m0._vector, (0, 1))
+        self.assertEqual(m1._vector, (0, 0, 0, -1))
+        self.assertEqual(m2._vector, (0, 0, 2, 0, -1))
+        self.assertEqual(m3._vector, (0, 0, 0, 2))
+
+    def test__vec(self):
+        m0 = ji.Monzo([0, 1], 1)
+        m1 = ji.Monzo([0, 0, -1], 2)
+        m2 = ji.Monzo([2, 0, -1], 3)
+        m3 = ji.Monzo([2], 5)
+        self.assertEqual(m0._vec, m0._vector[m0._val_shift:])
+        self.assertEqual(m1._vec, m1._vector[m1._val_shift:])
+        self.assertEqual(m2._vec, m2._vector[m2._val_shift:])
+        self.assertEqual(m3._vec, m3._vector[m3._val_shift:])
+
+    def test_val_border(self):
+        m0 = ji.Monzo([-1, 1], 1)
+        m1 = ji.Monzo([0, 1], 2)
+        m2 = ji.Monzo([1], 7)
         self.assertEqual(m0.ratio, Fraction(3, 2))
+        self.assertEqual(m1.ratio, Fraction(5, 4))
+        self.assertEqual(m2.ratio, Fraction(11, 7))
+        m0.val_border = 2
+        self.assertEqual(m0.val_border, 2)
+        self.assertEqual(m0._val_shift, 1)
+        m0.val_border = 3
+        self.assertEqual(m0.val_border, 3)
+        self.assertEqual(m0._val_shift, 2)
+        m0.val_border = 5
+        self.assertEqual(m0.val_border, 5)
+        self.assertEqual(m0._val_shift, 3)
+
+    def test_val(self):
+        m0 = ji.Monzo([-1, 1], 1)
+        m1 = ji.Monzo([-1, 1], 2)
+        m2 = ji.Monzo([-1, 1, 0, 0, 1], 3)
+        self.assertEqual(m0.val, (2, 3))
+        self.assertEqual(m1.val, (3, 5))
+        self.assertEqual(m2.val, (5, 7, 11, 13, 17))
 
     def test_adjust_ratio(self):
         self.assertEqual(ji.Monzo.adjust_ratio(
@@ -57,10 +98,21 @@ class MonzoTest(unittest.TestCase):
         m0 = ji.Monzo([0, -1, 1, 3, 2, -3])
         self.assertEqual(m0.summed(), 10)
 
+    def test_float(self):
+        m0 = ji.Monzo((-1, 1))
+        m1 = ji.Monzo((0, 1), 2)
+        self.assertEqual(m0.float, 1.5)
+        self.assertEqual(m1.float, 1.25)
+
     def test_inverse(self):
         m0 = ji.Monzo([0, -1, 1, 3, 2, -3])
         m1 = ji.Monzo([0, 1, -1, -3, -2, 3])
         self.assertEqual(m0.inverse(), m1)
+
+    def test_shift_staticmethod(self):
+        m0 = ji.Monzo([0, 1, 2])
+        m1 = ji.Monzo([0, 0, 0, 1, 2])
+        self.assertEqual(ji.Monzo(ji.Monzo._shift_vector(m0, 2)), m1)
 
     def test_shifted(self):
         m0 = ji.Monzo([0, 1, 2])
@@ -75,6 +127,14 @@ class MonzoTest(unittest.TestCase):
               ji.Monzo([0, 0, 0, 1]), ji.Monzo([0, 0, 0, 0, -1]),
               ji.Monzo([0, 0, 0, 0, -1])]
         self.assertEqual(m0.subvert(), ls)
+
+    def test_copy(self):
+        m0 = ji.Monzo([0, 0, 1, 2, -2])
+        m1 = ji.Monzo([0, 0, 1, 2, -2], 2)
+        m2 = ji.Monzo([0, 0, 1, 2, -2], 5)
+        self.assertEqual(m0.copy(), m0)
+        self.assertEqual(m1.copy(), m1)
+        self.assertEqual(m2.copy(), m2)
 
     def test_gender(self):
         m0 = ji.Monzo([0, 1])
@@ -202,6 +262,20 @@ class JIMelTest(unittest.TestCase):
             (ji.JITone((0, 1, -1)), ji.JITone((0, 2, -2)),
              ji.JITone((0, 3, -3))))
         self.assertEqual(test_mel0, test_mel1)
+
+    def test_mk_line_and_inverse(self):
+        test_mel0 = ji.JIMel.mk_line_and_inverse(ji.JITone((0, 1, -1)), 3)
+        test_mel1 = ji.JIMel.mk_line(ji.JITone((0, 1, -1)), 3)
+        test_mel1 = test_mel1 & test_mel1.inverse()
+        self.assertEqual(test_mel0, test_mel1)
+
+    def test_intervals(self):
+        test_mel0 = ji.JIMel(
+            (ji.JITone((0, 1, -1)), ji.JITone((0, 2, -2)),
+             ji.JITone((0, 3, -3))))
+        test_mel1 = ji.JIMel(
+            (ji.JITone((0, 1, -1)), ji.JITone((0, 1, -1))))
+        self.assertEqual(test_mel0.intervals, test_mel1)
 
     def test_subvert(self):
         test_mel0 = ji.JIMel.mk_line(ji.JITone((0, 1, -1)), 2)
