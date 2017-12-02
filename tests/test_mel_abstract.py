@@ -5,7 +5,7 @@ from mu.mel import abstract
 class AbstractTest(unittest.TestCase):
     def test_abstract_error(self):
         self.assertRaises(TypeError, type(
-            "test_cls", (abstract.AbstractTone,), {}))
+            "test_cls", (abstract.AbstractPitch,), {}))
 
     def test_private_test(self):
         self.assertEqual(abstract.is_private("__repr"), True)
@@ -14,7 +14,7 @@ class AbstractTest(unittest.TestCase):
 
 
 class InheritanceTest(unittest.TestCase):
-    class ToneTest(abstract.AbstractTone):
+    class PitchTest(abstract.AbstractPitch):
         def __init__(self, freq):
             self._freq = freq
 
@@ -30,26 +30,26 @@ class InheritanceTest(unittest.TestCase):
         def multiplied(self, arg):
             return type(self)(self.freq * arg)
 
-    def test_Tone_functionality(self):
-        self.ToneTest(200)
+    def test_Pitch_functionality(self):
+        self.PitchTest(200)
 
-    def test_Tone_methods_functionality(self):
+    def test_Pitch_methods_functionality(self):
         f = 200
-        n0 = self.ToneTest(f)
+        n0 = self.PitchTest(f)
         self.assertEqual(n0.freq, f)
         self.assertEqual(n0.calc(), f)
 
     def test_iterable_functionality(self):
-        test_class0 = self.ToneTest.mk_iterable(list)
+        test_class0 = self.PitchTest.mk_iterable(list)
         test_class0([])
 
     def test_iterable_inheritance(self):
-        self.assertIsInstance(self.ToneTest.mk_iterable(list)([]), list)
-        self.assertIsInstance(self.ToneTest.mk_iterable(set)([]), set)
-        self.assertIsInstance(self.ToneTest.mk_iterable(tuple)([]), tuple)
+        self.assertIsInstance(self.PitchTest.mk_iterable(list)([]), list)
+        self.assertIsInstance(self.PitchTest.mk_iterable(set)([]), set)
+        self.assertIsInstance(self.PitchTest.mk_iterable(tuple)([]), tuple)
 
     def test_iterable_method_takeover(self):
-        test_class0 = self.ToneTest.mk_iterable(list)
+        test_class0 = self.PitchTest.mk_iterable(list)
         self.assertIn("calc", dir(test_class0))
         self.assertIn("multiply", dir(test_class0))
 
@@ -60,8 +60,8 @@ class InheritanceTest(unittest.TestCase):
         returns a list of None in the iterable-version"""
         fac = 2
         f0, f1 = 200, 260
-        n0, n1 = self.ToneTest(f0), self.ToneTest(f1)
-        test_class = self.ToneTest.mk_iterable(list)
+        n0, n1 = self.PitchTest(f0), self.PitchTest(f1)
+        test_class = self.PitchTest.mk_iterable(list)
         test_obj0 = test_class([n0, n1])
         self.assertEqual(test_obj0.calc(), (f0, f1))
         self.assertEqual(test_obj0.multiply(fac), None)
@@ -75,8 +75,8 @@ class InheritanceTest(unittest.TestCase):
         in the iterable-version."""
         fac = 2
         f0, f1 = 200, 260
-        n0, n1 = self.ToneTest(f0), self.ToneTest(f1)
-        test_class = self.ToneTest.mk_iterable(list)
+        n0, n1 = self.PitchTest(f0), self.PitchTest(f1)
+        test_class = self.PitchTest.mk_iterable(list)
         test_obj0 = test_class([n0, n1])
         compare_obj = test_class([n0.multiplied(fac), n1.multiplied(2)])
         self.assertEqual(test_obj0.multiplied(fac), compare_obj)

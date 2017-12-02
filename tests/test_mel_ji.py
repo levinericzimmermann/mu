@@ -193,6 +193,18 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m0.primes, (3,))
         self.assertEqual(m1.primes, (3, 5))
 
+    def test_components(self):
+        m0 = ji.Monzo([1, -1, 2, 0, 1], 1)
+        m0_0 = ji.Monzo([1], 1)
+        m0_1 = ji.Monzo([0, -1], 1)
+        m0_2 = ji.Monzo([0, 0, 2], 1)
+        m0_3 = ji.Monzo([0, 0, 0, 0, 1], 1)
+        m1 = ji.Monzo([-2, 1], 2)
+        m1_0 = ji.Monzo([-2], 2)
+        m1_1 = ji.Monzo([0, 1], 2)
+        self.assertEqual(m0.components, (m0_0, m0_1, m0_2, m0_3))
+        self.assertEqual(m1.components, (m1_0, m1_1))
+
     def test_relation(self):
         m0 = ji.Monzo([1], 1)
         m1 = ji.Monzo([-2, 1], 1)
@@ -217,29 +229,29 @@ class MonzoTest(unittest.TestCase):
         self.assertIsInstance(ji.Monzo([]), ji.Monzo)
 
 
-class JIToneTest(unittest.TestCase):
+class JIPitchTest(unittest.TestCase):
     def test_calc(self):
-        n0 = ji.JITone([-1, 1])
+        n0 = ji.JIPitch([-1, 1])
         n0.multiply = 200
         self.assertEqual(n0.calc(), n0.multiply * Fraction(3, 2))
         self.assertEqual(n0.freq, n0.multiply * Fraction(3, 2))
 
     def test_constructor(self):
-        self.assertEqual(ji.JITone.from_ratio(3, 2), ji.JITone([-1, 1]))
-        self.assertEqual(ji.JITone.from_ratio(3, 2), ji.JITone([-1, 1]))
-        self.assertEqual(ji.JITone.from_ratio(1, 1), ji.JITone((0,)))
-        self.assertEqual(ji.JITone.from_ratio(2, 1), ji.JITone((1,)))
-        self.assertEqual(ji.JITone.from_ratio(1, 2), ji.JITone((-1,)))
-        self.assertEqual(ji.JITone.from_monzo(-1), ji.JITone((-1,)))
+        self.assertEqual(ji.JIPitch.from_ratio(3, 2), ji.JIPitch([-1, 1]))
+        self.assertEqual(ji.JIPitch.from_ratio(3, 2), ji.JIPitch([-1, 1]))
+        self.assertEqual(ji.JIPitch.from_ratio(1, 1), ji.JIPitch((0,)))
+        self.assertEqual(ji.JIPitch.from_ratio(2, 1), ji.JIPitch((1,)))
+        self.assertEqual(ji.JIPitch.from_ratio(1, 2), ji.JIPitch((-1,)))
+        self.assertEqual(ji.JIPitch.from_monzo(-1), ji.JIPitch((-1,)))
 
 
 class JIMelTest(unittest.TestCase):
     def test_math(self):
-        n0 = ji.JITone([0, 1])
-        n1 = ji.JITone([0, 0, 1])
-        n2 = ji.JITone([0, 1, 1])
-        n3 = ji.JITone([0, 1, -1])
-        n4 = ji.JITone([0, -1, 1])
+        n0 = ji.JIPitch([0, 1])
+        n1 = ji.JIPitch([0, 0, 1])
+        n2 = ji.JIPitch([0, 1, 1])
+        n3 = ji.JIPitch([0, 1, -1])
+        n4 = ji.JIPitch([0, -1, 1])
         mel0 = ji.JIMel([n0, n1])
         mel1 = ji.JIMel([n1, n0])
         mel2 = ji.JIMel([n2, n2])
@@ -248,8 +260,8 @@ class JIMelTest(unittest.TestCase):
         self.assertEqual(mel0 - mel1, mel3)
 
     def test_calc(self):
-        n0 = ji.JITone([1], 2)
-        n1 = ji.JITone([0, 1], 2)
+        n0 = ji.JIPitch([1], 2)
+        n1 = ji.JIPitch([0, 1], 2)
         n0.multiply = 2
         m_fac = 200
         mel0 = ji.JIMel([n0, n1], m_fac)
@@ -259,58 +271,58 @@ class JIMelTest(unittest.TestCase):
         self.assertEqual(mel0.calc(), correct)
 
     def test_inheritance(self):
-        t0 = ji.JITone([1])
-        t1 = ji.JITone([0, 1])
+        t0 = ji.JIPitch([1])
+        t1 = ji.JIPitch([0, 1])
         m0 = ji.JIMel([t0, t1])
         m1 = ji.JIMel([t0.inverse(), t1.inverse()])
         self.assertEqual(m0.inverse(), m1)
 
     def test_mk_line(self):
-        test_mel0 = ji.JIMel.mk_line(ji.JITone((0, 1, -1)), 3)
+        test_mel0 = ji.JIMel.mk_line(ji.JIPitch((0, 1, -1)), 3)
         test_mel1 = ji.JIMel(
-            (ji.JITone((0, 1, -1)), ji.JITone((0, 2, -2)),
-             ji.JITone((0, 3, -3))))
+            (ji.JIPitch((0, 1, -1)), ji.JIPitch((0, 2, -2)),
+             ji.JIPitch((0, 3, -3))))
         self.assertEqual(test_mel0, test_mel1)
 
     def test_mk_line_and_inverse(self):
-        test_mel0 = ji.JIMel.mk_line_and_inverse(ji.JITone((0, 1, -1)), 3)
-        test_mel1 = ji.JIMel.mk_line(ji.JITone((0, 1, -1)), 3)
+        test_mel0 = ji.JIMel.mk_line_and_inverse(ji.JIPitch((0, 1, -1)), 3)
+        test_mel1 = ji.JIMel.mk_line(ji.JIPitch((0, 1, -1)), 3)
         test_mel1 = test_mel1 & test_mel1.inverse()
         self.assertEqual(test_mel0, test_mel1)
 
     def test_intervals(self):
         test_mel0 = ji.JIMel(
-            (ji.JITone((0, 1, -1)), ji.JITone((0, 2, -2)),
-             ji.JITone((0, 3, -3))))
+            (ji.JIPitch((0, 1, -1)), ji.JIPitch((0, 2, -2)),
+             ji.JIPitch((0, 3, -3))))
         test_mel1 = ji.JIMel(
-            (ji.JITone((0, 1, -1)), ji.JITone((0, 1, -1))))
+            (ji.JIPitch((0, 1, -1)), ji.JIPitch((0, 1, -1))))
         self.assertEqual(test_mel0.intervals, test_mel1)
 
     def test_subvert(self):
-        test_mel0 = ji.JIMel.mk_line(ji.JITone((0, 1, -1)), 2)
-        f = ji.JITone((0, 0, -1))
-        t = ji.JITone((0, 1))
+        test_mel0 = ji.JIMel.mk_line(ji.JIPitch((0, 1, -1)), 2)
+        f = ji.JIPitch((0, 0, -1))
+        t = ji.JIPitch((0, 1))
         test_mel1 = ji.JIMel((t, f, t, t, f, f))
         self.assertEqual(test_mel0.subvert(), test_mel1)
 
     def test_accumulate(self):
-        f = ji.JITone((0, 0, -1))
-        t = ji.JITone((0, 1))
+        f = ji.JIPitch((0, 0, -1))
+        t = ji.JIPitch((0, 1))
         test_mel0 = ji.JIMel((f, f, t, t))
         test_mel1 = ji.JIMel((f, f + f, f + f + t, f + f + t + t))
         self.assertEqual(test_mel0.accumulate(), test_mel1)
 
     def test_separate(self):
-        test_mel0 = ji.JIMel.mk_line(ji.JITone((0, 1, -1)), 2)
-        test_mel1 = ji.JIMel((ji.JITone.from_ratio(3, 5),
-                              ji.JITone.from_ratio(9, 5),
-                              ji.JITone.from_ratio(9, 25)))
+        test_mel0 = ji.JIMel.mk_line(ji.JIPitch((0, 1, -1)), 2)
+        test_mel1 = ji.JIMel((ji.JIPitch.from_ratio(3, 5),
+                              ji.JIPitch.from_ratio(9, 5),
+                              ji.JIPitch.from_ratio(9, 25)))
         self.assertEqual(test_mel0.separate(), test_mel1)
 
     def test_dot_sum(self):
-        t0 = ji.JITone((0, 1, -1))
-        t1 = ji.JITone((-1, 1))
-        t2 = ji.JITone((2, -1))
+        t0 = ji.JIPitch((0, 1, -1))
+        t1 = ji.JIPitch((-1, 1))
+        t2 = ji.JIPitch((2, -1))
         test_mel0 = ji.JIMel.mk_line(t0, 2)
         test_mel1 = ji.JIMel.mk_line(t0.inverse(), 2)
         test_mel2 = ji.JIMel.mk_line_and_inverse(t0, 2)
@@ -325,7 +337,7 @@ class JIMelTest(unittest.TestCase):
 
 class jiModule(unittest.TestCase):
     def test_m(self):
-        n0 = ji.JITone([-1, 1], 2)
+        n0 = ji.JIPitch([-1, 1], 2)
         n0.multiply = 200
         n1 = ji.m(-1, 1, val_border=2, multiply=200)
         self.assertEqual(n0, n1)
@@ -333,7 +345,7 @@ class jiModule(unittest.TestCase):
         self.assertEqual(n1.val_border, 2)
 
     def test_r(self):
-        n0 = ji.JITone([-1, 1], 2)
+        n0 = ji.JIPitch([-1, 1], 2)
         n0.multiply = 200
         n1 = ji.r(5, 3, multiply=200, val_border=2)
         self.assertEqual(n0, n1)

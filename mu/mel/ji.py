@@ -179,7 +179,13 @@ class Monzo:
     @property
     def primes(self) -> tuple:
         p = factors.factorise(self.ratio.numerator * self.ratio.denominator)
-        return tuple(set(p))[self._val_shift:]
+        return tuple(sorted(tuple(set(p))))[self._val_shift:]
+
+    @property
+    def components(self) -> tuple:
+        vectors = [[0] * c + [x] for c, x in enumerate(self) if x != 0]
+        return tuple(type(self)(
+                vec, val_border=self.val_border) for vec in vectors)
 
     @comparable_bool_decorator
     def is_related(self: "Monzo", other: "Monzo") -> bool:
@@ -260,7 +266,7 @@ class Monzo:
             self, shiftval), self.val_border)
 
 
-class JITone(Monzo, abstract.AbstractTone):
+class JIPitch(Monzo, abstract.AbstractPitch):
     multiply = 1
 
     def __init__(self, iterable, val_border=1, multiply=1):
@@ -270,7 +276,7 @@ class JITone(Monzo, abstract.AbstractTone):
         self.multiply = multiply
 
     def __eq__(self, other) -> bool:
-        return abstract.AbstractTone.__eq__(self, other)
+        return abstract.AbstractPitch.__eq__(self, other)
 
     def __repr__(self) -> str:
         return str(self.ratio)
@@ -279,34 +285,34 @@ class JITone(Monzo, abstract.AbstractTone):
     def monzo(self) -> tuple:
         return tuple(self)
 
-    def __add__(self, other) -> "JITone":
-        return JITone(Monzo.__add__(self, other), self.val_border)
+    def __add__(self, other) -> "JIPitch":
+        return JIPitch(Monzo.__add__(self, other), self.val_border)
 
-    def __sub__(self, other) -> "JITone":
-        return JITone(Monzo.__sub__(self, other), self.val_border)
+    def __sub__(self, other) -> "JIPitch":
+        return JIPitch(Monzo.__sub__(self, other), self.val_border)
 
-    def __mul__(self, other) -> "JITone":
-        return JITone(Monzo.__mul__(self, other), self.val_border)
+    def __mul__(self, other) -> "JIPitch":
+        return JIPitch(Monzo.__mul__(self, other), self.val_border)
 
     def __hash__(self):
-        return abstract.AbstractTone.__hash__(self)
+        return abstract.AbstractPitch.__hash__(self)
 
     def calc(self, factor=1) -> float:
         return float(self.ratio * self.multiply * factor)
 
-    def copy(self) -> "JITone":
-        return JITone(self, self.val_border, self.multiply)
+    def copy(self) -> "JIPitch":
+        return JIPitch(self, self.val_border, self.multiply)
 
     @classmethod
     def from_ratio(cls, num: int, den: int, val_border=1, multiply=1
-                   ) -> "JITone":
-        obj = cls(JITone.ratio2monzo(Fraction(num, den), cls._val_shift))
+                   ) -> "JIPitch":
+        obj = cls(JIPitch.ratio2monzo(Fraction(num, den), cls._val_shift))
         obj.val_border = val_border
         obj.multiply = multiply
         return obj
 
     @classmethod
-    def from_monzo(cls, *arg, val_border=1, multiply=1) -> "JITone":
+    def from_monzo(cls, *arg, val_border=1, multiply=1) -> "JIPitch":
         obj = cls(arg, val_border)
         obj.multiply = multiply
         return obj
@@ -327,6 +333,10 @@ class JIContainer:
         m0 = cls.mk_line(reference, count)
         return m0 & m0.inverse()
 
+    def set_multiply(self, arg):
+        for t in self:
+            t.multiply = arg
+
     def show(self) -> tuple:
         r = tuple((r, p, round(f, 2))
                   for r, p, f in zip(self, self.primes, self.freq))
@@ -343,7 +353,7 @@ class JIContainer:
         return d
 
 
-class JIMel(JITone.mk_iterable(abstract.AbstractMelody), JIContainer):
+class JIMel(JIPitch.mk_iterable(abstract.AbstractMelody), JIContainer):
     def __init__(self, iterable, multiply=260):
         return JIContainer.__init__(self, iterable, multiply)
 
@@ -402,7 +412,7 @@ class JIMel(JITone.mk_iterable(abstract.AbstractMelody), JIContainer):
         return type(self)(subverted, self.multiply).accumulate()
 
 
-class JIHarmony(JITone.mk_iterable(abstract.AbstractHarmony), JIContainer):
+class JIHarmony(JIPitch.mk_iterable(abstract.AbstractHarmony), JIContainer):
     def __init__(self, iterable, multiply=260):
         return JIContainer.__init__(self, iterable, multiply)
 
@@ -425,13 +435,13 @@ class JIHarmony(JITone.mk_iterable(abstract.AbstractHarmony), JIContainer):
 
 
 """
-    syntactic sugar for creating JITone - Objects:
+    syntactic sugar for creating JIPitch - Objects:
 """
 
 
 def r(num, den, val_border=1, multiply=1):
-    return JITone.from_ratio(num, den, val_border, multiply)
+    return JIPitch.from_ratio(num, den, val_border, multiply)
 
 
 def m(*num, val_border=1, multiply=1):
-    return JITone.from_monzo(*num, val_border=val_border, multiply=multiply)
+    return JIPitch.from_monzo(*num, val_border=val_border, multiply=multiply)

@@ -2,7 +2,7 @@ from mu.mel import abstract
 import math
 
 
-class EdoTone(abstract.AbstractTone):
+class EdoPitch(abstract.AbstractPitch):
     _frame = None
     _steps = None
     _concert_pitch = None
@@ -38,7 +38,7 @@ class EdoTone(abstract.AbstractTone):
 
     @pitchclass.setter
     def pitchclass(self, arg):
-        if arg < self.steps and arg >= 0:
+        if arg < self._steps and arg >= 0:
             self.__pitchclass = arg
         else:
             msg = "Pitchclass can only be between 0 - {0}".format(
@@ -51,7 +51,7 @@ class EdoTone(abstract.AbstractTone):
 
     @multiply.setter
     def multiply(self, arg):
-        if EdoTone.isPower(arg, self._frame):
+        if EdoPitch.isPower(arg, self._frame):
             self.__multiply = arg
         else:
             w = "Multiply-Argument has to be a power of the frame {0}.".format(
@@ -73,7 +73,7 @@ class EdoTone(abstract.AbstractTone):
     @classmethod
     def mk_new_edo_class(cls, frame, steps, concert_pitch=None,
                          concert_pitch_shift=0):
-        new = type("Edo_{0}/{1}_Tone".format(frame, steps), (cls,), {})
+        new = type("Edo_{0}/{1}_Pitch".format(frame, steps), (cls,), {})
         new._frame = frame
         new._steps = steps
         new._concert_pitch = concert_pitch
@@ -81,11 +81,11 @@ class EdoTone(abstract.AbstractTone):
         return new
 
 
-class EDO2_12Tone(EdoTone.mk_new_edo_class(2, 12, 440, 9)):
+class EDO2_12Pitch(EdoPitch.mk_new_edo_class(2, 12, 440, 9)):
     pass
 
 
-class EDO2_12Harmony(EDO2_12Tone.mk_iterable(abstract.AbstractHarmony)):
+class EDO2_12Harmony(EDO2_12Pitch.mk_iterable(abstract.AbstractHarmony)):
     def set_multiply(self, arg):
         for t in self:
             t.multiply = arg
@@ -96,5 +96,5 @@ class EDO2_12Harmony(EDO2_12Tone.mk_iterable(abstract.AbstractHarmony)):
 
     @classmethod
     def make_scale(cls, step, octaves=1, start=1):
-        return cls(EDO2_12Tone(num, oc + 1) for num, oc in zip(
+        return cls(EDO2_12Pitch(num, oc + 1) for num, oc in zip(
             tuple(range(0, 12, step)) * octaves, range(0, octaves)))

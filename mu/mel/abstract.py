@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod, ABCMeta
+import abc
 
 
 def is_private(string: str) -> bool:
@@ -8,8 +8,8 @@ def is_private(string: str) -> bool:
         return False
 
 
-class AbstractTone(ABC):
-    @abstractmethod
+class AbstractPitch(abc.ABC):
+    @abc.abstractmethod
     def calc(self) -> float:
         raise NotImplementedError
 
@@ -18,7 +18,7 @@ class AbstractTone(ABC):
         return self.calc()
 
     @classmethod
-    def mk_iterable(cls, template) -> ABCMeta:
+    def mk_iterable(cls, template) -> abc.ABCMeta:
         def adapt_result(self, cls, res):
             if (cls,) * len(res) == tuple(map(lambda x: type(x), res)):
                 return type(self)(res)
