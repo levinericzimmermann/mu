@@ -1,4 +1,5 @@
 import abc
+from mu.abstract import muobjects
 
 
 def is_private(string: str) -> bool:
@@ -80,31 +81,9 @@ class AbstractPitch(abc.ABC):
         pass
 
 
-class AbstractMelody(list):
-    def reverse(self):
-        return type(self)(reversed(self))
-
-    def __and__(self, other):
-        """merge two Melody-objects"""
-        return type(self)(list.__add__(self, other))
-
+class AbstractHarmony(muobjects.MUSet):
     def __hash__(self):
         return hash(tuple(hash(t) for t in self))
-
-    def __getitem__(self, idx):
-        if type(idx) == slice:
-            return type(self)(list.__getitem__(self, idx))
-        else:
-            return list.__getitem__(self, idx)
-
-
-class AbstractHarmony(set):
-    def __or__(self, other: "JIMel") -> "JIMel":
-        """merge two Harmony-objects"""
-        return type(self)(set.__or__(self, other))
-
-    def __hash__(self):
-        return hash((hash(t) for t in self))
 
     def sorted(self):
         return sorted(self.calc())

@@ -256,8 +256,8 @@ class JIMelTest(unittest.TestCase):
         mel1 = ji.JIMel([n1, n0])
         mel2 = ji.JIMel([n2, n2])
         mel3 = ji.JIMel([n3, n4])
-        self.assertEqual(mel0 + mel1, mel2)
-        self.assertEqual(mel0 - mel1, mel3)
+        self.assertEqual(mel0.add(mel1), mel2)
+        self.assertEqual(mel0.sub(mel1), mel3)
 
     def test_calc(self):
         n0 = ji.JIPitch([1], 2)
@@ -287,7 +287,7 @@ class JIMelTest(unittest.TestCase):
     def test_mk_line_and_inverse(self):
         test_mel0 = ji.JIMel.mk_line_and_inverse(ji.JIPitch((0, 1, -1)), 3)
         test_mel1 = ji.JIMel.mk_line(ji.JIPitch((0, 1, -1)), 3)
-        test_mel1 = test_mel1 & test_mel1.inverse()
+        test_mel1 = test_mel1 + test_mel1.inverse()
         self.assertEqual(test_mel0, test_mel1)
 
     def test_intervals(self):
@@ -326,8 +326,8 @@ class JIMelTest(unittest.TestCase):
         test_mel0 = ji.JIMel.mk_line(t0, 2)
         test_mel1 = ji.JIMel.mk_line(t0.inverse(), 2)
         test_mel2 = ji.JIMel.mk_line_and_inverse(t0, 2)
-        test_mel3 = ji.JIMel.mk_line(t0, 2) & ji.JIMel.mk_line(t1, 2)
-        test_mel4 = ji.JIMel.mk_line(t0, 2) & ji.JIMel.mk_line(t2, 2)
+        test_mel3 = ji.JIMel.mk_line(t0, 2) + ji.JIMel.mk_line(t1, 2)
+        test_mel4 = ji.JIMel.mk_line(t0, 2) + ji.JIMel.mk_line(t2, 2)
         self.assertEqual(test_mel0.dot_sum(), 8)
         self.assertEqual(test_mel1.dot_sum(), 8)
         self.assertEqual(test_mel2.dot_sum(), -20)

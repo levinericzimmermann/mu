@@ -1,4 +1,5 @@
 from mu.mel import abstract
+from mu.sco import old
 from fractions import Fraction
 import pyprimes
 from pyprimes import factors
@@ -242,6 +243,9 @@ class Monzo:
     def __div__(self, other) -> "Monzo":
         return self.__math(other, lambda x, y: x / y)
 
+    def __pow__(self, other) -> "Monzo":
+        return self.__math(other, lambda x, y: x ** y)
+
     def scalar(self, factor):
         """Return the scalar-product of a Monzo and its factor."""
         return self * type(self)((factor,) * len(self), self.val_border)
@@ -331,7 +335,7 @@ class JIContainer:
     @classmethod
     def mk_line_and_inverse(cls, reference, count):
         m0 = cls.mk_line(reference, count)
-        return m0 & m0.inverse()
+        return m0 + m0.inverse()
 
     def set_multiply(self, arg):
         for t in self:
@@ -353,7 +357,7 @@ class JIContainer:
         return d
 
 
-class JIMel(JIPitch.mk_iterable(abstract.AbstractMelody), JIContainer):
+class JIMel(JIPitch.mk_iterable(old.Melody), JIContainer):
     def __init__(self, iterable, multiply=260):
         return JIContainer.__init__(self, iterable, multiply)
 
@@ -367,25 +371,25 @@ class JIMel(JIPitch.mk_iterable(abstract.AbstractMelody), JIContainer):
     @property
     def intervals(self):
         """return intervals between single notes"""
-        return self[1:] - self[:-1]
+        return self[1:].sub(self[:-1])
 
     def __getitem__(self, idx):
-        res = abstract.AbstractMelody.__getitem__(self, idx)
+        res = old.Melody.__getitem__(self, idx)
         if type(res) == type(self):
             res.multiply = self.multiply
             res.val_border = self.val_border
         return res
 
-    def __add__(self, other: "JIMel"):
+    def add(self, other: "JIMel"):
         return JIMel((m0 + m1 for m0, m1 in zip(self, other)))
 
-    def __sub__(self, other: "JIMel"):
+    def sub(self, other: "JIMel"):
         return JIMel((m0 - m1 for m0, m1 in zip(self, other)))
 
-    def __mul__(self, other: "JIMel"):
+    def mul(self, other: "JIMel"):
         return JIMel((m0 * m1 for m0, m1 in zip(self, other)))
 
-    def __div__(self, other: "JIMel"):
+    def div(self, other: "JIMel"):
         return JIMel((m0 / m1 for m0, m1 in zip(self, other)))
 
     @property
@@ -408,7 +412,7 @@ class JIMel(JIPitch.mk_iterable(abstract.AbstractMelody), JIContainer):
                           self.multiply)
 
     def separate(self):
-        subverted = JIMel((self[0],)) & self.intervals.subvert()
+        subverted = JIMel((self[0],)) + self.intervals.subvert()
         return type(self)(subverted, self.multiply).accumulate()
 
 
