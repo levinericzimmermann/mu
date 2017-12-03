@@ -49,11 +49,11 @@ class ComplexEvent(Event):
     def is_uniform(cls):
         return False
 
-
-class SequentialEvent(ComplexEvent, muobjects.MUList):
     def __hash__(self):
         return hash(tuple(hash(t) for t in self))
 
+
+class SequentialEvent(ComplexEvent, muobjects.MUList):
     @property
     def duration(self):
         return sum(element.duration for element in self)

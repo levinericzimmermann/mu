@@ -1,4 +1,7 @@
-class Time(float):
+from mu.abstract import muobjects
+
+
+class Time(muobjects.MUFloat):
     @staticmethod
     def seconds2miliseconds(s):
         return s * 1000

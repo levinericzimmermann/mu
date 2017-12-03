@@ -4,7 +4,7 @@ import abc
 import functools
 
 
-class Rhythm(abc.ABC):
+class AbstractRhythm(abc.ABC):
     @abc.abstractmethod
     def flat(self):
         raise NotImplementedError
@@ -18,7 +18,7 @@ class Rhythm(abc.ABC):
         raise NotImplementedError
 
 
-class RhyUnit(Rhythm, time.Time):
+class RhyUnit(AbstractRhythm, time.Time):
     def __repr__(self):
         return time.Time.__repr__(self)
 
@@ -27,13 +27,13 @@ class RhyUnit(Rhythm, time.Time):
 
     @property
     def delay(self):
-        return float(self)
+        return time.Time(self)
 
     def stretch(self, arg):
         return RhyUnit(self * arg)
 
 
-class RhyCompound(Rhythm, muobjects.MUList):
+class RhyCompound(AbstractRhythm, muobjects.MUList):
     def flat(self):
         if self:
             return functools.reduce(
@@ -43,7 +43,7 @@ class RhyCompound(Rhythm, muobjects.MUList):
 
     @property
     def delay(self):
-        return sum(u.delay for u in self)
+        return time.Time(sum(u.delay for u in self))
 
     def stretch(self, arg):
         return RhyCompound(tuple(u.stretch(arg) for u in self))

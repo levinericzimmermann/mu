@@ -14,12 +14,12 @@ class Tone(abstract.UniformEvent):
 
 
 class Chord(abstract.SimultanEvent):
-    """A Chord contains simultan played Tones."""
+    """A Chord contains simultanly played Tones."""
     pass
 
 
 class Melody(abstract.SequentialEvent):
-    """A Melody contains sequential played Tones."""
+    """A Melody contains sequentially played Tones."""
     @property
     def freq(self):
         return tuple((t.pitch.freq for t in self))
@@ -30,4 +30,5 @@ class Melody(abstract.SequentialEvent):
 
 
 class Cadence(abstract.SequentialEvent):
+    """A Cadence contains sequentially played Chords."""
     pass

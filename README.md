@@ -4,8 +4,11 @@ Python-representation of classical musical content, e.g. Harmony, Melody and Rhy
 Might be useful for algorithmic composition.
 
 Current state:
-  * implemented basic representation of Tone, Harmony and Melody
-  * . . .
+  * implemented basic representation of
+    * pitch
+    * harmony
+    * rhythm
+    * time
 
 
 installation:

@@ -1,5 +1,5 @@
 from mu.mel import abstract
-from mu.sco import old
+from mu.abstract import muobjects
 from fractions import Fraction
 import pyprimes
 from pyprimes import factors
@@ -357,7 +357,7 @@ class JIContainer:
         return d
 
 
-class JIMel(JIPitch.mk_iterable(old.Melody), JIContainer):
+class JIMel(JIPitch.mk_iterable(muobjects.MUList), JIContainer):
     def __init__(self, iterable, multiply=260):
         return JIContainer.__init__(self, iterable, multiply)
 
@@ -374,7 +374,7 @@ class JIMel(JIPitch.mk_iterable(old.Melody), JIContainer):
         return self[1:].sub(self[:-1])
 
     def __getitem__(self, idx):
-        res = old.Melody.__getitem__(self, idx)
+        res = muobjects.MUList.__getitem__(self, idx)
         if type(res) == type(self):
             res.multiply = self.multiply
             res.val_border = self.val_border

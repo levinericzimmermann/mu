@@ -1,5 +1,6 @@
 import abc
 from mu.abstract import muobjects
+from mu.abstract import mutate
 
 
 def is_private(string: str) -> bool:
@@ -30,16 +31,7 @@ class AbstractPitch(abc.ABC):
 
         def method_decorator(func):
             def wrap(*args, **kwargs):
-                def execute(f, args, kwargs):
-                    if args and kwargs:
-                        return getattr(f, func)(*args, **kwargs)
-                    elif args and not kwargs:
-                        return getattr(f, func)(*args)
-                    elif kwargs and not args:
-                        return getattr(f, func)(**kwargs)
-                    else:
-                        return getattr(f, func)()
-                res = tuple(execute(f, args[1:], kwargs) for f in args[0])
+                res = tuple(mutate.execute_method(f, func, args[1:], kwargs) for f in args[0])
                 return adapt_result(args[0], cls, res)
             return wrap
 
