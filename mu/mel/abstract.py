@@ -31,7 +31,8 @@ class AbstractPitch(abc.ABC):
 
         def method_decorator(func):
             def wrap(*args, **kwargs):
-                res = tuple(mutate.execute_method(f, func, args[1:], kwargs) for f in args[0])
+                res = tuple(mutate.execute_method(
+                        f, func, args[1:], kwargs) for f in args[0])
                 return adapt_result(args[0], cls, res)
             return wrap
 
@@ -73,7 +74,20 @@ class AbstractPitch(abc.ABC):
         pass
 
 
-class AbstractHarmony(muobjects.MUSet):
+class Mel(muobjects.MUList):
+    def __init__(self, iterable, multiply=260):
+        muobjects.MUList.__init__(self, iterable)
+        self.multiply = multiply
+
+    def calc(self, factor=1) -> tuple:
+        return tuple(t.calc(self.multiply * factor) for t in self)
+
+    @property
+    def freq(self) -> tuple:
+        return self.calc()
+
+
+class Harmony(muobjects.MUSet):
     def __hash__(self):
         return hash(tuple(hash(t) for t in self))
 

@@ -85,7 +85,7 @@ class EDO2_12Pitch(EdoPitch.mk_new_edo_class(2, 12, 440, 9)):
     pass
 
 
-class EDO2_12Harmony(EDO2_12Pitch.mk_iterable(abstract.AbstractHarmony)):
+class EDO2_12Harmony(EDO2_12Pitch.mk_iterable(abstract.Harmony)):
     def set_multiply(self, arg):
         for t in self:
             t.multiply = arg

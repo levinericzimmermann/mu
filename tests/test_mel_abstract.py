@@ -82,9 +82,9 @@ class InheritanceTest(unittest.TestCase):
         self.assertEqual(test_obj0.multiplied(fac), compare_obj)
 
 
-class AbstractHarmonyTest(unittest.TestCase):
+class HarmonyTest(unittest.TestCase):
     def test_hash(self):
-        h = abstract.AbstractHarmony()
+        h = abstract.Harmony()
         self.assertEqual(hash(h), hash(tuple([])))
 
 

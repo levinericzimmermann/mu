@@ -357,9 +357,9 @@ class JIContainer:
         return d
 
 
-class JIMel(JIPitch.mk_iterable(muobjects.MUList), JIContainer):
+class JIMel(JIPitch.mk_iterable(abstract.Mel), JIContainer):
     def __init__(self, iterable, multiply=260):
-        return JIContainer.__init__(self, iterable, multiply)
+        JIContainer.__init__(self, iterable, multiply)
 
     def calc(self, factor=1) -> tuple:
         return tuple(t.calc(self.multiply * factor) for t in self)
@@ -416,7 +416,7 @@ class JIMel(JIPitch.mk_iterable(muobjects.MUList), JIContainer):
         return type(self)(subverted, self.multiply).accumulate()
 
 
-class JIHarmony(JIPitch.mk_iterable(abstract.AbstractHarmony), JIContainer):
+class JIHarmony(JIPitch.mk_iterable(abstract.Harmony), JIContainer):
     def __init__(self, iterable, multiply=260):
         return JIContainer.__init__(self, iterable, multiply)
 
