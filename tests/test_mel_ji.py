@@ -4,6 +4,16 @@ from fractions import Fraction
 
 
 class MonzoTest(unittest.TestCase):
+    def test_gcd(self):
+        self.assertEqual(ji.Monzo.gcd(2, 4), 2)
+        self.assertEqual(ji.Monzo.gcd(3, 9), 3)
+        self.assertEqual(ji.Monzo.gcd(1, 7), 1)
+        self.assertEqual(ji.Monzo.gcd(4, 16), 4)
+        self.assertEqual(ji.Monzo.gcd(4, 16, 2), 2)
+        self.assertEqual(ji.Monzo.gcd(4, 16, 1), 1)
+        self.assertEqual(ji.Monzo.gcd(8, 96, 400), 8)
+        self.assertEqual(ji.Monzo.gcd(8, 96, 400, 6), 2)
+
     def test_ratio(self):
         m0 = ji.Monzo([0, 1], 2)
         m1 = ji.Monzo([0, 0, -1], 2)
@@ -58,6 +68,41 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m0.val, (2, 3))
         self.assertEqual(m1.val, (3, 5))
         self.assertEqual(m2.val, (5, 7, 11, 13, 17))
+
+    def test_lv(self):
+        m0 = ji.Monzo([1], 2)
+        m1 = ji.Monzo([2], 2)
+        m2 = ji.Monzo([1, -1], 2)
+        m3 = ji.Monzo([3, -3], 2)
+        m4 = ji.Monzo([3, -3, 1], 2)
+        self.assertEqual(m0.lv, 1)
+        self.assertEqual(m1.lv, 2)
+        self.assertEqual(m2.lv, 1)
+        self.assertEqual(m3.lv, 3)
+        self.assertEqual(m4.lv, 1)
+
+    def test_identity(self):
+        m0 = ji.Monzo([1], 2)
+        m1 = ji.Monzo([2], 2)
+        m2 = ji.Monzo([1, -1], 2)
+        m3 = ji.Monzo([3, -3], 2)
+        m4 = ji.Monzo([3, -3, 1], 2)
+        self.assertEqual(m0.identity.ratio, m0.ratio)
+        self.assertEqual(m1.identity, m0)
+        self.assertEqual(m2.identity, m2)
+        self.assertEqual(m3.identity, m2)
+        self.assertEqual(m4.identity, m4)
+
+    def test_past(self):
+        m0 = ji.Monzo([0], 2)
+        m1 = ji.Monzo([1], 2)
+        m2 = ji.Monzo([2], 2)
+        m3 = ji.Monzo([3], 2)
+        m4 = ji.Monzo([1, -1], 2)
+        m5 = ji.Monzo([2, -2], 2)
+        m6 = ji.Monzo([3, -3], 2)
+        self.assertEqual(m3.past, (m0, m1, m2))
+        self.assertEqual(m6.past, (m0, m4, m5))
 
     def test_adjust_ratio(self):
         self.assertEqual(ji.Monzo.adjust_ratio(
@@ -167,11 +212,11 @@ class MonzoTest(unittest.TestCase):
         m2 = ji.Monzo([0, 1, -1])
         m3 = ji.Monzo([0, -2, 0, 0, 1])
         m4 = ji.Monzo([0, 0])
-        self.assertEqual(m0.gender, 1)
-        self.assertEqual(m1.gender, -1)
-        self.assertEqual(m2.gender, -1)
-        self.assertEqual(m3.gender, 1)
-        self.assertEqual(m4.gender, 0)
+        self.assertEqual(m0.gender, True)
+        self.assertEqual(m1.gender, False)
+        self.assertEqual(m2.gender, False)
+        self.assertEqual(m3.gender, True)
+        self.assertEqual(m4.gender, True)
 
     def test_harmonic(self):
         m0 = ji.Monzo([1], 2)

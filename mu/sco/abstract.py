@@ -68,7 +68,6 @@ class MultiSequentialEvent(ComplexEvent):
         for i, name in enumerate(type(self)._sub_sequences_class_names):
             p = mk_property(i)
             setattr(self, name, p.fget(self))
-            # setattr(self, name, p.fset)
 
     @abc.abstractclassmethod
     def subvert_object(cls, obj):
@@ -102,6 +101,15 @@ class MultiSequentialEvent(ComplexEvent):
 
     def __iter__(self):
         return iter(self.mk_sequence())
+
+    def __add__(self, other):
+        return type(self)(self.mk_sequence() + other.mk_sequence())
+
+    def __sub__(self, other):
+        return type(self)(self.mk_sequence() - other.mk_sequence())
+
+    def __mul__(self, fac):
+        return type(self)(self.mk_sequence() * fac)
 
     def append(self, arg):
         data = type(self).subvert_object(arg)

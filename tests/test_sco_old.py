@@ -1,6 +1,6 @@
 import unittest
 from mu.sco import old
-from mu.mel import abstract as mel_abstract
+from mu.mel import mel
 from mu.mel import ji
 from mu.rhy import rhy
 
@@ -14,7 +14,7 @@ class MelodyTest(unittest.TestCase):
     p0 = ji.r(14, 9)
     d0 = rhy.RhyUnit(400)
     t0 = old.Tone(p0, d0)
-    mel0 = mel_abstract.Mel([p0] * 3)
+    mel0 = mel.Mel([p0] * 3)
     rhy0 = rhy.RhyCompound([d0] * 3)
     melody0 = old.Melody([t0] * 3)
 
@@ -41,6 +41,31 @@ class MelodyTest(unittest.TestCase):
 
     def test_freq(self):
         self.assertEqual(self.melody0.freq, self.mel0.freq)
+
+
+"""
+class CadenceTest(unittest.TestCase):
+    p0 = ji.r(5, 4)
+    p1 = ji.r(3, 2)
+    p2 = ji.r(1, 1)
+    p3 = ji.r(6, 5)
+    p4 = ji.r(7, 4)
+    p5 = ji.r(9, 8)
+    h0 = mel.Harmony([p0, p1, p2])
+    h1 = mel.Harmony([p3, p4, p5])
+    d0 = rhy.RhyUnit(400)
+    rhy0 = rhy.RhyCompound([d0] * 2)
+    chord0 = old.Chord(h0, d0)
+    chord1 = old.Chord(h1, d0)
+    cadence0 = old.Cadence([chord0, chord1])
+
+    def test_constructor(self):
+        old.Cadence([self.chord0, self.chord1])
+
+    def test_alternative_constructor(self):
+        cadence1 = old.Cadence.from_parameter((self.h0, self.h1), self.rhy0)
+        self.assertEqual(self.cadence0, cadence1)
+"""
 
 
 if __name__ == "__main__":

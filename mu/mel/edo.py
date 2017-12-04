@@ -1,4 +1,5 @@
 from mu.mel import abstract
+from mu.mel import mel
 import math
 
 
@@ -81,11 +82,10 @@ class EdoPitch(abstract.AbstractPitch):
         return new
 
 
-class EDO2_12Pitch(EdoPitch.mk_new_edo_class(2, 12, 440, 9)):
-    pass
+EDO2_12Pitch = EdoPitch.mk_new_edo_class(2, 12, 440, 9)
 
 
-class EDO2_12Harmony(EDO2_12Pitch.mk_iterable(abstract.Harmony)):
+class EDO2_12Harmony(EDO2_12Pitch.mk_iterable(mel.Harmony)):
     def set_multiply(self, arg):
         for t in self:
             t.multiply = arg

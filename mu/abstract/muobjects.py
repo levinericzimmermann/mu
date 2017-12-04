@@ -6,9 +6,7 @@ class MUList(mutate.mutate_class(list)):
         return type(self)(reversed(self))
 
 
-class MUSet(mutate.mutate_class(set)):
-    pass
+MUSet = mutate.mutate_class(set)
 
 
-class MUFloat(mutate.mutate_class(float)):
-    pass
+MUFloat = mutate.mutate_class(float)

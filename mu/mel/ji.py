@@ -1,4 +1,5 @@
 from mu.mel import abstract
+from mu.mel import mel
 from mu.abstract import muobjects
 from fractions import Fraction
 import pyprimes
@@ -45,7 +46,17 @@ class Monzo:
 
     @property
     def _vec(self):
-        return self._vector[self._val_shift:]
+        #TODO: replace ugly implementation
+        vec = self._vector[self._val_shift:]
+        c = 0
+        for i in reversed(vec):
+            if i == 0:
+                c += 1
+            else:
+                break
+        if c:
+            vec = vec[:-c]
+        return vec
 
     def __repr__(self):
         return repr(self._vec)
@@ -126,6 +137,16 @@ class Monzo:
             m = vec[abs(shiftval):]
         return tuple(m)
 
+    @staticmethod
+    def gcd(*args):
+        def _gcd(a, b):
+            """Return greatest common divisor using Euclid's Algorithm
+            https://stackoverflow.com/questions/147515/least-common-multiple-for-3-or-more-numbers"""
+            while b:
+                a, b = b, a % b
+            return a
+        return functools.reduce(_gcd, args)
+
     @property
     def val(self) -> tuple:
         return tuple(pyprimes.nprimes(
@@ -155,16 +176,17 @@ class Monzo:
 
     @property
     def gender(self) -> int:
-        maxima = max(self)
-        minima = min(self)
-        if (maxima > 0 and minima >= 0) or (
-                maxima > 0 and self.index(maxima) > self.index(minima)):
-            return 1
-        elif maxima <= 0 and minima < 0 or (
-                minima < 0 and self.index(minima) > self.index(maxima)):
-            return -1
+        if self:
+            maxima = max(self)
+            minima = min(self)
+            if (maxima > 0 and minima >= 0) or (
+                    maxima > 0 and self.index(maxima) > self.index(minima)):
+                return True
+            elif maxima <= 0 and minima < 0 or (
+                    minima < 0 and self.index(minima) > self.index(maxima)):
+                return False
         else:
-            return 0
+            return True
 
     @property
     def harmonic(self) -> int:
@@ -183,10 +205,28 @@ class Monzo:
         return tuple(sorted(tuple(set(p))))[self._val_shift:]
 
     @property
+    def quantity(self) -> int:
+        return len(self.primes)
+
+    @property
     def components(self) -> tuple:
         vectors = [[0] * c + [x] for c, x in enumerate(self) if x != 0]
         return tuple(type(self)(
-                vec, val_border=self.val_border) for vec in vectors)
+            vec, val_border=self.val_border) for vec in vectors)
+
+    @property
+    def lv(self):
+        return abs(Monzo.gcd(*tuple(filter(lambda x: x != 0, self))))
+
+    @property
+    def identity(self):
+        filtered = type(self)([1 / self.lv] * len(self), self.val_border)
+        return type(self)((int(x) for x in self * filtered), self.val_border)
+
+    @property
+    def past(self) -> tuple:
+        return tuple(type(self)(
+            self.identity.scalar(i), self.val_border) for i in range(self.lv))
 
     @comparable_bool_decorator
     def is_related(self: "Monzo", other: "Monzo") -> bool:
@@ -204,7 +244,7 @@ class Monzo:
 
     @comparable_bool_decorator
     def __eq__(self: "Monzo", other: "Monzo") -> bool:
-        return tuple.__eq__(self._vector, other._vector)
+        return tuple.__eq__(self._vec, other._vec)
 
     def summed(self) -> int:
         return sum(map(lambda x: abs(x), self))
@@ -298,6 +338,12 @@ class JIPitch(Monzo, abstract.AbstractPitch):
     def __mul__(self, other) -> "JIPitch":
         return JIPitch(Monzo.__mul__(self, other), self.val_border)
 
+    def __div__(self, other) -> "JIPitch":
+        return JIPitch(Monzo.__div__(self, other), self.val_border)
+
+    def __pow__(self, val) -> "JIPitch":
+        return JIPitch(Monzo.__pow__(self, val), self.val_border)
+
     def __hash__(self):
         return abstract.AbstractPitch.__hash__(self)
 
@@ -357,7 +403,7 @@ class JIContainer:
         return d
 
 
-class JIMel(JIPitch.mk_iterable(abstract.Mel), JIContainer):
+class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
     def __init__(self, iterable, multiply=260):
         JIContainer.__init__(self, iterable, multiply)
 
@@ -416,7 +462,7 @@ class JIMel(JIPitch.mk_iterable(abstract.Mel), JIContainer):
         return type(self)(subverted, self.multiply).accumulate()
 
 
-class JIHarmony(JIPitch.mk_iterable(abstract.Harmony), JIContainer):
+class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
     def __init__(self, iterable, multiply=260):
         return JIContainer.__init__(self, iterable, multiply)
 
@@ -438,8 +484,35 @@ class JIHarmony(JIPitch.mk_iterable(abstract.Harmony), JIContainer):
         self._val_border = arg
 
 
+class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
+    def __init__(self, iterable, multiply=1):
+        super(type(self), self).__init__(iterable)
+        self.multiply = multiply
+        self._val_border = 1
+
+    def calc(self, factor=1) -> tuple:
+        return tuple(h.calc(self.multiply * factor) for h in self)
+
+    @property
+    def freq(self) -> tuple:
+        return self.calc()
+
+    @property
+    def val_border(self) -> int:
+        return self._val_border
+
+    @val_border.setter
+    def val_border(self, arg) -> None:
+        for f in self:
+            f.val_border = arg
+        self._val_border = arg
+
+    def dot_sum(self):
+        return tuple(h.dot_sum() for h in self)
+
+
 """
-    syntactic sugar for creating JIPitch - Objects:
+    syntactic sugar for the creation of JIPitch - Objects:
 """
 
 
@@ -449,3 +522,8 @@ def r(num, den, val_border=1, multiply=1):
 
 def m(*num, val_border=1, multiply=1):
     return JIPitch.from_monzo(*num, val_border=val_border, multiply=multiply)
+
+
+def filterMonzo(*prime, val_border=1, multiply=1):
+    iterable = []
+    return Monzo(iterable, val_border=val_border, multiply=multiply)

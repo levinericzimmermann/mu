@@ -1,6 +1,6 @@
 from mu.sco import abstract
 from mu.rhy import rhy
-from mu.mel import abstract as mel_abstract
+from mu.mel import mel
 
 
 class Tone(abstract.UniformEvent):
@@ -24,11 +24,15 @@ class Chord(abstract.SimultanEvent):
         self.harmony = harmony
         self._dur = duration
 
+    @property
+    def duration(self):
+        return self._dur
+
 
 class Melody(abstract.MultiSequentialEvent):
-    """A Melody contains sequentially played Tones."""
+    """A Melody contains sequentially played Pitches."""
     _obj_class = Tone
-    _sub_sequences_class = (mel_abstract.Mel, rhy.RhyCompound)
+    _sub_sequences_class = (mel.Mel, rhy.RhyCompound)
     _sub_sequences_class_names = ("mel", "rhy")
 
     @classmethod
@@ -39,15 +43,11 @@ class Melody(abstract.MultiSequentialEvent):
     def freq(self):
         return self.mel.freq
 
-    @property
-    def dur(self):
-        return self.rhy
-
 
 class Cadence(abstract.MultiSequentialEvent):
-    """A Cadence contains sequentially played Chords."""
+    """A Cadence contains sequentially played Harmonies."""
     _obj_class = Chord
-    _sub_sequences_class = (mel_abstract.Harmony, rhy.RhyCompound)
+    _sub_sequences_class = (mel.Harmony, rhy.RhyCompound)
     _sub_sequences_class_names = ("harmony", "rhy")
 
     @classmethod
@@ -57,7 +57,3 @@ class Cadence(abstract.MultiSequentialEvent):
     @property
     def freq(self):
         return self.mel.freq
-
-    @property
-    def dur(self):
-        return self.rhy
