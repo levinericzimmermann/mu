@@ -59,15 +59,26 @@ class MultiSequentialEvent(ComplexEvent):
     _sub_sequences_class = None
     _sub_sequences_class_names = None
 
-    def __init__(self, iterable):
+    def __new__(cls, *args, **kwargs):
         def mk_property(num):
-            def func(self):
+            def get_value(self):
                 return self.sequences[num]
-            return property(func)
+            def set_value(self, arg):
+                self.sequences[num] = arg
+            return get_value, set_value
+        for i, name in enumerate(cls._sub_sequences_class_names):
+            getter, setter = mk_property(i)
+            getter_name, setter_name = "get_{0}".format(
+                name), "set_{0}".format(name)
+            setattr(cls, getter_name, getter)
+            setattr(cls, setter_name, setter)
+            setattr(cls, name, property(
+                getattr(cls, getter_name), getattr(cls, setter_name)))
+        obj = ComplexEvent.__new__(cls)
+        return obj
+
+    def __init__(self, iterable):
         self.sequences = type(self).subvert_iterable(iterable)
-        for i, name in enumerate(type(self)._sub_sequences_class_names):
-            p = mk_property(i)
-            setattr(self, name, p.fget(self))
 
     @abc.abstractclassmethod
     def subvert_object(cls, obj):
@@ -75,7 +86,7 @@ class MultiSequentialEvent(ComplexEvent):
 
     @classmethod
     def subvert_iterable(cls, iterable):
-        sequences = tuple(c([]) for c in cls._sub_sequences_class)
+        sequences = list(c([]) for c in cls._sub_sequences_class)
         for obj in iterable:
             for i, unit in enumerate(cls.subvert_object(obj)):
                 sequences[i].append(unit)

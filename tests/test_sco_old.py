@@ -12,10 +12,14 @@ class ToneTest(unittest.TestCase):
 
 class MelodyTest(unittest.TestCase):
     p0 = ji.r(14, 9)
+    p1 = ji.r(7, 4)
     d0 = rhy.RhyUnit(400)
+    d1 = rhy.RhyUnit(800)
     t0 = old.Tone(p0, d0)
     mel0 = mel.Mel([p0] * 3)
+    mel1 = mel.Mel([p1] * 3)
     rhy0 = rhy.RhyCompound([d0] * 3)
+    rhy1 = rhy.RhyCompound([d1] * 3)
     melody0 = old.Melody([t0] * 3)
 
     def test_constructor(self):
@@ -29,15 +33,38 @@ class MelodyTest(unittest.TestCase):
         self.assertEqual(self.melody0.duration, sum(self.rhy0))
 
     def test_get_attributes(self):
+        self.assertEqual(self.melody0.get_mel(), self.mel0)
+        self.assertEqual(self.melody0.get_rhy(), self.rhy0)
+
+    def test_set_attributes(self):
+        melody0 = old.Melody([])
+        melody0.set_mel(self.mel0)
+        melody0.set_rhy(self.rhy0)
+        self.assertEqual(melody0.get_mel(), self.mel0)
+        self.assertEqual(melody0.get_rhy(), self.rhy0)
+        self.assertEqual(melody0.sequences[0], self.mel0)
+        self.assertEqual(melody0.sequences[1], self.rhy0)
+        melody0.set_mel(self.mel1)
+        melody0.set_rhy(self.rhy1)
+        self.assertEqual(melody0.get_mel(), self.mel1)
+        self.assertEqual(melody0.get_rhy(), self.rhy1)
+
+    def test_get_attributes_syntactic_sugar(self):
         self.assertEqual(self.melody0.mel, self.mel0)
         self.assertEqual(self.melody0.rhy, self.rhy0)
 
-    def test_set_attributes(self):
+    def test_set_attributes_syntactic_sugar(self):
         melody0 = old.Melody([])
         melody0.mel = self.mel0
         melody0.rhy = self.rhy0
         self.assertEqual(melody0.mel, self.mel0)
         self.assertEqual(melody0.rhy, self.rhy0)
+        self.assertEqual(melody0.sequences[0], self.mel0)
+        self.assertEqual(melody0.sequences[1], self.rhy0)
+        melody0.mel = self.mel1
+        melody0.rhy = self.rhy1
+        self.assertEqual(melody0.mel, self.mel1)
+        self.assertEqual(melody0.rhy, self.rhy1)
 
     def test_freq(self):
         self.assertEqual(self.melody0.freq, self.mel0.freq)
