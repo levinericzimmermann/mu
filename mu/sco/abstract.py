@@ -61,21 +61,18 @@ class MultiSequentialEvent(ComplexEvent):
 
     def __new__(cls, *args, **kwargs):
         def mk_property(num):
-            def get_value(self):
-                return self.sequences[num]
             def set_value(self, arg):
                 self.sequences[num] = arg
-            return get_value, set_value
+            return lambda self: self.sequences[num], set_value
         for i, name in enumerate(cls._sub_sequences_class_names):
             getter, setter = mk_property(i)
-            getter_name, setter_name = "get_{0}".format(
-                name), "set_{0}".format(name)
+            getter_name = "get_{0}".format(name)
+            setter_name = "set_{0}".format(name)
             setattr(cls, getter_name, getter)
             setattr(cls, setter_name, setter)
             setattr(cls, name, property(
                 getattr(cls, getter_name), getattr(cls, setter_name)))
-        obj = ComplexEvent.__new__(cls)
-        return obj
+        return ComplexEvent.__new__(cls)
 
     def __init__(self, iterable):
         self.sequences = type(self).subvert_iterable(iterable)

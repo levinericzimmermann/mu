@@ -216,12 +216,19 @@ class Monzo:
 
     @property
     def lv(self):
-        return abs(Monzo.gcd(*tuple(filter(lambda x: x != 0, self))))
+        if self:
+            return abs(Monzo.gcd(*tuple(filter(lambda x: x != 0, self))))
+        else:
+            return 0
 
     @property
     def identity(self):
-        filtered = type(self)([1 / self.lv] * len(self), self.val_border)
-        return type(self)((int(x) for x in self * filtered), self.val_border)
+        if self:
+            filtered = type(self)([1 / self.lv] * len(self), self.val_border)
+            monzo = tuple(int(x) for x in self * filtered)
+            return type(self)(monzo, self.val_border)
+        else:
+            return type(self)([], self.val_border)
 
     @property
     def past(self) -> tuple:
@@ -309,6 +316,30 @@ class Monzo:
         return type(self)(Monzo._shift_vector(
             self, shiftval), self.val_border)
 
+    def filter(self, *prime):
+        return type(self)(MonzoFilter(
+                *prime, val_border=self.val_border) * self, self.val_border)
+
+
+class MonzoFilter(Monzo):
+    @staticmethod
+    def mk_filter_vec(*prime):
+        numbers = tuple(pyprimes.prime_count(p) for p in prime)
+        iterable = [1] * max(numbers)
+        for n in numbers:
+            iterable[n-1] = 0
+        return iterable
+
+    def __init__(self, *prime, val_border=1):
+        Monzo.__init__(self, MonzoFilter.mk_filter_vec(*prime), 1)
+        self.val_border = val_border
+
+    def __mul__(self, other):
+        iterable = list(self._vector)[self._val_shift:]
+        while len(other._vec) > len(iterable):
+            iterable.append(1)
+        return Monzo.__mul__(Monzo(iterable, self.val_border), other)
+
 
 class JIPitch(Monzo, abstract.AbstractPitch):
     multiply = 1
@@ -367,6 +398,41 @@ class JIPitch(Monzo, abstract.AbstractPitch):
         obj.multiply = multiply
         return obj
 
+    @property
+    def identity_adjusted(self):
+        """unstable, experimental method.
+        works only for 2/1 as a frame and for val_border=2"""
+        id = self.identity
+        if id:
+            id.val_border = 1
+            id -= Monzo([id[0]])
+            if id.gender:
+                while id.float < 1:
+                    id += Monzo([1])
+                while id.float > 2:
+                    id -= Monzo([1])
+                if id.float > 1.7:
+                    id.multiply *= 0.25
+                elif id.float > 1.5:
+                    id.multiply *= 0.5
+            else:
+                while id.float > 1:
+                    id -= Monzo([1])
+                while id.float < 0.5:
+                    id += Monzo([1])
+                if id.float * 2 < 1.2:
+                    id.multiply *= 4
+                elif id.float * 2 < 1.5:
+                    id.multiply *= 2
+            return id
+        else:
+            return id
+
+    @property
+    def adjusted_register(self):
+        return type(self)(
+                self.identity_adjusted.scalar(self.lv), 1, self.identity_adjusted.multiply)
+
 
 class JIContainer:
     def __init__(self, iterable, multiply=260):
@@ -401,6 +467,10 @@ class JIContainer:
                 if m_in != m_out:
                     d += m_out.dot(m_in)
         return d
+
+    @property
+    def summed_summed(self):
+        return sum(self.summed())
 
 
 class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
@@ -483,6 +553,25 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
             f.val_border = arg
         self._val_border = arg
 
+    def operator_harmony(self, func):
+        #TODO: replace ugly implementation by a better one
+        new_har = type(self)([], self.multiply)
+        for c, p in enumerate(self):
+            for c2, p2 in enumerate(self):
+                if c2 > c:
+                    new_har.add(func(p, p2))
+        new_har.val_border = self.val_border
+        return new_har
+
+    def add_harmony(self):
+        return self.operator_harmony(lambda x, y: x + y)
+
+    def sub_harmony(self):
+        return self.operator_harmony(lambda x, y: x - y)
+
+    def mul_harmony(self):
+        return self.operator_harmony(lambda x, y: x * y)
+
 
 class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
     def __init__(self, iterable, multiply=1):
@@ -522,8 +611,3 @@ def r(num, den, val_border=1, multiply=1):
 
 def m(*num, val_border=1, multiply=1):
     return JIPitch.from_monzo(*num, val_border=val_border, multiply=multiply)
-
-
-def filterMonzo(*prime, val_border=1, multiply=1):
-    iterable = []
-    return Monzo(iterable, val_border=val_border, multiply=multiply)

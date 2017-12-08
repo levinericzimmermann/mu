@@ -57,3 +57,13 @@ class Cadence(abstract.MultiSequentialEvent):
     @property
     def freq(self):
         return self.mel.freq
+
+
+class Polyphon(abstract.MultiSequentialEvent):
+    _obj_class = Chord
+    _sub_sequences_class = (mel.Harmony, rhy.RhyCompound)
+    _sub_sequences_class_names = ("harmony", "rhy")
+
+    @classmethod
+    def subvert_object(cls, chord):
+        return chord.harmony, chord.duration

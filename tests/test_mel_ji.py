@@ -289,6 +289,18 @@ class JIPitchTest(unittest.TestCase):
         self.assertEqual(ji.JIPitch.from_ratio(1, 2), ji.JIPitch((-1,)))
         self.assertEqual(ji.JIPitch.from_monzo(-1), ji.JIPitch((-1,)))
 
+    def test_comparsion(self):
+        t0 = ji.r(1, 1)
+        t1 = ji.r(1, 1)
+        t2 = ji.r(1, 1)
+        t0.multiply = 200
+        t1.multiply = 200
+        t2.multiply = 220
+        self.assertEqual(t0, t1)
+        self.assertNotEqual(t0, t2)
+        self.assertLess(t0, t2)
+        self.assertGreater(t2, t1)
+
 
 class JIMelTest(unittest.TestCase):
     def test_math(self):
@@ -380,7 +392,7 @@ class JIMelTest(unittest.TestCase):
         self.assertEqual(test_mel4.dot_sum(), 10)
 
 
-class jiModule(unittest.TestCase):
+class JIModule(unittest.TestCase):
     def test_m(self):
         n0 = ji.JIPitch([-1, 1], 2)
         n0.multiply = 200

@@ -1,4 +1,5 @@
 import abc
+import math
 from mu.abstract import muobjects
 from mu.abstract import mutate
 
@@ -62,12 +63,18 @@ class AbstractPitch(abc.ABC):
         except AttributeError:
             return False
 
+    def __lt__(self, other):
+        return self.freq < other.freq
+
+    def __gt__(self, other):
+        return self.freq > other.freq
+
     def __hash__(self):
         return hash(self.freq)
 
     @staticmethod
-    def hz2ct(freq):
-        pass
+    def hz2ct(freq0, freq1):
+        return 1200 * math.log(freq1 / freq0, 2)
 
     @staticmethod
     def ct2hz(ct):

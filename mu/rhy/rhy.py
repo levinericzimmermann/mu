@@ -5,6 +5,7 @@ import functools
 
 
 class AbstractRhythm(abc.ABC):
+    """A Rhythm shall be a structure to organise time."""
     @abc.abstractmethod
     def flat(self):
         raise NotImplementedError
