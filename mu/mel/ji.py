@@ -46,7 +46,7 @@ class Monzo:
 
     @property
     def _vec(self):
-        #TODO: replace ugly implementation
+        # TODO: replace ugly implementation
         vec = self._vector[self._val_shift:]
         c = 0
         for i in reversed(vec):
@@ -175,7 +175,7 @@ class Monzo:
         return float(self.ratio)
 
     @property
-    def gender(self) -> int:
+    def gender(self) -> bool:
         if self:
             maxima = max(self)
             minima = min(self)
@@ -219,7 +219,7 @@ class Monzo:
         if self:
             return abs(Monzo.gcd(*tuple(filter(lambda x: x != 0, self))))
         else:
-            return 0
+            return 1
 
     @property
     def identity(self):
@@ -234,6 +234,15 @@ class Monzo:
     def past(self) -> tuple:
         return tuple(type(self)(
             self.identity.scalar(i), self.val_border) for i in range(self.lv))
+
+    @property
+    def is_root(self) -> bool:
+        test = Monzo(self._vector, 1)
+        test.val_border = 2
+        if test:
+            return False
+        else:
+            return True
 
     @comparable_bool_decorator
     def is_related(self: "Monzo", other: "Monzo") -> bool:
@@ -431,7 +440,8 @@ class JIPitch(Monzo, abstract.AbstractPitch):
     @property
     def adjusted_register(self):
         return type(self)(
-                self.identity_adjusted.scalar(self.lv), 1, self.identity_adjusted.multiply)
+                self.identity_adjusted.scalar(self.lv),
+                1, self.identity_adjusted.multiply)
 
 
 class JIContainer:
@@ -448,6 +458,11 @@ class JIContainer:
     def mk_line_and_inverse(cls, reference, count):
         m0 = cls.mk_line(reference, count)
         return m0 + m0.inverse()
+
+    @property
+    def average_gender(self):
+        return sum(map(lambda b: 1 if b is True else -1,
+                       self.gender)) / len(self)
 
     def set_multiply(self, arg):
         for t in self:
@@ -471,6 +486,9 @@ class JIContainer:
     @property
     def summed_summed(self):
         return sum(self.summed())
+
+    def count_root(self):
+        return sum(map(lambda p: 1 if p.is_root else 0, self))
 
 
 class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
@@ -518,6 +536,36 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
             f.val_border = arg
         self._val_border = arg
 
+    @property
+    def different_pitches(self):
+        container = []
+        for t in self:
+            if t not in container:
+                container.append(t)
+        return tuple(container)
+
+    @property
+    def is_ordered(self):
+        if self.order() == 1:
+            return True
+        else:
+            return False
+
+    def order(self, val_border=2):
+        intervals = self.intervals
+        intervals.val_border = val_border
+        return sum(intervals.lv) / len(intervals)
+
+    def count_repeats(self):
+        repeats = 0
+        for p0, p1 in zip(self, self[1:]):
+            if p0 == p1:
+                repeats += 1
+        return repeats
+
+    def count_different_pitches(self):
+        return len(self.different_pitches)
+
     def subvert(self):
         return type(self)(functools.reduce(
             lambda x, y: x + y, tuple(t.subvert() for t in self)),
@@ -554,7 +602,7 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         self._val_border = arg
 
     def operator_harmony(self, func):
-        #TODO: replace ugly implementation by a better one
+        # TODO: replace ugly implementation by a better one
         new_har = type(self)([], self.multiply)
         for c, p in enumerate(self):
             for c2, p2 in enumerate(self):

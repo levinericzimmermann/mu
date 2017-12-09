@@ -35,6 +35,7 @@ class MelodyTest(unittest.TestCase):
     def test_get_attributes(self):
         self.assertEqual(self.melody0.get_mel(), self.mel0)
         self.assertEqual(self.melody0.get_rhy(), self.rhy0)
+        self.assertEqual(self.melody0.get_dur(), self.rhy0)
 
     def test_set_attributes(self):
         melody0 = old.Melody([])
@@ -46,14 +47,18 @@ class MelodyTest(unittest.TestCase):
         self.assertEqual(melody0.sequences[1], self.rhy0)
         melody0.set_mel(self.mel1)
         melody0.set_rhy(self.rhy1)
+        melody0.set_dur(self.rhy0)
         self.assertEqual(melody0.get_mel(), self.mel1)
         self.assertEqual(melody0.get_rhy(), self.rhy1)
+        self.assertEqual(melody0.get_dur(), self.rhy0)
         self.assertEqual(melody0.sequences[0], self.mel1)
         self.assertEqual(melody0.sequences[1], self.rhy1)
+        self.assertEqual(melody0.sequences[2], self.rhy0)
 
     def test_get_attributes_syntactic_sugar(self):
         self.assertEqual(self.melody0.mel, self.mel0)
         self.assertEqual(self.melody0.rhy, self.rhy0)
+        self.assertEqual(self.melody0.dur, self.rhy0)
 
     def test_set_attributes_syntactic_sugar(self):
         melody0 = old.Melody([])
@@ -65,10 +70,12 @@ class MelodyTest(unittest.TestCase):
         self.assertEqual(melody0.sequences[1], self.rhy0)
         melody0.mel = self.mel1
         melody0.rhy = self.rhy1
+        melody0.dur = self.rhy0
         self.assertEqual(melody0.mel, self.mel1)
         self.assertEqual(melody0.rhy, self.rhy1)
         self.assertEqual(melody0.sequences[0], self.mel1)
         self.assertEqual(melody0.sequences[1], self.rhy1)
+        self.assertEqual(melody0.sequences[2], self.rhy0)
 
     def test_freq(self):
         self.assertEqual(self.melody0.freq, self.mel0.freq)

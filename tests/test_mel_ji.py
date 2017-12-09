@@ -75,11 +75,13 @@ class MonzoTest(unittest.TestCase):
         m2 = ji.Monzo([1, -1], 2)
         m3 = ji.Monzo([3, -3], 2)
         m4 = ji.Monzo([3, -3, 1], 2)
+        m5 = ji.Monzo([0], 2)
         self.assertEqual(m0.lv, 1)
         self.assertEqual(m1.lv, 2)
         self.assertEqual(m2.lv, 1)
         self.assertEqual(m3.lv, 3)
         self.assertEqual(m4.lv, 1)
+        self.assertEqual(m5.lv, 1)
 
     def test_identity(self):
         m0 = ji.Monzo([1], 2)
@@ -273,6 +275,20 @@ class MonzoTest(unittest.TestCase):
             self.assertIn(method, dir(ji.Monzo))
         self.assertIsInstance(ji.Monzo([]), ji.Monzo)
 
+    def test_root(self):
+        m0 = ji.Monzo([0, 0, 1])
+        m1 = ji.Monzo([0, -1, 1])
+        m2 = ji.Monzo([1])
+        m3 = ji.Monzo([1], val_border=2)
+        m4 = ji.Monzo([0], val_border=2)
+        m5 = ji.Monzo([1, 0, 0], val_border=1)
+        self.assertFalse(m0.is_root)
+        self.assertFalse(m1.is_root)
+        self.assertTrue(m2.is_root)
+        self.assertFalse(m3.is_root)
+        self.assertTrue(m4.is_root)
+        self.assertTrue(m5.is_root)
+
 
 class JIPitchTest(unittest.TestCase):
     def test_calc(self):
@@ -355,6 +371,62 @@ class JIMelTest(unittest.TestCase):
             (ji.JIPitch((0, 1, -1)), ji.JIPitch((0, 1, -1))))
         self.assertEqual(test_mel0.intervals, test_mel1)
 
+    def test_different_pitches(self):
+        t0 = ji.JIPitch((0, 1, -1))
+        t1 = ji.JIPitch((-1, 1))
+        t2 = ji.JIPitch((2, -1))
+        t3 = ji.JIPitch((1,))
+        t4 = ji.JIPitch((0,))
+        test_mel0 = ji.JIMel([t0, t1, t2, t3])
+        test_mel1 = ji.JIMel([t0, t3, t3, t3])
+        test_mel2 = ji.JIMel([t3, t3, t3, t3])
+        test_mel3 = ji.JIMel([t3, t4, t3, t3])
+        self.assertEqual(test_mel0.different_pitches, (t0, t1, t2, t3))
+        self.assertEqual(test_mel1.different_pitches, (t0, t3))
+        self.assertEqual(test_mel2.different_pitches, (t3,))
+        self.assertEqual(test_mel3.different_pitches, (t3, t4))
+
+    def test_average_gender(self):
+        t0 = ji.JIPitch((0, 1, -1))
+        t1 = ji.JIPitch((-1, 1))
+        t2 = ji.JIPitch((2, -1))
+        t3 = ji.JIPitch((1,))
+        t4 = ji.JIPitch((0, -1))
+        test_mel0 = ji.JIMel([t0, t1, t2, t3])
+        test_mel1 = ji.JIMel([t0, t3, t3, t3])
+        test_mel2 = ji.JIMel([t3, t3, t3, t3])
+        test_mel3 = ji.JIMel([t4, t4, t4, t3])
+        self.assertEqual(test_mel0.average_gender, 0)
+        self.assertEqual(test_mel1.average_gender, 0.5)
+        self.assertEqual(test_mel2.average_gender, 1)
+        self.assertEqual(test_mel3.average_gender, -0.5)
+
+    def test_order(self):
+        t0 = ji.JIPitch((0, 1, -1))
+        t1 = ji.JIPitch((0, 2, -2))
+        t2 = ji.JIPitch((0, 3, -3))
+        test_mel0 = ji.JIMel([t0, t1, t2, t1])
+        test_mel1 = ji.JIMel([t0, t1, t0, t2])
+        test_mel2 = ji.JIMel([t0, t0, t0])
+        test_mel3 = ji.JIMel([t0, t2, t0, t2])
+        self.assertEqual(test_mel0.order(), 1)
+        self.assertEqual(test_mel1.order(), 4 / 3)
+        self.assertEqual(test_mel2.order(), 1)
+        self.assertEqual(test_mel3.order(), 2)
+
+    def test_is_ordered(self):
+        t0 = ji.JIPitch((0, 1, -1))
+        t1 = ji.JIPitch((0, 2, -2))
+        t2 = ji.JIPitch((0, 3, -3))
+        test_mel0 = ji.JIMel([t0, t1, t2, t1])
+        test_mel1 = ji.JIMel([t0, t1, t0, t2])
+        test_mel2 = ji.JIMel([t0, t0, t0])
+        test_mel3 = ji.JIMel([t0, t2, t0, t2])
+        self.assertEqual(test_mel0.is_ordered, True)
+        self.assertEqual(test_mel1.is_ordered, False)
+        self.assertEqual(test_mel2.is_ordered, True)
+        self.assertEqual(test_mel3.is_ordered, False)
+
     def test_subvert(self):
         test_mel0 = ji.JIMel.mk_line(ji.JIPitch((0, 1, -1)), 2)
         f = ji.JIPitch((0, 0, -1))
@@ -390,6 +462,49 @@ class JIMelTest(unittest.TestCase):
         self.assertEqual(test_mel2.dot_sum(), -20)
         self.assertEqual(test_mel3.dot_sum(), 34)
         self.assertEqual(test_mel4.dot_sum(), 10)
+
+    def test_count_roots(self):
+        t0 = ji.JIPitch((0, 1, -1))
+        t1 = ji.JIPitch((-1, 1))
+        t2 = ji.JIPitch((2, -1))
+        t3 = ji.JIPitch((1,))
+        test_mel0 = ji.JIMel([t0, t1, t2, t3])
+        test_mel1 = ji.JIMel([t0, t3, t3, t3])
+        test_mel2 = ji.JIMel([t3, t3, t3, t3])
+        self.assertEqual(test_mel0.count_root(), 1)
+        self.assertEqual(test_mel1.count_root(), 3)
+        self.assertEqual(test_mel2.count_root(), 4)
+
+    def test_count_repeats(self):
+        t0 = ji.JIPitch((0, 1, -1))
+        t1 = ji.JIPitch((-1, 1))
+        t2 = ji.JIPitch((2, -1))
+        t3 = ji.JIPitch((1,))
+        test_mel0 = ji.JIMel([t0, t1, t2, t3])
+        test_mel1 = ji.JIMel([t0, t1, t3, t3])
+        test_mel2 = ji.JIMel([t3, t3, t3, t3])
+        test_mel3 = ji.JIMel([t0, t0, t1, t0])
+        self.assertEqual(test_mel0.count_repeats(), 0)
+        self.assertEqual(test_mel1.count_repeats(), 1)
+        self.assertEqual(test_mel2.count_repeats(), 3)
+        self.assertEqual(test_mel3.count_repeats(), 1)
+
+    def test_count_different_pitches(self):
+        t0 = ji.JIPitch((0, 1, -1))
+        t1 = ji.JIPitch((-1, 1))
+        t2 = ji.JIPitch((2, -1))
+        t3 = ji.JIPitch((1,))
+        t4 = ji.JIPitch((0,))
+        test_mel0 = ji.JIMel([t0, t1, t2, t3])
+        test_mel1 = ji.JIMel([t0, t3, t3, t3])
+        test_mel2 = ji.JIMel([t3, t3, t3, t3])
+        test_mel3 = ji.JIMel([t3, t4, t3, t3])
+        self.assertEqual(test_mel0.count_different_pitches(), 4)
+        self.assertEqual(test_mel1.count_different_pitches(), 2)
+        self.assertEqual(test_mel2.count_different_pitches(), 1)
+        self.assertEqual(test_mel3.count_different_pitches(), 2)
+        test_mel3.val_border = 2
+        self.assertEqual(test_mel3.count_different_pitches(), 1)
 
 
 class JIModule(unittest.TestCase):
