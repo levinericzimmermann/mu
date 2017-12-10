@@ -537,12 +537,32 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
         self._val_border = arg
 
     @property
-    def different_pitches(self):
+    def pitch_rate(self):
         container = []
+        frequency = []
         for t in self:
-            if t not in container:
+            if t in container:
+                frequency[container.index(t)] += 1
+            else:
                 container.append(t)
-        return tuple(container)
+                frequency.append(1)
+        return tuple(zip(container, frequency))
+
+    @property
+    def pitch_rate_sorted(self):
+        return tuple(sorted(self.pitch_rate, key=lambda obj: obj[1]))
+
+    @property
+    def different_pitches(self):
+        return tuple(zip(*self.pitch_rate))[0]
+
+    @property
+    def most_common_pitch(self):
+        return self.pitch_rate_sorted[-1][0]
+
+    @property
+    def least_common_pitch(self):
+        return self.pitch_rate_sorted[0][0]
 
     @property
     def is_ordered(self):
@@ -550,6 +570,15 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
             return True
         else:
             return False
+
+    def count_identities(self):
+        am = 0
+        container = []
+        for x in self.identity:
+            if x not in container:
+                container.append(x)
+                am += 1
+        return am
 
     def order(self, val_border=2):
         intervals = self.intervals

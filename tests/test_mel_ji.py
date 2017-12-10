@@ -371,6 +371,38 @@ class JIMelTest(unittest.TestCase):
             (ji.JIPitch((0, 1, -1)), ji.JIPitch((0, 1, -1))))
         self.assertEqual(test_mel0.intervals, test_mel1)
 
+    def test_pitch_rate(self):
+        t0 = ji.JIPitch((0, 1, -1))
+        t1 = ji.JIPitch((-1, 1))
+        t2 = ji.JIPitch((2, -1))
+        t3 = ji.JIPitch((1,))
+        t4 = ji.JIPitch((0,))
+        test_mel0 = ji.JIMel([t0, t1, t2, t3])
+        test_mel1 = ji.JIMel([t0, t3, t3, t3])
+        test_mel2 = ji.JIMel([t3, t3, t3, t3])
+        test_mel3 = ji.JIMel([t3, t4, t3, t3])
+        self.assertEqual(test_mel0.pitch_rate, ((t0, 1), (t1, 1),
+                                                (t2, 1), (t3, 1)))
+        self.assertEqual(test_mel1.pitch_rate, ((t0, 1), (t3, 3)))
+        self.assertEqual(test_mel2.pitch_rate, ((t3, 4),))
+        self.assertEqual(test_mel3.pitch_rate, ((t3, 3), (t4, 1)))
+
+    def test_pitch_rate_sorted(self):
+        t0 = ji.JIPitch((0, 1, -1))
+        t1 = ji.JIPitch((-1, 1))
+        t2 = ji.JIPitch((2, -1))
+        t3 = ji.JIPitch((1,))
+        t4 = ji.JIPitch((0,))
+        test_mel0 = ji.JIMel([t0, t1, t2, t3])
+        test_mel1 = ji.JIMel([t0, t3, t3, t3])
+        test_mel2 = ji.JIMel([t3, t3, t3, t3])
+        test_mel3 = ji.JIMel([t3, t4, t3, t3])
+        self.assertEqual(test_mel0.pitch_rate_sorted, ((t0, 1), (t1, 1),
+                                                       (t2, 1), (t3, 1)))
+        self.assertEqual(test_mel1.pitch_rate_sorted, ((t0, 1), (t3, 3)))
+        self.assertEqual(test_mel2.pitch_rate_sorted, ((t3, 4),))
+        self.assertEqual(test_mel3.pitch_rate_sorted, ((t4, 1), (t3, 3)))
+
     def test_different_pitches(self):
         t0 = ji.JIPitch((0, 1, -1))
         t1 = ji.JIPitch((-1, 1))
@@ -385,6 +417,36 @@ class JIMelTest(unittest.TestCase):
         self.assertEqual(test_mel1.different_pitches, (t0, t3))
         self.assertEqual(test_mel2.different_pitches, (t3,))
         self.assertEqual(test_mel3.different_pitches, (t3, t4))
+
+    def test_most_common_pitch(self):
+        t0 = ji.JIPitch((0, 1, -1))
+        t1 = ji.JIPitch((-1, 1))
+        t2 = ji.JIPitch((2, -1))
+        t3 = ji.JIPitch((1,))
+        t4 = ji.JIPitch((0,))
+        test_mel0 = ji.JIMel([t0, t1, t2, t3])
+        test_mel1 = ji.JIMel([t0, t3, t3, t3])
+        test_mel2 = ji.JIMel([t3, t3, t3, t3])
+        test_mel3 = ji.JIMel([t3, t4, t3, t3])
+        self.assertEqual(test_mel0.most_common_pitch, t3)
+        self.assertEqual(test_mel1.most_common_pitch, t3)
+        self.assertEqual(test_mel2.most_common_pitch, t3)
+        self.assertEqual(test_mel3.most_common_pitch, t3)
+
+    def test_least_common_pitch(self):
+        t0 = ji.JIPitch((0, 1, -1))
+        t1 = ji.JIPitch((-1, 1))
+        t2 = ji.JIPitch((2, -1))
+        t3 = ji.JIPitch((1,))
+        t4 = ji.JIPitch((0,))
+        test_mel0 = ji.JIMel([t0, t1, t2, t3])
+        test_mel1 = ji.JIMel([t0, t3, t3, t3])
+        test_mel2 = ji.JIMel([t3, t3, t3, t3])
+        test_mel3 = ji.JIMel([t3, t4, t3, t3])
+        self.assertEqual(test_mel0.least_common_pitch, t0)
+        self.assertEqual(test_mel1.least_common_pitch, t0)
+        self.assertEqual(test_mel2.least_common_pitch, t3)
+        self.assertEqual(test_mel3.least_common_pitch, t4)
 
     def test_average_gender(self):
         t0 = ji.JIPitch((0, 1, -1))
