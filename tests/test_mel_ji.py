@@ -240,6 +240,16 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m0.primes, (3,))
         self.assertEqual(m1.primes, (3, 5))
 
+    def test_quantity(self):
+        m0 = ji.Monzo([1], 2)
+        m1 = ji.Monzo([-2, 1], 2)
+        m2 = ji.Monzo([-2, 1, 1, 1], 2)
+        m3 = ji.Monzo([-2, 1, 1, 1, -4, -2, 1], 2)
+        self.assertEqual(m0.quantity, 1)
+        self.assertEqual(m1.quantity, 2)
+        self.assertEqual(m2.quantity, 4)
+        self.assertEqual(m3.quantity, 7)
+
     def test_components(self):
         m0 = ji.Monzo([1, -1, 2, 0, 1], 1)
         m0_0 = ji.Monzo([1], 1)
@@ -567,6 +577,41 @@ class JIMelTest(unittest.TestCase):
         self.assertEqual(test_mel3.count_different_pitches(), 2)
         test_mel3.val_border = 2
         self.assertEqual(test_mel3.count_different_pitches(), 1)
+
+
+class JIHarmonyTest(unittest.TestCase):
+    def test_root(self):
+        n0 = ji.JIPitch([], val_border=2)
+        n1 = ji.JIPitch([1], val_border=2)
+        n2 = ji.JIPitch([1, 1], val_border=2)
+        n3 = ji.JIPitch([0, 1], val_border=2)
+        n4 = ji.JIPitch([-1], val_border=2)
+        h0 = ji.JIHarmony([n0, n1, n3])
+        h1 = ji.JIHarmony([n0, n1, n2])
+        h2 = h0.inverse() | h0
+        h3 = h1.inverse()
+        h4 = h1.inverse() | h1
+        h5 = ji.JIHarmony([n1, n3])
+        h6 = h5 | h5.inverse()
+        self.assertEqual(h0.root, (n0,))
+        self.assertEqual(h1.root, (n1,))
+        self.assertEqual(h2.root, (n0,))
+        self.assertEqual(h3.root, (n4,))
+        self.assertEqual(h4.root, (n0,))
+        self.assertEqual(h5.root, (n1, n3))
+        self.assertEqual(h6.root, (n1, n1.inverse(), n3.inverse(), n3))
+
+    def test_converted2root(self):
+        n0 = ji.JIPitch([], val_border=2)
+        n1 = ji.JIPitch([1], val_border=2)
+        n2 = ji.JIPitch([1, 1], val_border=2)
+        n3 = ji.JIPitch([0, 1], val_border=2)
+        n4 = ji.JIPitch([-1], val_border=2)
+        h0 = ji.JIHarmony([n0, n1, n3])
+        h1 = ji.JIHarmony([n0, n1, n2])
+        h2 = ji.JIHarmony([n0, n4, n3])
+        self.assertEqual(h0.converted2root(), h0)
+        self.assertEqual(h1.converted2root(), h2)
 
 
 class JIModule(unittest.TestCase):

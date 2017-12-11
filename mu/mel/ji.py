@@ -327,7 +327,7 @@ class Monzo:
 
     def filter(self, *prime):
         return type(self)(MonzoFilter(
-                *prime, val_border=self.val_border) * self, self.val_border)
+            *prime, val_border=self.val_border) * self, self.val_border)
 
 
 class MonzoFilter(Monzo):
@@ -336,7 +336,7 @@ class MonzoFilter(Monzo):
         numbers = tuple(pyprimes.prime_count(p) for p in prime)
         iterable = [1] * max(numbers)
         for n in numbers:
-            iterable[n-1] = 0
+            iterable[n - 1] = 0
         return iterable
 
     def __init__(self, *prime, val_border=1):
@@ -440,8 +440,8 @@ class JIPitch(Monzo, abstract.AbstractPitch):
     @property
     def adjusted_register(self):
         return type(self)(
-                self.identity_adjusted.scalar(self.lv),
-                1, self.identity_adjusted.multiply)
+            self.identity_adjusted.scalar(self.lv),
+            1, self.identity_adjusted.multiply)
 
 
 class JIContainer:
@@ -617,6 +617,19 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         return tuple(t.calc(self.multiply * factor) for t in self)
 
     @property
+    def root(self):
+        ls = list(self)
+        distance = []
+        for t in ls:
+            local_distance = 0
+            for t_comp in ls:
+                if t != t_comp:
+                    local_distance += (t - t_comp).summed()
+            distance.append(local_distance)
+        minima = (c for c, d in enumerate(distance) if d == min(distance))
+        return tuple(ls[c] for c in minima)
+
+    @property
     def freq(self) -> tuple:
         return self.calc()
 
@@ -629,6 +642,10 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         for f in self:
             f.val_border = arg
         self._val_border = arg
+
+    def converted2root(self):
+        root = self.root[0]
+        return JIHarmony(t - root for t in self)
 
     def operator_harmony(self, func):
         # TODO: replace ugly implementation by a better one
@@ -648,6 +665,21 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
 
     def mul_harmony(self):
         return self.operator_harmony(lambda x, y: x * y)
+
+    def components_harmony(self):
+        return JIHarmony(functools.reduce(
+            lambda x, y: x + y, (tone.components + (tone,) for tone in self)))
+
+    def inverse_harmony(self):
+        return self.inverse() | self
+
+    def symmetric_harmony(self, *shift):
+        return JIHarmony(functools.reduce(
+                lambda x, y: x | y, (self.shift(s) for s in shift)))
+
+    def past_harmony(self):
+        return JIHarmony(functools.reduce(
+            lambda x, y: x + y, (tone.past + (tone,) for tone in self)))
 
 
 class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
