@@ -458,7 +458,7 @@ class JIMelTest(unittest.TestCase):
         self.assertEqual(test_mel2.least_common_pitch, t3)
         self.assertEqual(test_mel3.least_common_pitch, t4)
 
-    def test_average_gender(self):
+    def test_avg_gender(self):
         t0 = ji.JIPitch((0, 1, -1))
         t1 = ji.JIPitch((-1, 1))
         t2 = ji.JIPitch((2, -1))
@@ -468,10 +468,10 @@ class JIMelTest(unittest.TestCase):
         test_mel1 = ji.JIMel([t0, t3, t3, t3])
         test_mel2 = ji.JIMel([t3, t3, t3, t3])
         test_mel3 = ji.JIMel([t4, t4, t4, t3])
-        self.assertEqual(test_mel0.average_gender, 0)
-        self.assertEqual(test_mel1.average_gender, 0.5)
-        self.assertEqual(test_mel2.average_gender, 1)
-        self.assertEqual(test_mel3.average_gender, -0.5)
+        self.assertEqual(test_mel0.avg_gender, 0)
+        self.assertEqual(test_mel1.avg_gender, 0.5)
+        self.assertEqual(test_mel2.avg_gender, 1)
+        self.assertEqual(test_mel3.avg_gender, -0.5)
 
     def test_order(self):
         t0 = ji.JIPitch((0, 1, -1))
@@ -612,6 +612,52 @@ class JIHarmonyTest(unittest.TestCase):
         h2 = ji.JIHarmony([n0, n4, n3])
         self.assertEqual(h0.converted2root(), h0)
         self.assertEqual(h1.converted2root(), h2)
+
+
+class JICadenceTest(unittest.TestCase):
+    def test_identity(self):
+        n0 = ji.JIPitch([], val_border=2)
+        n1 = ji.JIPitch([1], val_border=2)
+        n2 = ji.JIPitch([1, 1], val_border=2)
+        n3 = ji.JIPitch([0, 1], val_border=2)
+        n4 = ji.JIPitch([-1], val_border=2)
+        h0 = ji.JIHarmony([n0, n1, n3])
+        h1 = ji.JIHarmony([n0, n1, n2])
+        h2 = h0.inverse() | h0
+        h3 = h1.inverse()
+        h4 = h1.inverse() | h1
+        h5 = ji.JIHarmony([n1, n3])
+        h6 = h5 | h5.inverse()
+        cadence0 = ji.JICadence([h0, h1, h2])
+        cadence1 = ji.JICadence([h3, h4, h5, h6])
+        self.assertEqual(cadence0.identity,
+                         (h0.identity, h1.identity, h2.identity))
+        self.assertEqual(cadence1.identity, (h3.identity,
+                                             h4.identity, h5.identity, h6.identity))
+
+    def test_empty_chords(self):
+        n0 = ji.JIPitch([], val_border=2)
+        h0 = ji.JIHarmony([n0, n0])
+        h1 = ji.JIHarmony([n0])
+        h2 = ji.JIHarmony([])
+        cadence0 = ji.JICadence([h0, h1, h2])
+        cadence1 = ji.JICadence([h2, h2, h2])
+        cadence2 = ji.JICadence([h1, h1, h1])
+        self.assertEqual(cadence0.empty_chords, (2,))
+        self.assertEqual(cadence1.empty_chords, (0, 1, 2))
+        self.assertEqual(cadence2.empty_chords, tuple([]))
+
+    def test_has_empty_chords(self):
+        n0 = ji.JIPitch([], val_border=2)
+        h0 = ji.JIHarmony([n0, n0])
+        h1 = ji.JIHarmony([n0])
+        h2 = ji.JIHarmony([])
+        cadence0 = ji.JICadence([h0, h1, h2])
+        cadence1 = ji.JICadence([h2, h2, h2])
+        cadence2 = ji.JICadence([h1, h1, h1])
+        self.assertEqual(cadence0.has_empty_chords, True)
+        self.assertEqual(cadence1.has_empty_chords, True)
+        self.assertEqual(cadence2.has_empty_chords, False)
 
 
 class JIModule(unittest.TestCase):

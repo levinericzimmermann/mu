@@ -6,6 +6,7 @@ import pyprimes
 from pyprimes import factors
 import functools
 import itertools
+import math
 
 
 def comparable_bool_decorator(func):
@@ -139,13 +140,7 @@ class Monzo:
 
     @staticmethod
     def gcd(*args):
-        def _gcd(a, b):
-            """Return greatest common divisor using Euclid's Algorithm
-            https://stackoverflow.com/questions/147515/least-common-multiple-for-3-or-more-numbers"""
-            while b:
-                a, b = b, a % b
-            return a
-        return functools.reduce(_gcd, args)
+        return functools.reduce(math.gcd, args)
 
     @property
     def val(self) -> tuple:
@@ -454,15 +449,17 @@ class JIContainer:
     def mk_line(cls, reference, count):
         return cls([reference.scalar(i + 1) for i in range(count)])
 
-    @classmethod
-    def mk_line_and_inverse(cls, reference, count):
-        m0 = cls.mk_line(reference, count)
-        return m0 + m0.inverse()
+    @property
+    def avg_gender(self):
+        if self:
+            return sum(map(lambda b: 1 if b is True else -1,
+                           self.gender)) / len(self)
+        else:
+            return 0
 
     @property
-    def average_gender(self):
-        return sum(map(lambda b: 1 if b is True else -1,
-                       self.gender)) / len(self)
+    def avg_lv(self):
+        return sum(p.lv for p in self) / len(self)
 
     def set_multiply(self, arg):
         for t in self:
@@ -483,12 +480,20 @@ class JIContainer:
                     d += m_out.dot(m_in)
         return d
 
-    @property
     def summed_summed(self):
-        return sum(self.summed())
+        return functools.reduce(lambda x, y: x + y, self.summed())
 
     def count_root(self):
         return sum(map(lambda p: 1 if p.is_root else 0, self))
+
+    def count_identities(self):
+        am = 0
+        container = []
+        for x in self.identity:
+            if x not in container:
+                container.append(x)
+                am += 1
+        return am
 
 
 class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
@@ -506,6 +511,11 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
     def intervals(self):
         """return intervals between single notes"""
         return self[1:].sub(self[:-1])
+
+    @classmethod
+    def mk_line_and_inverse(cls, reference, count):
+        m0 = cls.mk_line(reference, count)
+        return m0 + m0.inverse()
 
     def __getitem__(self, idx):
         res = muobjects.MUList.__getitem__(self, idx)
@@ -571,15 +581,6 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
         else:
             return False
 
-    def count_identities(self):
-        am = 0
-        container = []
-        for x in self.identity:
-            if x not in container:
-                container.append(x)
-                am += 1
-        return am
-
     def order(self, val_border=2):
         intervals = self.intervals
         intervals.val_border = val_border
@@ -616,6 +617,11 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
     def calc(self, factor=1) -> tuple:
         return tuple(t.calc(self.multiply * factor) for t in self)
 
+    @classmethod
+    def mk_line_and_inverse(cls, reference, count):
+        m0 = cls.mk_line(reference, count)
+        return m0 | m0.inverse()
+
     @property
     def root(self):
         ls = list(self)
@@ -630,12 +636,17 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         return tuple(ls[c] for c in minima)
 
     @property
+    def dominant_prime(self):
+        pass
+
+    @property
     def freq(self) -> tuple:
         return self.calc()
 
     @property
     def val_border(self) -> int:
-        return self._val_border
+        for x in self:
+            return x.val_border
 
     @val_border.setter
     def val_border(self, arg) -> None:
@@ -644,8 +655,12 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         self._val_border = arg
 
     def converted2root(self):
-        root = self.root[0]
-        return JIHarmony(t - root for t in self)
+        root = self.root
+        if root:
+            root = self.root[0]
+            return JIHarmony(t - root for t in self)
+        else:
+            return JIHarmony([])
 
     def operator_harmony(self, func):
         # TODO: replace ugly implementation by a better one
@@ -668,18 +683,19 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
 
     def components_harmony(self):
         return JIHarmony(functools.reduce(
-            lambda x, y: x + y, (tone.components + (tone,) for tone in self)))
+            lambda x, y: x + y, tuple(
+                tone.components + (tone,) for tone in self)))
 
     def inverse_harmony(self):
         return self.inverse() | self
 
     def symmetric_harmony(self, *shift):
         return JIHarmony(functools.reduce(
-                lambda x, y: x | y, (self.shift(s) for s in shift)))
+            lambda x, y: x | y, tuple(self.shift(s) for s in shift)))
 
     def past_harmony(self):
         return JIHarmony(functools.reduce(
-            lambda x, y: x + y, (tone.past + (tone,) for tone in self)))
+            lambda x, y: x + y, tuple(tone.past + (tone,) for tone in self)))
 
 
 class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
@@ -688,16 +704,9 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
         self.multiply = multiply
         self._val_border = 1
 
-    def calc(self, factor=1) -> tuple:
-        return tuple(h.calc(self.multiply * factor) for h in self)
-
-    @property
-    def freq(self) -> tuple:
-        return self.calc()
-
     @property
     def val_border(self) -> int:
-        return self._val_border
+        return self[0].val_border
 
     @val_border.setter
     def val_border(self, arg) -> None:
@@ -705,8 +714,75 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
             f.val_border = arg
         self._val_border = arg
 
+    @property
+    def root(self):
+        return tuple(h.root for h in self)
+
+    def calc(self, factor=1) -> tuple:
+        return tuple(h.calc(self.multiply * factor) for h in self)
+
+    def summed(self):
+        return tuple(h.summed() for h in self)
+
+    def summed_summed(self):
+        return tuple(h.summed_summed() for h in self)
+
+    @property
+    def float(self):
+        return tuple(h.float for h in self)
+
+    @property
+    def gender(self):
+        return tuple(h.gender for h in self)
+
+    @property
+    def identity(self):
+        return tuple(h.identity for h in self)
+
+    @property
+    def identity_adjusted(self):
+        return tuple(h.identity_adjusted for h in self)
+
+    @property
+    def lv(self):
+        return tuple(h.lv for h in self)
+
+    @property
+    def past(self):
+        return tuple(h.past for h in self)
+
+    @property
+    def ratio(self):
+        return tuple(h.ratio for h in self)
+
+    @property
+    def empty_chords(self):
+        return tuple(i for i, chord in enumerate(self) if not chord)
+
+    @property
+    def has_empty_chords(self):
+        if self.empty_chords:
+            return True
+        else:
+            return False
+
+    @property
+    def length(self):
+        return tuple(len(h) for h in self)
+
+    @property
+    def adjusted_register(self):
+        return type(self)([h.adjusted_register for h in self])
+
     def dot_sum(self):
         return tuple(h.dot_sum() for h in self)
+
+    def count_repeats(self):
+        repeats = 0
+        for h0, h1 in zip(self, self[1:]):
+            if h0 == h1:
+                repeats += 1
+        return repeats
 
 
 """
