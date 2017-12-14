@@ -81,29 +81,47 @@ class MelodyTest(unittest.TestCase):
         self.assertEqual(self.melody0.freq, self.mel0.freq)
 
 
-"""
-class CadenceTest(unittest.TestCase):
+class ToneSetTest(unittest.TestCase):
     p0 = ji.r(5, 4)
     p1 = ji.r(3, 2)
     p2 = ji.r(1, 1)
     p3 = ji.r(6, 5)
     p4 = ji.r(7, 4)
     p5 = ji.r(9, 8)
-    h0 = mel.Harmony([p0, p1, p2])
-    h1 = mel.Harmony([p3, p4, p5])
-    d0 = rhy.RhyUnit(400)
-    rhy0 = rhy.RhyCompound([d0] * 2)
-    chord0 = old.Chord(h0, d0)
-    chord1 = old.Chord(h1, d0)
-    cadence0 = old.Cadence([chord0, chord1])
+    t0 = old.Tone(p0, rhy.RhyUnit(1))
+    t1 = old.Tone(p1, rhy.RhyUnit(1))
+    t2 = old.Tone(p2, rhy.RhyUnit(1))
+    t3 = old.Tone(p3, rhy.RhyUnit(1))
+    t3 = old.Tone(p3, rhy.RhyUnit(1))
+    t4 = old.Tone(p4, rhy.RhyUnit(1))
+    t5 = old.Tone(p5, rhy.RhyUnit(1))
+    t0_set = old.Tone(p0, rhy.RhyUnit(0), rhy.RhyUnit(1))
+    t1_set = old.Tone(p1, rhy.RhyUnit(1), rhy.RhyUnit(1))
+    t2_set = old.Tone(p2, rhy.RhyUnit(2), rhy.RhyUnit(1))
+    t3_set = old.Tone(p3, rhy.RhyUnit(3), rhy.RhyUnit(1))
+    t4_set = old.Tone(p4, rhy.RhyUnit(4), rhy.RhyUnit(1))
+    t5_set = old.Tone(p5, rhy.RhyUnit(5), rhy.RhyUnit(1))
+    mel0 = old.Melody([t0, t1, t2, t3, t4, t5])
+    mel1 = old.Melody([old.Rest(rhy.RhyUnit(1)), t1, t2, t3, t4, t5])
+    mel2 = old.Melody([t0, t1])
+    set0 = old.ToneSet([t0_set, t1_set, t2_set, t3_set, t4_set, t5_set])
+    set1 = old.ToneSet([t1_set, t2_set, t3_set, t4_set, t5_set])
 
     def test_constructor(self):
-        old.Cadence([self.chord0, self.chord1])
+        self.assertEqual(old.ToneSet.from_melody(ToneSetTest.mel0),
+                         ToneSetTest.set0)
 
-    def test_alternative_constructor(self):
-        cadence1 = old.Cadence.from_parameter((self.h0, self.h1), self.rhy0)
-        self.assertEqual(self.cadence0, cadence1)
-"""
+    def test_converter(self):
+        self.assertEqual(ToneSetTest.mel0,
+                         ToneSetTest.set0.convert2melody())
+        self.assertEqual(ToneSetTest.mel1,
+                         ToneSetTest.set1.convert2melody())
+
+    def test_pop_by(self):
+        copied_set = ToneSetTest.set0.copy()
+        popped = copied_set.pop_by_pitch(ToneSetTest.p0, ToneSetTest.p1)
+        converted = popped.convert2melody()
+        self.assertEqual(ToneSetTest.mel2, converted)
 
 
 if __name__ == "__main__":

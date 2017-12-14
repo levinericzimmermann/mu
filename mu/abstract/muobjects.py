@@ -6,7 +6,9 @@ class MUList(mutate.mutate_class(list)):
         return type(self)(reversed(self))
 
 
-MUSet = mutate.mutate_class(set)
+class MUSet(mutate.mutate_class(set)):
+    def copy(self):
+        return type(self)([t.copy() for t in self])
 
 
 MUFloat = mutate.mutate_class(float)

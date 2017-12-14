@@ -1,3 +1,4 @@
+from mu.abstract import muobjects
 from mu.sco import abstract
 from mu.rhy import rhy
 from mu.mel import mel
@@ -12,18 +13,23 @@ class Tone(abstract.UniformEvent):
         self.delay = delay
 
     def __hash__(self):
-        return hash((self.pitch, self.duration))
+        return hash((self.pitch, self.delay, self.duration))
 
     def __repr__(self):
-        return str((repr(self.pitch), repr(self.duration)))
+        return str((repr(self.pitch), repr(self.delay), repr(self.duration)))
 
     def __eq__(self, other):
-        return self.pitch == other.pitch and self.duration == other.duration
+        return all((self.pitch == other.pitch, self.duration == other.duration,
+                   self.delay == other.delay))
+
+    def copy(self):
+        return type(self)(self.pitch, self.delay, self.duration)
 
 
 class Rest(Tone):
-    def __init__(self, duration):
-        self._dur = duration
+    def __init__(self, delay):
+        self._dur = delay
+        self.delay = delay
 
     def __repr__(self):
         return repr(self.duration)
@@ -76,3 +82,44 @@ class Cadence(abstract.MultiSequentialEvent):
 
 class Polyphon(abstract.SimultanEvent):
     pass
+
+
+class ToneSet(muobjects.MUSet):
+    @classmethod
+    def from_melody(cls, melody):
+        new_set = cls()
+        d = 0
+        for t in melody.copy():
+            delay = float(t.delay)
+            t.delay = d
+            d += delay
+            new_set.add(t)
+        return new_set
+
+    def pop_by(self, test, args):
+        new_set = ToneSet()
+        for arg in args:
+            for t in self:
+                if test(t, arg):
+                    new_set.add(t)
+        return new_set
+
+    def pop_by_pitch(self, *pitch):
+        return self.pop_by(lambda t, p: t.pitch == p, pitch)
+
+    def pop_by_duration(self, *duration):
+        return self.pop_by(lambda t, d: t.duration == d, duration)
+
+    def pop_by_start(self, *start):
+        return self.pop_by(lambda t, s: t.delay == s, start)
+
+    def convert2melody(self):
+        sorted_by_delay = sorted(list(self.copy()), key=lambda t: t.delay)
+        first = sorted_by_delay[0].delay
+        if first != 0:
+            sorted_by_delay.insert(0, Rest(0))
+        for t, t_after in zip(sorted_by_delay, sorted_by_delay[1:]):
+            diff = t_after.delay - t.delay
+            t.delay = rhy.RhyUnit(diff)
+        sorted_by_delay[-1].delay = rhy.RhyUnit(sorted_by_delay[-1].duration)
+        return Melody(sorted_by_delay)
