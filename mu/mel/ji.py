@@ -239,6 +239,10 @@ class Monzo:
         else:
             return True
 
+    @property
+    def virtual_root(self):
+        return JIPitch.from_ratio(1, self.ratio.denominator)
+
     @comparable_bool_decorator
     def is_related(self: "Monzo", other: "Monzo") -> bool:
         for p in self.primes:
@@ -296,6 +300,10 @@ class Monzo:
 
     def __pow__(self, other) -> "Monzo":
         return self.__math(other, lambda x, y: x ** y)
+
+    def __abs__(self):
+        monzo = tuple(abs(v) for v in iter(self))
+        return type(self)(monzo, val_border=self.val_border)
 
     def scalar(self, factor):
         """Return the scalar-product of a Monzo and its factor."""
@@ -459,7 +467,10 @@ class JIContainer:
 
     @property
     def avg_lv(self):
-        return sum(p.lv for p in self) / len(self)
+        if self:
+            return sum(p.lv for p in self) / len(self)
+        else:
+            return 0
 
     def set_multiply(self, arg):
         for t in self:
@@ -494,6 +505,14 @@ class JIContainer:
                 container.append(x)
                 am += 1
         return am
+
+    @property
+    def dominant_prime(self):
+        summed = abs(functools.reduce(lambda x, y: x + y, self))
+        if summed:
+            return summed.val[summed.index(max(summed))]
+        else:
+            return 1
 
 
 class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
@@ -567,6 +586,11 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
         return tuple(zip(*self.pitch_rate))[0]
 
     @property
+    def lv_difference(self):
+        return tuple(abs(t0.lv - t1.lv)
+                     for t0, t1 in zip(self, self[1:]))
+
+    @property
     def most_common_pitch(self):
         return self.pitch_rate_sorted[-1][0]
 
@@ -586,12 +610,21 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
         intervals.val_border = val_border
         return sum(intervals.lv) / len(intervals)
 
+    def count_property(self, test):
+        counter = 0
+        for t0, t1 in zip(self, self[1:]):
+            if test(t0, t1):
+                counter += 1
+        return counter
+
     def count_repeats(self):
-        repeats = 0
-        for p0, p1 in zip(self, self[1:]):
-            if p0 == p1:
-                repeats += 1
-        return repeats
+        return self.count_property(lambda x, y: x == y)
+
+    def count_related(self):
+        return self.count_property(lambda x, y: x.is_related(y))
+
+    def count_congeneric(self):
+        return self.count_property(lambda x, y: x.is_congeneric(y))
 
     def count_different_pitches(self):
         return len(self.different_pitches)
@@ -622,6 +655,11 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         m0 = cls.mk_line(reference, count)
         return m0 | m0.inverse()
 
+    @classmethod
+    def mk_harmonic_series(cls, p, max):
+        root = p.virtual_root
+        return cls([root + JIPitch.from_ratio(i, 1) for i in range(max)])
+
     @property
     def root(self):
         ls = list(self)
@@ -634,10 +672,6 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
             distance.append(local_distance)
         minima = (c for c, d in enumerate(distance) if d == min(distance))
         return tuple(ls[c] for c in minima)
-
-    @property
-    def dominant_prime(self):
-        pass
 
     @property
     def freq(self) -> tuple:
@@ -769,6 +803,10 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
     @property
     def length(self):
         return tuple(len(h) for h in self)
+
+    @property
+    def virtual_root(self):
+        return tuple(h.virtual_root for h in self)
 
     @property
     def adjusted_register(self):

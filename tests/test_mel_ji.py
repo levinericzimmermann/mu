@@ -299,6 +299,25 @@ class MonzoTest(unittest.TestCase):
         self.assertTrue(m4.is_root)
         self.assertTrue(m5.is_root)
 
+    def test_virtual_root(self):
+        p0 = ji.r(7, 5)
+        p0_vr = ji.r(1, 5)
+        p1 = ji.r(13, 11)
+        p1_vr = ji.r(1, 11)
+        p2 = ji.r(11, 13)
+        p2_vr = ji.r(1, 13)
+        self.assertEqual(p0.virtual_root, p0_vr)
+        self.assertEqual(p1.virtual_root, p1_vr)
+        self.assertEqual(p2.virtual_root, p2_vr)
+
+    def test_abs(self):
+        p0 = ji.JIPitch((1, -1), 2)
+        p1 = ji.JIPitch((2, -2), 2)
+        p2 = ji.JIPitch((1, 1), 2)
+        p3 = ji.JIPitch((2, 2), 2)
+        self.assertEqual(abs(p0), p2)
+        self.assertEqual(abs(p1), p3)
+
 
 class JIPitchTest(unittest.TestCase):
     def test_calc(self):
@@ -559,7 +578,30 @@ class JIMelTest(unittest.TestCase):
         self.assertEqual(test_mel0.count_repeats(), 0)
         self.assertEqual(test_mel1.count_repeats(), 1)
         self.assertEqual(test_mel2.count_repeats(), 3)
-        self.assertEqual(test_mel3.count_repeats(), 1)
+
+    def test_count_related(self):
+        t0 = ji.JIPitch((0, 1, -1))
+        t1 = ji.JIPitch((-1, 1))
+        t2 = ji.JIPitch((0, -1))
+        t3 = ji.JIPitch((1,))
+        test_mel0 = ji.JIMel([t0, t1, t2, t3])
+        test_mel1 = ji.JIMel([t0, t1, t3, t1])
+        test_mel2 = ji.JIMel([t3, t0, t3, t2])
+        self.assertEqual(test_mel0.count_related(), 2)
+        self.assertEqual(test_mel1.count_related(), 3)
+        self.assertEqual(test_mel2.count_related(), 0)
+
+    def test_count_congeneric(self):
+        t0 = ji.JIPitch((0, 1, -1))
+        t1 = ji.JIPitch((-1, 1))
+        t2 = ji.JIPitch((0, -1))
+        t3 = ji.JIPitch((0, -1, 1))
+        test_mel0 = ji.JIMel([t0, t1, t2, t3])
+        test_mel1 = ji.JIMel([t0, t3, t3, t1])
+        test_mel2 = ji.JIMel([t3, t0, t3, t3])
+        self.assertEqual(test_mel0.count_congeneric(), 0)
+        self.assertEqual(test_mel1.count_congeneric(), 2)
+        self.assertEqual(test_mel2.count_congeneric(), 3)
 
     def test_count_different_pitches(self):
         t0 = ji.JIPitch((0, 1, -1))
@@ -577,6 +619,23 @@ class JIMelTest(unittest.TestCase):
         self.assertEqual(test_mel3.count_different_pitches(), 2)
         test_mel3.val_border = 2
         self.assertEqual(test_mel3.count_different_pitches(), 1)
+
+    def test_lv_difference(self):
+        p0 = ji.JIPitch((1, -1), 2)
+        p1 = ji.JIPitch((2, -2), 2)
+        p2 = ji.JIPitch((2,), 2)
+        p3 = ji.JIPitch((1,), 2)
+        test_mel0 = ji.JIMel([p0, p1, p2, p3, p0])
+        self.assertEqual(test_mel0.lv_difference, (1, 0, 1, 0))
+
+    def test_dominant_prime(self):
+        p0 = ji.JIPitch((1, -1), 2)
+        p1 = ji.JIPitch((1,), 2)
+        p2 = ji.JIPitch((0, 1), 2)
+        p3 = ji.JIPitch((2,), 2)
+        p4 = ji.JIPitch((-2,), 2)
+        test_mel0 = ji.JIMel([p0, p1, p2, p3, p4])
+        self.assertEqual(test_mel0.dominant_prime, 3)
 
 
 class JIHarmonyTest(unittest.TestCase):
@@ -613,6 +672,13 @@ class JIHarmonyTest(unittest.TestCase):
         self.assertEqual(h0.converted2root(), h0)
         self.assertEqual(h1.converted2root(), h2)
 
+    def test_mk_harmonic_series(self):
+        test_pitch = ji.r(11, 7)
+        harmonic_series = ji.JIHarmony([ji.r(1, 7), ji.r(2, 7), ji.r(3, 7),
+                                        ji.r(4, 7), ji.r(5, 7)])
+        self.assertEqual(ji.JIHarmony.mk_harmonic_series(test_pitch, 6),
+                         harmonic_series)
+
 
 class JICadenceTest(unittest.TestCase):
     def test_identity(self):
@@ -620,7 +686,6 @@ class JICadenceTest(unittest.TestCase):
         n1 = ji.JIPitch([1], val_border=2)
         n2 = ji.JIPitch([1, 1], val_border=2)
         n3 = ji.JIPitch([0, 1], val_border=2)
-        n4 = ji.JIPitch([-1], val_border=2)
         h0 = ji.JIHarmony([n0, n1, n3])
         h1 = ji.JIHarmony([n0, n1, n2])
         h2 = h0.inverse() | h0
@@ -632,8 +697,8 @@ class JICadenceTest(unittest.TestCase):
         cadence1 = ji.JICadence([h3, h4, h5, h6])
         self.assertEqual(cadence0.identity,
                          (h0.identity, h1.identity, h2.identity))
-        self.assertEqual(cadence1.identity, (h3.identity,
-                                             h4.identity, h5.identity, h6.identity))
+        self.assertEqual(cadence1.identity, (
+                h3.identity, h4.identity, h5.identity, h6.identity))
 
     def test_empty_chords(self):
         n0 = ji.JIPitch([], val_border=2)

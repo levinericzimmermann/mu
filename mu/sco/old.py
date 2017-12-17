@@ -91,7 +91,7 @@ class ToneSet(muobjects.MUSet):
         d = 0
         for t in melody.copy():
             delay = float(t.delay)
-            t.delay = d
+            t.delay = rhy.RhyUnit(d)
             d += delay
             new_set.add(t)
         return new_set

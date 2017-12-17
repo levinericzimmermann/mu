@@ -118,10 +118,12 @@ class ToneSetTest(unittest.TestCase):
                          ToneSetTest.set1.convert2melody())
 
     def test_pop_by(self):
-        copied_set = ToneSetTest.set0.copy()
-        popped = copied_set.pop_by_pitch(ToneSetTest.p0, ToneSetTest.p1)
-        converted = popped.convert2melody()
-        self.assertEqual(ToneSetTest.mel2, converted)
+        popped = ToneSetTest.set0.copy().pop_by_pitch(
+            ToneSetTest.p0, ToneSetTest.p1)
+        self.assertEqual(ToneSetTest.mel2, popped.convert2melody())
+        popped = ToneSetTest.set0.copy().pop_by_start(
+            rhy.RhyUnit(0), rhy.RhyUnit(1))
+        self.assertEqual(ToneSetTest.mel2, popped.convert2melody())
 
 
 if __name__ == "__main__":
