@@ -7,7 +7,7 @@ setup(
     description='Python-representation of classical musical content.',
     author='Levin Eric Zimmermann',
     author_email='levin-eric.zimmermann@folkwang-uni.de',
-    url='https://github.com/uummoo/',
+    url='https://github.com/uummoo/mu',
     packages=['mu', 'mu.abstract', 'mu.time', 'mu.rhy', 'mu.mel', 'mu.sco'],
     setup_requires=[''],
     tests_require=['nosetests'],

@@ -227,8 +227,10 @@ class Monzo:
 
     @property
     def past(self) -> tuple:
+        identity = self.identity
+        lv = self.lv
         return tuple(type(self)(
-            self.identity.scalar(i), self.val_border) for i in range(self.lv))
+            identity.scalar(i), self.val_border) for i in range(lv))
 
     @property
     def is_root(self) -> bool:
@@ -242,6 +244,12 @@ class Monzo:
     @property
     def virtual_root(self):
         return JIPitch.from_ratio(1, self.ratio.denominator)
+
+    @property
+    def is_symmetric(self):
+        absolute = abs(self)
+        maxima = max(absolute)
+        return all(x == maxima for x in filter(lambda x: x != 0, absolute))
 
     @comparable_bool_decorator
     def is_related(self: "Monzo", other: "Monzo") -> bool:
@@ -647,6 +655,20 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
     def __init__(self, iterable, multiply=260):
         return JIContainer.__init__(self, iterable, multiply)
 
+    @property
+    def intervals(self):
+        """return all present intervals between single notes"""
+        intervals = JIHarmony([])
+        for p0 in self:
+            for p1 in self:
+                if p0 != p1:
+                    if p0 > p1:
+                        interval = p0 - p1
+                    else:
+                        interval = p1 - p0
+                        intervals.add(interval)
+        return intervals
+
     def calc(self, factor=1) -> tuple:
         return tuple(t.calc(self.multiply * factor) for t in self)
 
@@ -752,6 +774,10 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
     def root(self):
         return tuple(h.root for h in self)
 
+    @property
+    def intervals(self):
+        return tuple(h.intervals for h in self)
+
     def calc(self, factor=1) -> tuple:
         return tuple(h.calc(self.multiply * factor) for h in self)
 
@@ -811,6 +837,9 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
     @property
     def adjusted_register(self):
         return type(self)([h.adjusted_register for h in self])
+
+    def without_nulls(self):
+        return type(self)(h for h in self if h)
 
     def dot_sum(self):
         return tuple(h.dot_sum() for h in self)

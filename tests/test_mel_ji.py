@@ -318,6 +318,18 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(abs(p0), p2)
         self.assertEqual(abs(p1), p3)
 
+    def test_is_symmetric(self):
+        p0 = ji.JIPitch((1, -1), 2)
+        p1 = ji.JIPitch((2, -2, 0, -2), 2)
+        p2 = ji.JIPitch((1, 3), 2)
+        p3 = ji.JIPitch((2, -1), 2)
+        p4 = ji.JIPitch((0, 2, 2), 2)
+        self.assertEqual(p0.is_symmetric, True)
+        self.assertEqual(p1.is_symmetric, True)
+        self.assertEqual(p2.is_symmetric, False)
+        self.assertEqual(p3.is_symmetric, False)
+        self.assertEqual(p4.is_symmetric, True)
+
 
 class JIPitchTest(unittest.TestCase):
     def test_calc(self):
@@ -574,7 +586,6 @@ class JIMelTest(unittest.TestCase):
         test_mel0 = ji.JIMel([t0, t1, t2, t3])
         test_mel1 = ji.JIMel([t0, t1, t3, t3])
         test_mel2 = ji.JIMel([t3, t3, t3, t3])
-        test_mel3 = ji.JIMel([t0, t0, t1, t0])
         self.assertEqual(test_mel0.count_repeats(), 0)
         self.assertEqual(test_mel1.count_repeats(), 1)
         self.assertEqual(test_mel2.count_repeats(), 3)
@@ -679,6 +690,16 @@ class JIHarmonyTest(unittest.TestCase):
         self.assertEqual(ji.JIHarmony.mk_harmonic_series(test_pitch, 6),
                          harmonic_series)
 
+    def test_intervals(self):
+        h0 = ji.JIHarmony([ji.r(1, 1), ji.r(7, 4), ji.r(3, 2)])
+        h0_intervals = ji.JIHarmony([ji.r(7, 4), ji.r(7, 4) - ji.r(3, 2),
+                                     ji.r(3, 2)])
+        h1 = ji.JIHarmony([ji.r(1, 1), ji.r(5, 4), ji.r(2, 1), ji.r(8, 5)])
+        h1_intervals = ji.JIHarmony([ji.r(5, 4), ji.r(2, 1),
+                                     ji.r(8, 5), ji.r(32, 25)])
+        self.assertEqual(h0.intervals, h0_intervals)
+        self.assertEqual(h1.intervals, h1_intervals)
+
 
 class JICadenceTest(unittest.TestCase):
     def test_identity(self):
@@ -698,7 +719,7 @@ class JICadenceTest(unittest.TestCase):
         self.assertEqual(cadence0.identity,
                          (h0.identity, h1.identity, h2.identity))
         self.assertEqual(cadence1.identity, (
-                h3.identity, h4.identity, h5.identity, h6.identity))
+            h3.identity, h4.identity, h5.identity, h6.identity))
 
     def test_empty_chords(self):
         n0 = ji.JIPitch([], val_border=2)
