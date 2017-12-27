@@ -1,3 +1,4 @@
+from typing import Callable, Optional, Tuple, Union
 try:
     import music21
 except ImportError:
@@ -7,32 +8,34 @@ from mu.sco import abstract
 from mu.rhy import rhy
 from mu.mel import mel
 from mu.mel import ji
+from mu.mel.abstract import AbstractPitch
 
 
 class Tone(abstract.UniformEvent):
-    def __init__(self, pitch, delay, duration=None):
+    def __init__(self, pitch: Optional[AbstractPitch], delay: rhy.RhyUnit,
+                 duration: Optional[rhy.RhyUnit] = None) -> None:
         if not duration:
             duration = delay
         self.pitch = pitch
         self._dur = duration
         self.delay = delay
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.pitch, self.delay, self.duration))
 
     def __repr__(self):
         return str((repr(self.pitch), repr(self.delay), repr(self.duration)))
 
-    def __eq__(self, other):
+    def __eq__(self, other: "Tone") -> bool:
         return all((self.pitch == other.pitch, self.duration == other.duration,
-                   self.delay == other.delay))
+                    self.delay == other.delay))
 
-    def copy(self):
+    def copy(self) -> "Tone":
         return type(self)(self.pitch, self.delay, self.duration)
 
 
 class Rest(Tone):
-    def __init__(self, delay):
+    def __init__(self, delay: rhy.RhyUnit) -> None:
         self._dur = 0
         self.delay = delay
 
@@ -40,12 +43,13 @@ class Rest(Tone):
         return repr(self.duration)
 
     @property
-    def pitch(self):
+    def pitch(self) -> None:
         return None
 
 
 class Chord(abstract.SimultanEvent):
     """A Chord contains simultanly played Tones."""
+
     def __init__(self, harmony, duration):
         self.harmony = harmony
         self._dur = duration
@@ -62,11 +66,13 @@ class Melody(abstract.MultiSequentialEvent):
     _sub_sequences_class_names = ("mel", "rhy", "dur")
 
     @classmethod
-    def subvert_object(cls, tone):
+    def subvert_object(cls, tone: Tone) -> Union[
+            Tuple[AbstractPitch, rhy.RhyUnit, rhy.RhyUnit],
+            Tuple[None, rhy.RhyUnit, rhy.RhyUnit]]:
         return tone.pitch, tone.delay, tone.duration
 
     @property
-    def freq(self):
+    def freq(self) -> Tuple[float, float, float]:
         return self.mel.freq
 
     def convert2music21(self):
@@ -123,7 +129,7 @@ class Ensemble(muobjects.MUDict):
 
 class ToneSet(muobjects.MUSet):
     @classmethod
-    def from_melody(cls, melody):
+    def from_melody(cls, melody: Melody) -> "ToneSet":
         new_set = cls()
         d = 0
         for t in melody.copy():
@@ -133,7 +139,7 @@ class ToneSet(muobjects.MUSet):
             new_set.add(t)
         return new_set
 
-    def pop_by(self, test, args):
+    def pop_by(self, test: Callable, args) -> "ToneSet":
         new_set = ToneSet()
         for arg in args:
             for t in self:
@@ -141,16 +147,16 @@ class ToneSet(muobjects.MUSet):
                     new_set.add(t)
         return new_set
 
-    def pop_by_pitch(self, *pitch):
+    def pop_by_pitch(self, *pitch) -> "ToneSet":
         return self.pop_by(lambda t, p: t.pitch == p, pitch)
 
-    def pop_by_duration(self, *duration):
+    def pop_by_duration(self, *duration) -> "ToneSet":
         return self.pop_by(lambda t, d: t.duration == d, duration)
 
-    def pop_by_start(self, *start):
+    def pop_by_start(self, *start) -> "ToneSet":
         return self.pop_by(lambda t, s: t.delay == s, start)
 
-    def convert2melody(self):
+    def convert2melody(self) -> Melody:
         sorted_by_delay = sorted(list(self.copy()), key=lambda t: t.delay)
         first = sorted_by_delay[0].delay
         if first != 0:

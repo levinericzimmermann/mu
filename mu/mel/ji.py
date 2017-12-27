@@ -7,9 +7,10 @@ from pyprimes import factors
 import functools
 import itertools
 import math
+from typing import Callable, List
 
 
-def comparable_bool_decorator(func):
+def comparable_bool_decorator(func: Callable) -> Callable:
     def wrap(*args, **kwargs):
         if Monzo.is_comparable(args[0], args[1]):
             return func(*args, **kwargs)
@@ -18,7 +19,7 @@ def comparable_bool_decorator(func):
     return wrap
 
 
-def comparable_monzo_decorator(func):
+def comparable_monzo_decorator(func: Callable) -> Callable:
     def wrap(*args, **kwargs):
         if Monzo.is_comparable(args[0], args[1]):
             return func(*args, **kwargs)
@@ -89,7 +90,7 @@ class Monzo:
         return (operation(x, y) for x, y in zip(iterable0, iterable1))
 
     @staticmethod
-    def adjust_ratio(r: Fraction, val_border=int) -> Fraction:
+    def adjust_ratio(r: Fraction, val_border: int) -> Fraction:
         if val_border > 1:
             while r > val_border:
                 r /= val_border
@@ -814,7 +815,7 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
 
 
 class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
-    def __init__(self, iterable, multiply=1):
+    def __init__(self, iterable: List[JIHarmony], multiply: int = 1) -> None:
         super(type(self), self).__init__(iterable)
         self.multiply = multiply
         self._val_border = 1
@@ -903,7 +904,7 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
     def dot_sum(self):
         return tuple(h.dot_sum() for h in self)
 
-    def count_repeats(self):
+    def count_repeats(self) -> int:
         repeats = 0
         for h0, h1 in zip(self, self[1:]):
             if h0 == h1:

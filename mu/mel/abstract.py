@@ -56,19 +56,19 @@ class AbstractPitch(abc.ABC):
                       for key, func in old_property}
         return type(c_name, bases, {**methods, **properties})
 
-    def __eq__(self, other):
+    def __eq__(self, other: "AbstractPitch") -> bool:
         try:
             return self.freq == other.freq
         except AttributeError:
             return False
 
-    def __lt__(self, other):
+    def __lt__(self, other: "AbstractPitch") -> bool:
         return self.freq < other.freq
 
-    def __gt__(self, other):
+    def __gt__(self, other: "AbstractPitch") -> bool:
         return self.freq > other.freq
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.freq)
 
     @staticmethod

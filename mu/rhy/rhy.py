@@ -2,6 +2,7 @@ from mu.time import time
 from mu.abstract import muobjects
 import abc
 import functools
+from typing import Union
 
 
 class AbstractRhythm(abc.ABC):
@@ -38,7 +39,7 @@ class RhyCompound(AbstractRhythm, muobjects.MUList):
     def flat(self):
         if self:
             return functools.reduce(
-                    lambda x, y: x + y, tuple(u.flat() for u in self))
+                lambda x, y: x + y, tuple(u.flat() for u in self))
         else:
             return RhyCompound([])
 
@@ -49,7 +50,7 @@ class RhyCompound(AbstractRhythm, muobjects.MUList):
     def stretch(self, arg):
         return RhyCompound(tuple(u.stretch(arg) for u in self))
 
-    def append(self, arg):
+    def append(self, arg: Union[int, RhyUnit]) -> None:
         if id(arg) == id(self):
             arg = arg.copy()
         list.append(self, arg)

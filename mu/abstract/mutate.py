@@ -1,7 +1,8 @@
 import functools
+from typing import Any, Dict, Tuple
 
 
-def execute_method(cls, method, args, kwargs):
+def execute_method(cls: Any, method: str, args: Tuple, kwargs: Dict) -> Any:
     if args and kwargs:
         return getattr(cls, method)(*args, **kwargs)
     elif args and not kwargs:
