@@ -10,7 +10,7 @@ class Mel(muobjects.MUList):
         return hash(tuple(hash(t) for t in self))
 
     def calc(self, factor=1) -> tuple:
-        return tuple(t.calc(self.multiply * factor) for t in self)
+        return tuple(t.calc(self.multiply * factor) for t in self if t)
 
     @property
     def freq(self) -> tuple:

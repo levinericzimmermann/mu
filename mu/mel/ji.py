@@ -161,6 +161,13 @@ class Monzo:
             v) - pyprimes.prime_count(self.val_border)
         self._val_shift += difference
 
+    def set_val_border(self, val_border):
+        """Return a new Monzo-Object
+        with a new val_border"""
+        copied = self.copy()
+        copied.val_border = val_border
+        return copied
+
     @property
     def ratio(self) -> Fraction:
         return Monzo.monzo2ratio(self, self.val, self.val_border)
@@ -454,6 +461,13 @@ class JIPitch(Monzo, abstract.AbstractPitch):
             self.identity_adjusted.scalar(self.lv),
             1, self.identity_adjusted.multiply)
 
+    def differential(self, other):
+        """calculates differential tone between pitch and other pitch"""
+        diff_ratio = abs((self.ratio * self.multiply) - (
+            other.ratio * other.multiply))
+        return type(self).from_ratio(
+            diff_ratio.numerator, diff_ratio.denominator)
+
 
 class JIContainer:
     def __init__(self, iterable, multiply=260):
@@ -481,8 +495,18 @@ class JIContainer:
             return 0
 
     def set_multiply(self, arg):
-        for t in self:
-            t.multiply = arg
+        """set the multiply - argument of
+        every containing pitch - element to
+        the input argument."""
+        for p in self:
+            p.multiply = arg
+
+    def set_muliplied_multiply(self, arg):
+        """set the multiply - argument of
+        every containing pitch - element to itself
+        multiplied with the input argument."""
+        for p in self:
+            p.multiply *= arg
 
     def show(self) -> tuple:
         r = tuple((r, p, round(f, 2))
@@ -521,6 +545,35 @@ class JIContainer:
             return summed.val[summed.index(max(summed))]
         else:
             return 1
+
+    def remove(self, pitch):
+        data = [p for p in self if p != pitch]
+        copied = type(self)(data, self.multiply)
+        copied.val_border = self.val_border
+        return copied
+
+    def find_by(self, pitch, compare_function):
+        """This method compares every pitch of a Container-Object
+        with the arguments pitch through the compare_function.
+        The compare_function shall return a float or integer number.
+        This float or integer number represents the fitness of the specific
+        pitch. The return-value is the pitch with the lowest fitness."""
+        result = tuple((p, compare_function(p, pitch)) for p in self)
+        if result:
+            result_sorted = sorted(result, key=lambda el: el[1])
+            return result_sorted[0][0]
+
+    def find_by_walk(self, pitch, compare_function):
+        """Iterative usage of the find_by - method. The input pitch
+        is the first argument, the resulting pitch is next input Argument etc.
+        until the Container might be empty."""
+        test_container = self.copy()
+        result = [pitch]
+        while len(test_container):
+            pitch = test_container.find_by(pitch, compare_function)
+            test_container = test_container.remove(pitch)
+            result.append(pitch)
+        return tuple(result)
 
 
 class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
@@ -562,6 +615,9 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
 
     def div(self, other: "JIMel"):
         return JIMel((m0 / m1 for m0, m1 in zip(self, other)))
+
+    def remove(self, pitch):
+        return JIContainer.remove(self, pitch)
 
     @property
     def val_border(self) -> int:
@@ -671,6 +727,9 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
 
     def calc(self, factor=1) -> tuple:
         return tuple(t.calc(self.multiply * factor) for t in self)
+
+    def remove(self, pitch):
+        return JIContainer.remove(self, pitch)
 
     @classmethod
     def mk_line_and_inverse(cls, reference, count):

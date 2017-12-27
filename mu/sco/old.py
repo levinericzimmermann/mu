@@ -1,7 +1,12 @@
+try:
+    import music21
+except ImportError:
+    music21 = False
 from mu.abstract import muobjects
 from mu.sco import abstract
 from mu.rhy import rhy
 from mu.mel import mel
+from mu.mel import ji
 
 
 class Tone(abstract.UniformEvent):
@@ -28,7 +33,7 @@ class Tone(abstract.UniformEvent):
 
 class Rest(Tone):
     def __init__(self, delay):
-        self._dur = delay
+        self._dur = 0
         self.delay = delay
 
     def __repr__(self):
@@ -64,6 +69,13 @@ class Melody(abstract.MultiSequentialEvent):
     def freq(self):
         return self.mel.freq
 
+    def convert2music21(self):
+        pass
+
+
+class JIMelody(Melody):
+    _sub_sequences_class = (ji.JIMel, rhy.RhyCompound, rhy.RhyCompound)
+
 
 class Cadence(abstract.MultiSequentialEvent):
     """A Cadence contains sequentially played Harmonies."""
@@ -82,6 +94,31 @@ class Cadence(abstract.MultiSequentialEvent):
 
 class Polyphon(abstract.SimultanEvent):
     pass
+
+
+class Instrument:
+    def __init__(self, name, pitches):
+        self.name = name
+        self.pitches = pitches
+
+    def __repr__(self):
+        return repr(self.name)
+
+    def copy(self):
+        return type(self)(self.name, self.pitches)
+
+
+class Ensemble(muobjects.MUDict):
+    melody_class = Melody
+
+    def get_instrument_by_pitch(self, pitch):
+        """return all Instruments, which could play the
+        asked pitch"""
+        possible = []
+        for instr in self:
+            if pitch in instr.pitches:
+                possible.append(instr.name)
+        return possible
 
 
 class ToneSet(muobjects.MUSet):

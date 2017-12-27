@@ -358,6 +358,16 @@ class JIPitchTest(unittest.TestCase):
         self.assertLess(t0, t2)
         self.assertGreater(t2, t1)
 
+    def test_differential_pitch(self):
+        p0 = ji.r(7, 4)
+        p1 = ji.r(4, 3)
+        p2 = ji.r(5, 12)
+        self.assertEqual(p0.differential(p1), p2)
+        self.assertEqual(p1.differential(p0), p2)
+        p0.multiply = 2
+        p3 = ji.r(13, 6)
+        self.assertEqual(p0.differential(p1), p3)
+
 
 class JIMelTest(unittest.TestCase):
     def test_math(self):
@@ -647,6 +657,47 @@ class JIMelTest(unittest.TestCase):
         p4 = ji.JIPitch((-2,), 2)
         test_mel0 = ji.JIMel([p0, p1, p2, p3, p4])
         self.assertEqual(test_mel0.dominant_prime, 3)
+
+    def test_remove(self):
+        p0 = ji.JIPitch((0, 1, -1), 2)
+        p1 = ji.JIPitch((0, 1,), 2)
+        p2 = ji.JIPitch((0, 0, 1), 2)
+        p3 = ji.JIPitch((0, 2,), 2)
+        p4 = ji.JIPitch((0, -2,), 2)
+        test_mel0 = ji.JIMel([p4, p0, p4, p1, p2, p3, p4])
+        test_mel1 = ji.JIMel([p0, p1, p2, p3])
+        test_mel2 = ji.JIMel([p4, p4, p1, p2, p3, p4])
+        self.assertEqual(test_mel0.remove(p4), test_mel1)
+        self.assertEqual(test_mel0.remove(p0), test_mel2)
+        test_mel0.val_border = 3
+        test_mel1.val_border = 3
+        p4.val_border = 3
+        self.assertEqual(test_mel0.remove(p4), test_mel1)
+
+    def test_find_by(self):
+        def summed_minus(p0, p1):
+            return (p0 - p1).summed()
+        p0 = ji.JIPitch((1, -1), 2)
+        p1 = ji.JIPitch((1,), 2)
+        p2 = ji.JIPitch((0, 1), 2)
+        p3 = ji.JIPitch((2,), 2)
+        p4 = ji.JIPitch((-2,), 2)
+        p5 = ji.JIPitch((-1,), 2)
+        test_mel0 = ji.JIMel([p0, p1, p2, p3, p4])
+        self.assertEqual(test_mel0.find_by(p0, summed_minus), p0)
+        self.assertEqual(test_mel0.find_by(p5, summed_minus), p4)
+
+    def test_find_by_walk(self):
+        def summed_minus(p0, p1):
+            return (p0 - p1).summed()
+        p0 = ji.JIPitch((1, -1), 2)
+        p1 = ji.JIPitch((1,), 2)
+        p2 = ji.JIPitch((0, 1), 2)
+        p3 = ji.JIPitch((2,), 2)
+        p4 = ji.JIPitch((-2,), 2)
+        test_mel0 = ji.JIMel([p0, p1, p2, p3, p4])
+        test_result = (p0, p0, p1, p3, p2, p4)
+        self.assertEqual(test_mel0.find_by_walk(p0, summed_minus), test_result)
 
 
 class JIHarmonyTest(unittest.TestCase):

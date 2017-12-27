@@ -12,3 +12,6 @@ class MUSet(mutate.mutate_class(set)):
 
 
 MUFloat = mutate.mutate_class(float)
+
+
+MUDict = mutate.mutate_class(dict)
