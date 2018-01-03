@@ -7,7 +7,7 @@ from pyprimes import factors
 import functools
 import itertools
 import math
-from typing import Callable, List
+from typing import (Callable, List, Type)
 
 
 def comparable_bool_decorator(func: Callable) -> Callable:
@@ -35,6 +35,20 @@ class Monzo:
         self._vector = Monzo._shift_vector(
             tuple(iterable), pyprimes.prime_count(val_border))
         self.val_border = val_border
+
+    @classmethod
+    def from_ratio(cls, num: int, den: int, val_border=1, multiply=1
+                   ) -> Type["Monzo"]:
+        obj = cls(cls.ratio2monzo(Fraction(num, den), cls._val_shift))
+        obj.val_border = val_border
+        obj.multiply = multiply
+        return obj
+
+    @classmethod
+    def from_monzo(cls, *arg, val_border=1, multiply=1) -> Type["Monzo"]:
+        obj = cls(arg, val_border)
+        obj.multiply = multiply
+        return obj
 
     def __getitem__(self, idx):
         res = self._vec[idx]
@@ -113,7 +127,7 @@ class Monzo:
         return Monzo.adjust_ratio(Fraction(numerator, denominator), val_border)
 
     @staticmethod
-    def ratio2monzo(ratio: Fraction, val_shift=0) -> "Monzo":
+    def ratio2monzo(ratio: Fraction, val_shift=0) -> Type["Monzo"]:
         gen_pos = factors.factors(ratio.numerator)
         gen_neg = factors.factors(ratio.denominator)
 
@@ -140,7 +154,7 @@ class Monzo:
         return tuple(m)
 
     @staticmethod
-    def gcd(*args):
+    def gcd(*args) -> int:
         return functools.reduce(math.gcd, args)
 
     @property
@@ -157,12 +171,12 @@ class Monzo:
                 len(self) + self._val_shift))[self._val_shift - 1]
 
     @val_border.setter
-    def val_border(self, v):
+    def val_border(self, v: int):
         difference = pyprimes.prime_count(
             v) - pyprimes.prime_count(self.val_border)
         self._val_shift += difference
 
-    def set_val_border(self, val_border):
+    def set_val_border(self, val_border: int) -> Type["Monzo"]:
         """Return a new Monzo-Object
         with a new val_border"""
         copied = self.copy()
@@ -218,14 +232,14 @@ class Monzo:
             vec, val_border=self.val_border) for vec in vectors)
 
     @property
-    def lv(self):
+    def lv(self) -> int:
         if self:
             return abs(Monzo.gcd(*tuple(filter(lambda x: x != 0, self))))
         else:
             return 1
 
     @property
-    def identity(self):
+    def identity(self) -> Type["Monzo"]:
         if self:
             filtered = type(self)([1 / self.lv] * len(self), self.val_border)
             monzo = tuple(int(x) for x in self * filtered)
@@ -250,8 +264,8 @@ class Monzo:
             return True
 
     @property
-    def virtual_root(self):
-        return JIPitch.from_ratio(1, self.ratio.denominator)
+    def virtual_root(self) -> Type["Monzo"]:
+        return type(self).from_ratio(1, self.ratio.denominator)
 
     @property
     def is_symmetric(self):
@@ -412,20 +426,6 @@ class JIPitch(Monzo, abstract.AbstractPitch):
     def copy(self) -> "JIPitch":
         return JIPitch(self, self.val_border, self.multiply)
 
-    @classmethod
-    def from_ratio(cls, num: int, den: int, val_border=1, multiply=1
-                   ) -> "JIPitch":
-        obj = cls(JIPitch.ratio2monzo(Fraction(num, den), cls._val_shift))
-        obj.val_border = val_border
-        obj.multiply = multiply
-        return obj
-
-    @classmethod
-    def from_monzo(cls, *arg, val_border=1, multiply=1) -> "JIPitch":
-        obj = cls(arg, val_border)
-        obj.multiply = multiply
-        return obj
-
     @property
     def identity_adjusted(self):
         """unstable, experimental method.
@@ -553,7 +553,7 @@ class JIContainer:
         copied.val_border = self.val_border
         return copied
 
-    def find_by(self, pitch, compare_function):
+    def find_by(self, pitch, compare_function) -> Type["JIPitch"]:
         """This method compares every pitch of a Container-Object
         with the arguments pitch through the compare_function.
         The compare_function shall return a float or integer number.
@@ -564,7 +564,7 @@ class JIContainer:
             result_sorted = sorted(result, key=lambda el: el[1])
             return result_sorted[0][0]
 
-    def find_by_walk(self, pitch, compare_function):
+    def find_by_walk(self, pitch, compare_function) -> Type["JIContainer"]:
         """Iterative usage of the find_by - method. The input pitch
         is the first argument, the resulting pitch is next input Argument etc.
         until the Container might be empty."""
@@ -574,7 +574,17 @@ class JIContainer:
             pitch = test_container.find_by(pitch, compare_function)
             test_container = test_container.remove(pitch)
             result.append(pitch)
-        return tuple(result)
+        return type(self)(result)
+
+
+class JIScale(JIPitch.mk_iterable(mel.Scale), JIContainer):
+    def __init__(self, period, periodsize):
+        mel.Scale.__init__(self, period, periodsize)
+
+    @property
+    def intervals(self):
+        plus_period = JIMel(self) + JIMel((self.periodsize,))
+        return JIMel.sub(plus_period[1:], plus_period[:-1])
 
 
 class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
@@ -589,7 +599,7 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
         return self.calc()
 
     @property
-    def intervals(self):
+    def intervals(self) -> "JIMel":
         """return intervals between single notes"""
         return self[1:].sub(self[:-1])
 
@@ -605,16 +615,16 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
             res.val_border = self.val_border
         return res
 
-    def add(self, other: "JIMel"):
+    def add(self, other: "JIMel") -> "JIMel":
         return JIMel((m0 + m1 for m0, m1 in zip(self, other)))
 
-    def sub(self, other: "JIMel"):
+    def sub(self, other: "JIMel") -> "JIMel":
         return JIMel((m0 - m1 for m0, m1 in zip(self, other)))
 
-    def mul(self, other: "JIMel"):
+    def mul(self, other: "JIMel") -> "JIMel":
         return JIMel((m0 * m1 for m0, m1 in zip(self, other)))
 
-    def div(self, other: "JIMel"):
+    def div(self, other: "JIMel") -> "JIMel":
         return JIMel((m0 / m1 for m0, m1 in zip(self, other)))
 
     def remove(self, pitch):

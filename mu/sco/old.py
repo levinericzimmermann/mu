@@ -1,8 +1,8 @@
-from typing import Callable, Optional, Tuple, Union
 try:
     import music21
 except ImportError:
     music21 = False
+from typing import Callable, Optional, Tuple, Union
 from mu.abstract import muobjects
 from mu.sco import abstract
 from mu.rhy import rhy

@@ -6,6 +6,11 @@ class MUList(mutate.mutate_class(list)):
         return type(self)(reversed(self))
 
 
+class MUTuple(mutate.mutate_class(tuple)):
+    def reverse(self) -> "MUTuple":
+        return type(self)(reversed(self))
+
+
 class MUSet(mutate.mutate_class(set)):
     def copy(self) -> "MUSet":
         return type(self)([t.copy() for t in self])
