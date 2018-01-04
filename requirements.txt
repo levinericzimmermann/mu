@@ -16,15 +16,20 @@
 # mu/sco/old.py: 6,7,8,9,10,11
 # mu/time/__init__.py: 1
 # mu/time/time.py: 1
+# tests/test_abstract_muobjects.py: 2
 # tests/test_mel_abstract.py: 2
 # tests/test_mel_edo.py: 2
 # tests/test_mel_ji.py: 2
 # tests/test_mel_mel.py: 2
 # tests/test_sco_abstract.py: 2
 # tests/test_sco_old.py: 2,3,4,5
+# mu == 0.0.2
 
-# mu/sco/old.py: 3
+# mu/sco/old.py: 2
 music21 == 4.1.0
+
+# mu/abstract/muobjects.py: 2
+orderedset == 2.0
 
 # mu/mel/ji.py: 5,6
 pyprimes == 0.2.2a0

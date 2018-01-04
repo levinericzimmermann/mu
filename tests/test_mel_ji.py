@@ -370,6 +370,15 @@ class JIPitchTest(unittest.TestCase):
 
 
 class JIScaleTest(unittest.TestCase):
+    def test_add(self):
+        scale0 = ji.JIScale([ji.r(1, 1), ji.r(9, 8), ji.r(4, 3),
+                             ji.r(3, 2), ji.r(7, 4)], ji.r(2, 1))
+        scale1 = ji.JIScale([ji.r(1, 1), ji.r(16, 15), ji.r(4, 3),
+                             ji.r(3, 2), ji.r(7, 4)], ji.r(2, 1))
+        scale2 = ji.JIScale([ji.r(1, 1), ji.r(16, 15), ji.r(9, 8), ji.r(4, 3),
+                             ji.r(3, 2), ji.r(7, 4)], ji.r(2, 1))
+        self.assertEqual(scale0 + scale1, scale2)
+
     def test_intervals(self):
         scale = ji.JIScale([ji.r(1, 1), ji.r(9, 8), ji.r(4, 3),
                             ji.r(3, 2), ji.r(7, 4)], ji.r(2, 1))
@@ -708,6 +717,16 @@ class JIMelTest(unittest.TestCase):
         test_mel0 = ji.JIMel([p0, p1, p2, p3, p4])
         test_result = ji.JIMel((p0, p0, p1, p3, p2, p4))
         self.assertEqual(test_mel0.find_by_walk(p0, summed_minus), test_result)
+
+    def test_uniqify(self):
+        p0 = ji.JIPitch((1, -1), 2)
+        p1 = ji.JIPitch((1,), 2)
+        p2 = ji.JIPitch((0, 1), 2)
+        p3 = ji.JIPitch((2,), 2)
+        p4 = ji.JIPitch((-2,), 2)
+        test_mel0 = ji.JIMel((p0, p1, p0, p2, p3, p2, p4, p0))
+        test_mel1 = ji.JIMel((p0, p1, p2, p3, p4))
+        self.assertEqual(test_mel0.uniqify(), test_mel1)
 
 
 class JIHarmonyTest(unittest.TestCase):

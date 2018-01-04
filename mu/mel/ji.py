@@ -576,15 +576,14 @@ class JIContainer:
             result.append(pitch)
         return type(self)(result)
 
+    def map(self, function):
+        return type(self)((function(x) for x in self))
 
-class JIScale(JIPitch.mk_iterable(mel.Scale), JIContainer):
-    def __init__(self, period, periodsize):
-        mel.Scale.__init__(self, period, periodsize)
+    def add_map(self, pitch):
+        return self.map(lambda x: x + pitch)
 
-    @property
-    def intervals(self):
-        plus_period = JIMel(self) + JIMel((self.periodsize,))
-        return JIMel.sub(plus_period[1:], plus_period[:-1])
+    def sub_map(self, pitch):
+        return self.map(lambda x: x - pitch)
 
 
 class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
@@ -920,6 +919,28 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
             if h0 == h1:
                 repeats += 1
         return repeats
+
+
+class JIScale(JIPitch.mk_iterable(mel.Scale), JIContainer):
+    _period_cls = JIMel
+
+    def __init__(self, period, periodsize):
+        mel.Scale.__init__(self, period, periodsize)
+
+    @property
+    def intervals(self):
+        plus_period = JIMel(self)
+        return JIMel.sub(plus_period[1:], plus_period[:-1])
+
+    def map(self, function):
+        return type(self)((function(x) for x in self.period),
+                          function(self.periodsize))
+
+    def index(self, item):
+        for c, x in enumerate(self):
+            if x == item:
+                return c
+        raise ValueError("x not in tuple")
 
 
 """

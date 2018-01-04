@@ -1,13 +1,6 @@
 from mu.abstract import muobjects
 from typing import Any
-
-
-class Scale(muobjects.MUTuple):
-    def __new__(cls, period, periodsize):
-        return muobjects.MUTuple.__new__(cls, period)
-
-    def __init__(self, period, periodsize):
-        self.periodsize = periodsize
+import collections
 
 
 class Mel(muobjects.MUList):
@@ -25,6 +18,10 @@ class Mel(muobjects.MUList):
     @property
     def freq(self) -> tuple:
         return self.calc()
+
+    def uniqify(self):
+        return type(self)(
+                collections.OrderedDict((x, True) for x in self).keys())
 
 
 class Harmony(muobjects.MUSet):
@@ -52,3 +49,21 @@ class Cadence(muobjects.MUList):
     @property
     def freq(self) -> tuple:
         return self.calc()
+
+
+class Scale(muobjects.MUOrderedSet):
+    _period_cls = Mel
+
+    def __init__(self, period, periodsize):
+        if not type(period) == self._period_cls:
+            period = self._period_cls(period)
+        period = period.sort().uniqify()
+        muobjects.MUOrderedSet.__init__(
+                self, period + self._period_cls((periodsize, )))
+        self.period = period
+        self.periodsize = periodsize
+
+    def __add__(self, other):
+        return type(self)(
+                tuple(self.period) + tuple(other.period),
+                max((self.periodsize, other.periodsize)))

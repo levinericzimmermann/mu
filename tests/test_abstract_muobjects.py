@@ -9,3 +9,4 @@ class AbstractTest(unittest.TestCase):
         assert(muobjects.MUDict({"hi": 10, "hey": 20}))
         assert(muobjects.MUFloat(2.429))
         assert(muobjects.MUTuple([1, 2, 3]))
+        assert(muobjects.MUOrderedSet([1, 2, 3]))
