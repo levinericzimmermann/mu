@@ -62,13 +62,11 @@ class TestMelodyConverter(unittest.TestCase):
         r_m21_0 = music21.m21.duration.Duration(2)
         t_mu_0 = old.Tone(p_mu_0, r_mu_0)
         t_m21_0 = music21.m21.note.Note(p_m21_0, r_m21_0)
-        stream0 = music21.m21.stream.Stream([t_m21_0])
         melody_mu_0 = old.Melody([t_mu_0, t_mu_0])
         melody_mu_0_converted = melody_mu_0.convert2music21()
-        melody_m21_0 = music21.m21.stream.Stream([stream0, stream0])
+        melody_m21_0 = music21.m21.stream.Stream([t_m21_0, t_m21_0])
         for t0, t1 in zip(melody_mu_0_converted, melody_m21_0):
-            for s0, s1 in zip(t0, t1):
-                self.assertEqual(s0, s1)
+            self.assertEqual(t0, t1)
 
 
 class TestPolyConverter(unittest.TestCase):

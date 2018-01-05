@@ -89,7 +89,8 @@ class Melody(abstract.MultiSequentialEvent):
         stream = music21.m21.stream.Stream()
         for t in self:
             m21_tone = t.convert2music21()
-            stream.append(m21_tone)
+            for sub in m21_tone:
+                stream.append(sub)
         return stream
 
     def __hash__(self):
