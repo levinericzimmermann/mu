@@ -81,7 +81,3 @@ class AbstractPitch(abc.ABC):
     @staticmethod
     def hz2ct(freq0, freq1):
         return 1200 * math.log(freq1 / freq0, 2)
-
-    @staticmethod
-    def ct2hz(ct):
-        pass

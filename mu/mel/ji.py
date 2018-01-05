@@ -500,14 +500,16 @@ class JIContainer:
         every containing pitch - element to
         the input argument."""
         for p in self:
-            p.multiply = arg
+            if p is not None:
+                p.multiply = arg
 
     def set_muliplied_multiply(self, arg):
         """set the multiply - argument of
         every containing pitch - element to itself
         multiplied with the input argument."""
         for p in self:
-            p.multiply *= arg
+            if p is not None:
+                p.multiply *= arg
 
     def show(self) -> tuple:
         r = tuple((r, p, round(f, 2))

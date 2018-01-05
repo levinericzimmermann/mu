@@ -33,19 +33,22 @@ class Tone(abstract.UniformEvent):
     @music21.decorator
     def convert2music21(self):
         stream = music21.m21.stream.Stream()
-        pitch = self.pitch.convert2music21()
         duration = self.duration.convert2music21()
-        stream.append(music21.m21.note.Note(pitch, duration))
-        difference = self.delay - self.duration
-        if difference != 0:
-            rhythm = rhy.RhyUnit(difference).convert2music21()
-            stream.append(music21.m21.note.Rest(rhythm))
+        if self.pitch is not None:
+            pitch = self.pitch.convert2music21()
+            stream.append(music21.m21.note.Note(pitch, duration=duration))
+            difference = self.delay - self.duration
+            if difference != 0:
+                rhythm = rhy.RhyUnit(difference).convert2music21()
+                stream.append(music21.m21.note.Rest(duration=rhythm))
+        else:
+            stream.append(music21.m21.note.Rest(duration=duration))
         return stream
 
 
 class Rest(Tone):
     def __init__(self, delay: rhy.RhyUnit) -> None:
-        self._dur = 0
+        self._dur = rhy.RhyUnit(0)
         self.delay = delay
 
     def __repr__(self):
@@ -159,13 +162,18 @@ class Ensemble(muobjects.MUDict):
 class ToneSet(muobjects.MUSet):
     @classmethod
     def from_melody(cls, melody: Melody) -> "ToneSet":
+        return cls.from_polyphon(Polyphon([melody]))
+
+    @classmethod
+    def from_polyphon(cls, polyphon: Polyphon) -> "ToneSet":
         new_set = cls()
         d = 0
-        for t in melody.copy():
-            delay = float(t.delay)
-            t.delay = rhy.RhyUnit(d)
-            d += delay
-            new_set.add(t)
+        for melody in polyphon:
+            for t in melody.copy():
+                delay = float(t.delay)
+                t.delay = rhy.RhyUnit(d)
+                d += delay
+                new_set.add(t)
         return new_set
 
     def pop_by(self, test: Callable, args) -> "ToneSet":
