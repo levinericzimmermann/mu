@@ -147,7 +147,7 @@ class MultiSequentialEvent(ComplexEvent):
         return self.mk_sequence() == other.mk_sequence()
 
 
-class SimultanEvent(ComplexEvent, muobjects.MUSet):
+class SimultanEvent(ComplexEvent, muobjects.MUList):
     @property
     def duration(self):
         return time.Time(max(tuple(element.duration for element in self)))

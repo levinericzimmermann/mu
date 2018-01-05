@@ -1,5 +1,6 @@
 from mu.time import time
 from mu.abstract import muobjects
+from mu.utils import music21
 import abc
 import functools
 from typing import Union
@@ -33,6 +34,10 @@ class RhyUnit(AbstractRhythm, time.Time):
 
     def stretch(self, arg):
         return RhyUnit(self * arg)
+
+    @music21.decorator
+    def convert2music21(self):
+        return music21.m21.duration.Duration(self)
 
 
 class RhyCompound(AbstractRhythm, muobjects.MUList):

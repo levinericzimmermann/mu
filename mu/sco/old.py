@@ -1,7 +1,3 @@
-try:
-    import music21
-except ImportError:
-    music21 = False
 from typing import Callable, Optional, Tuple, Union
 from mu.abstract import muobjects
 from mu.sco import abstract
@@ -9,6 +5,7 @@ from mu.rhy import rhy
 from mu.mel import mel
 from mu.mel import ji
 from mu.mel.abstract import AbstractPitch
+from mu.utils import music21
 
 
 class Tone(abstract.UniformEvent):
@@ -32,6 +29,18 @@ class Tone(abstract.UniformEvent):
 
     def copy(self) -> "Tone":
         return type(self)(self.pitch, self.delay, self.duration)
+
+    @music21.decorator
+    def convert2music21(self):
+        stream = music21.m21.stream.Stream()
+        pitch = self.pitch.convert2music21()
+        duration = self.duration.convert2music21()
+        stream.append(music21.m21.note.Note(pitch, duration))
+        difference = self.delay - self.duration
+        if difference != 0:
+            rhythm = rhy.RhyUnit(difference).convert2music21()
+            stream.append(music21.m21.note.Rest(rhythm))
+        return stream
 
 
 class Rest(Tone):
@@ -75,8 +84,16 @@ class Melody(abstract.MultiSequentialEvent):
     def freq(self) -> Tuple[float, float, float]:
         return self.mel.freq
 
+    @music21.decorator
     def convert2music21(self):
-        pass
+        stream = music21.m21.stream.Stream()
+        for t in self:
+            m21_tone = t.convert2music21()
+            stream.append(m21_tone)
+        return stream
+
+    def __hash__(self):
+        return hash(tuple(hash(t) for t in self))
 
 
 class JIMelody(Melody):
@@ -99,7 +116,18 @@ class Cadence(abstract.MultiSequentialEvent):
 
 
 class Polyphon(abstract.SimultanEvent):
-    pass
+    """A Container for Melody - Objects"""
+    @music21.decorator
+    def convert2music21(self):
+        score = music21.m21.stream.Score(id='mainScore')
+        measures = (music21.m21.stream.Measure(
+            m.convert2music21(), number=1)
+            for m in self)
+        parts = (music21.m21.stream.Part([measure], id='part{0}'.format(i))
+                 for i, measure in enumerate(measures))
+        for part in parts:
+            score.append(part)
+        return score
 
 
 class Instrument:

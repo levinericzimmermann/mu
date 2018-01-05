@@ -1,6 +1,7 @@
+from mu.abstract import mutate
+from mu.utils import music21
 import abc
 import math
-from mu.abstract import mutate
 
 
 def is_private(string: str) -> bool:
@@ -70,6 +71,12 @@ class AbstractPitch(abc.ABC):
 
     def __hash__(self) -> int:
         return hash(self.freq)
+
+    @music21.decorator
+    def convert2music21(self):
+        pitch_object = music21.m21.pitch.Pitch()
+        pitch_object.frequency = self.freq
+        return pitch_object
 
     @staticmethod
     def hz2ct(freq0, freq1):
