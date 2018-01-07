@@ -33,7 +33,8 @@ class AbstractPitch(abc.ABC):
         def method_decorator(func):
             def wrap(*args, **kwargs):
                 res = tuple(mutate.execute_method(
-                        f, func, args[1:], kwargs) for f in args[0])
+                        f, func, args[1:], kwargs) for f in args[0]
+                            if f is not None)
                 return adapt_result(args[0], cls, res)
             return wrap
 

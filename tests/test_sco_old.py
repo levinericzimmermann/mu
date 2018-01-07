@@ -101,11 +101,13 @@ class ToneSetTest(unittest.TestCase):
     t3_set = old.Tone(p3, rhy.RhyUnit(3), rhy.RhyUnit(1))
     t4_set = old.Tone(p4, rhy.RhyUnit(4), rhy.RhyUnit(1))
     t5_set = old.Tone(p5, rhy.RhyUnit(5), rhy.RhyUnit(1))
+    t6_set = old.Tone(p5, rhy.RhyUnit(1), rhy.RhyUnit(5))
     mel0 = old.Melody([t0, t1, t2, t3, t4, t5])
     mel1 = old.Melody([old.Rest(rhy.RhyUnit(1)), t1, t2, t3, t4, t5])
     mel2 = old.Melody([t0, t1])
     set0 = old.ToneSet([t0_set, t1_set, t2_set, t3_set, t4_set, t5_set])
     set1 = old.ToneSet([t1_set, t2_set, t3_set, t4_set, t5_set])
+    set2 = old.ToneSet([t1_set, t6_set, t2_set])
 
     def test_constructor(self):
         self.assertEqual(old.ToneSet.from_melody(ToneSetTest.mel0),
@@ -124,6 +126,20 @@ class ToneSetTest(unittest.TestCase):
         popped = ToneSetTest.set0.copy().pop_by_start(
             rhy.RhyUnit(0), rhy.RhyUnit(1))
         self.assertEqual(ToneSetTest.mel2, popped.convert2melody())
+
+    def test_pop_by_time(self):
+        for t in self.set0.pop_by_time(1):
+            self.assertEqual(t, self.t1_set)
+        for t in self.set0.pop_by_time(1.5):
+            self.assertEqual(t, self.t1_set)
+        test_set0 = self.set2.pop_by_time(1.5)
+        test_set_compare0 = old.ToneSet([self.t1_set,
+                                        self.t6_set])
+        test_set1 = self.set2.pop_by_time(2.7)
+        test_set_compare1 = old.ToneSet([self.t2_set,
+                                        self.t6_set])
+        self.assertEqual(test_set0, test_set_compare0)
+        self.assertEqual(test_set1, test_set_compare1)
 
 
 if __name__ == "__main__":

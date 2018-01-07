@@ -77,6 +77,9 @@ class MultiSequentialEvent(ComplexEvent):
     def __init__(self, iterable):
         self.sequences = type(self).subvert_iterable(iterable)
 
+    def __len__(self):
+        return len(self.mk_sequence())
+
     @abc.abstractclassmethod
     def subvert_object(cls, obj):
         raise NotImplementedError

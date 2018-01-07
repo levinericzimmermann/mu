@@ -12,8 +12,8 @@ class Mel(muobjects.MUList):
         return hash(tuple(hash(t) for t in self))
 
     def calc(self, factor: int = 1) -> tuple:
-        return tuple(t.calc(self.multiply * factor)
-                     if t is not None else None for t in self)
+        return tuple(p.calc(self.multiply * factor)
+                     if p is not None else None for p in self)
 
     @property
     def freq(self) -> tuple:

@@ -133,6 +133,14 @@ class Polyphon(abstract.SimultanEvent):
             score.append(part)
         return score
 
+    def chordify(self):
+        """
+        similar to music21.stream.Stream.chordify() - method:
+        Create a chordal reduction of polyphonic music, where each
+        change to a new pitch results in a new chord.
+        """
+        pass
+
 
 class Instrument:
     def __init__(self, name, pitches):
@@ -167,8 +175,8 @@ class ToneSet(muobjects.MUSet):
     @classmethod
     def from_polyphon(cls, polyphon: Polyphon) -> "ToneSet":
         new_set = cls()
-        d = 0
         for melody in polyphon:
+            d = 0
             for t in melody.copy():
                 delay = float(t.delay)
                 t.delay = rhy.RhyUnit(d)
@@ -192,6 +200,13 @@ class ToneSet(muobjects.MUSet):
 
     def pop_by_start(self, *start) -> "ToneSet":
         return self.pop_by(lambda t, s: t.delay == s, start)
+
+    def pop_by_time(self, *time) -> "ToneSet":
+        def test(tone, time):
+            start = tone.delay
+            duration = tone.duration
+            return time >= start and time < start + duration
+        return self.pop_by(test, time)
 
     def convert2melody(self) -> Melody:
         sorted_by_delay = sorted(list(self.copy()), key=lambda t: t.delay)

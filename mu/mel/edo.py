@@ -68,8 +68,9 @@ class EdoPitch(abstract.AbstractPitch):
         return self._concert_pitch / pow(self.factor,
                                          self._concert_pitch_shift)
 
-    def calc(self):
-        return (self.factor ** self.pitchclass) * self.multiply * self.p0
+    def calc(self, factor: float=1):
+        return (self.factor ** self.pitchclass
+                ) * self.multiply * self.p0 * factor
 
     @classmethod
     def mk_new_edo_class(cls, frame, steps, concert_pitch=None,
