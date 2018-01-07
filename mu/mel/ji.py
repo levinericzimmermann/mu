@@ -464,8 +464,7 @@ class JIPitch(Monzo, abstract.AbstractPitch):
 
     def differential(self, other):
         """calculates differential tone between pitch and other pitch"""
-        diff_ratio = abs((self.ratio * self.multiply) - (
-            other.ratio * other.multiply))
+        diff_ratio = abs(self.ratio - other.ratio)
         return type(self).from_ratio(
             diff_ratio.numerator, diff_ratio.denominator)
 
@@ -592,8 +591,8 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
     def __init__(self, iterable, multiply=260):
         JIContainer.__init__(self, iterable, multiply)
 
-    def calc(self, factor=1) -> tuple:
-        return tuple(t.calc(self.multiply * factor) for t in self)
+    def calc(self):
+        return mel.Mel.calc(self)
 
     @property
     def freq(self) -> tuple:
@@ -824,6 +823,16 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         return JIHarmony(functools.reduce(
             lambda x, y: x + y, tuple(tone.past + (tone,) for tone in self)))
 
+    @property
+    def differential(self):
+        harmony = type(self)([])
+        for p0 in self:
+            for p1 in self:
+                if p0 != p1:
+                    diff = p0.differential(p1)
+                    harmony.add(diff)
+        return harmony
+
 
 class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
     def __init__(self, iterable: List[JIHarmony], multiply: int = 1) -> None:
@@ -908,6 +917,10 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
     @property
     def adjusted_register(self):
         return type(self)([h.adjusted_register for h in self])
+
+    @property
+    def differential(self):
+        return type(self)([h.differential for h in self])
 
     def without_nulls(self):
         return type(self)(h for h in self if h)

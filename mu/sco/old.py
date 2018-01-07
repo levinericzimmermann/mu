@@ -62,13 +62,20 @@ class Rest(Tone):
 class Chord(abstract.SimultanEvent):
     """A Chord contains simultanly played Tones."""
 
-    def __init__(self, harmony, duration):
+    def __init__(self, harmony, delay: rhy.RhyUnit,
+                 duration: Optional[rhy.RhyUnit] = None) -> None:
+        if not duration:
+            duration = delay
         self.harmony = harmony
         self._dur = duration
+        self.delay = delay
 
     @property
     def duration(self):
         return self._dur
+
+    def __repr__(self):
+        return str((repr(self.harmony), repr(self.delay), repr(self.duration)))
 
 
 class Melody(abstract.MultiSequentialEvent):
@@ -107,16 +114,20 @@ class JIMelody(Melody):
 class Cadence(abstract.MultiSequentialEvent):
     """A Cadence contains sequentially played Harmonies."""
     _obj_class = Chord
-    _sub_sequences_class = (mel.Harmony, rhy.RhyCompound)
-    _sub_sequences_class_names = ("harmony", "rhy")
+    _sub_sequences_class = (mel.Cadence, rhy.RhyCompound, rhy.RhyCompound)
+    _sub_sequences_class_names = ("harmony", "rhy", "dur")
 
     @classmethod
     def subvert_object(cls, chord):
-        return chord.harmony, chord.duration
+        return chord.harmony, chord.delay, chord.duration
 
     @property
     def freq(self):
-        return self.mel.freq
+        return self.harmony.freq
+
+
+class JICadence(Cadence):
+    _sub_sequences_class = (ji.JICadence, rhy.RhyCompound, rhy.RhyCompound)
 
 
 class Polyphon(abstract.SimultanEvent):
@@ -133,13 +144,25 @@ class Polyphon(abstract.SimultanEvent):
             score.append(part)
         return score
 
-    def chordify(self):
+    def chordify(self, cadence_class=Cadence, harmony_class=mel.Harmony):
         """
         similar to music21.stream.Stream.chordify() - method:
         Create a chordal reduction of polyphonic music, where each
         change to a new pitch results in a new chord.
         """
-        pass
+        t_set = ToneSet.from_polyphon(self)
+        melody = t_set.convert2melody()
+        cadence = []
+        acc = 0
+        for t in melody:
+            if t.delay != 0:
+                harmony = t_set.pop_by_time(acc).convert2melody().mel
+                harmony = harmony_class(
+                        (p for p in harmony if p is not None))
+                new_chord = Chord(harmony, t.delay)
+                cadence.append(new_chord)
+                acc += t.delay
+        return cadence_class(cadence)
 
 
 class Instrument:

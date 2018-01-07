@@ -142,5 +142,30 @@ class ToneSetTest(unittest.TestCase):
         self.assertEqual(test_set1, test_set_compare1)
 
 
+class PolyTest(unittest.TestCase):
+    p0 = ji.r(5, 4)
+    p1 = ji.r(3, 2)
+    p2 = ji.r(1, 1)
+    p3 = ji.r(6, 5)
+    p4 = ji.r(7, 4)
+    p5 = ji.r(9, 8)
+    t0 = old.Tone(p0, rhy.RhyUnit(1))
+    t1 = old.Tone(p1, rhy.RhyUnit(1))
+    t2 = old.Tone(p2, rhy.RhyUnit(1))
+    t3 = old.Tone(p3, rhy.RhyUnit(1))
+    t3 = old.Tone(p3, rhy.RhyUnit(1))
+    t4 = old.Tone(p4, rhy.RhyUnit(1))
+    t5 = old.Tone(p5, rhy.RhyUnit(1))
+    melody0 = old.JIMelody((t0, t1))
+    melody1 = old.JIMelody((t2, t3))
+    poly0 = old.Polyphon([melody0, melody1])
+
+    def test_chordify(self):
+        chord0 = old.Chord(ji.JIHarmony([self.t0, self.t2]), rhy.RhyUnit(1))
+        chord1 = old.Chord(ji.JIHarmony([self.t1, self.t3]), rhy.RhyUnit(1))
+        cadence0 = old.Cadence([chord0, chord1])
+        self.assertEqual(cadence0, self.poly0.chordify())
+
+
 if __name__ == "__main__":
     unittest.main()
