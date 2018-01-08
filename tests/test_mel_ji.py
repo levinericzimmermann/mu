@@ -330,6 +330,10 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(p3.is_symmetric, False)
         self.assertEqual(p4.is_symmetric, True)
 
+    def test_sparsity(self):
+        m0 = ji.Monzo((0, 0, 1), val_border=1)
+        self.assertEqual(m0.sparsity, 2/3)
+
 
 class JIPitchTest(unittest.TestCase):
     def test_calc(self):

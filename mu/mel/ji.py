@@ -2,9 +2,11 @@ from mu.mel import abstract
 from mu.mel import mel
 from mu.abstract import muobjects
 from mu.utils import prime_factors
-from fractions import Fraction
+try:
+    from quicktions import Fraction
+except ImportError:
+    from fractions import Fraction
 import primesieve
-import primesieve.numpy
 import functools
 import itertools
 import math
@@ -160,7 +162,7 @@ class Monzo:
 
     @property
     def val(self) -> tuple:
-        return tuple(primesieve.numpy.n_primes(
+        return tuple(primesieve.n_primes(
             len(self) + self._val_shift))[self._val_shift:]
 
     @property
@@ -168,7 +170,7 @@ class Monzo:
         if self._val_shift == 0:
             return 1
         else:
-            return tuple(primesieve.numpy.n_primes(
+            return tuple(primesieve.n_primes(
                 len(self) + self._val_shift))[self._val_shift - 1]
 
     @val_border.setter
@@ -274,6 +276,18 @@ class Monzo:
         absolute = abs(self)
         maxima = max(absolute)
         return all(x == maxima for x in filter(lambda x: x != 0, absolute))
+
+    @property
+    def sparsity(self):
+        zero = 0
+        for i in self:
+            if i == 0:
+                zero += 1
+        return zero / len(self._vec)
+
+    @property
+    def density(self):
+        return 1 - self.sparsity
 
     @comparable_bool_decorator
     def is_related(self: "Monzo", other: "Monzo") -> bool:

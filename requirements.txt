@@ -33,9 +33,12 @@ music21 == 4.1.0
 # mu/abstract/muobjects.py: 2
 orderedset == 2.0
 
-# mu/mel/ji.py: 6,7
+# mu/mel/ji.py: 9
 # mu/utils/prime_factors.py: 1
 primesieve == 1.3.0
+
+# mu/mel/ji.py: 6
+quicktions == 1.5
 
 # setup.py: 1
 setuptools == 36.2.7

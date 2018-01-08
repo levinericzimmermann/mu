@@ -12,7 +12,7 @@ setup(
               'mu.mel', 'mu.sco', 'mu.utils'],
     setup_requires=[''],
     tests_require=['nosetests'],
-    install_requires=['pyprimes>= 0.2.2a0'],
+    install_requires=[''],
     extras_require={'Lilypond':  ["Music21>=4.1.0"]},
     python_requires='>=3.6'
 )
