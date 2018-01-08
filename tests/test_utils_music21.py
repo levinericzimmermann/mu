@@ -7,15 +7,31 @@ from mu.mel import ji
 
 class TestRhythmConverter(unittest.TestCase):
     def test_converter(self):
+        # TODO: test 1 / 3 or 1 / 5
         r_mu_0 = rhy.RhyUnit(2)
         r_m21_0 = music21.m21.duration.Duration(2)
         r_mu_1 = rhy.RhyUnit(3.5)
         r_m21_1 = music21.m21.duration.Duration(3.5)
         r_mu_2 = rhy.RhyUnit(1.5)
         r_m21_2 = music21.m21.duration.Duration(1.5)
+        r_mu_3 = rhy.RhyUnit(0.25)
+        r_m21_3 = music21.m21.duration.Duration(0.25)
+        r_mu_4 = rhy.RhyUnit(0.125)
+        r_m21_4 = music21.m21.duration.Duration(0.125)
+        r_mu_5 = rhy.RhyUnit(0.0625)
+        r_m21_5 = music21.m21.duration.Duration(0.0625)
+        r_mu_6 = rhy.RhyUnit(0.375)
+        r_m21_6 = music21.m21.duration.Duration(0.375)
+        r_mu_7 = rhy.RhyUnit(2.375)
+        r_m21_7 = music21.m21.duration.Duration(2.375)
         self.assertEqual(r_mu_0.convert2music21(), r_m21_0)
         self.assertEqual(r_mu_1.convert2music21(), r_m21_1)
         self.assertEqual(r_mu_2.convert2music21(), r_m21_2)
+        self.assertEqual(r_mu_3.convert2music21(), r_m21_3)
+        self.assertEqual(r_mu_4.convert2music21(), r_m21_4)
+        self.assertEqual(r_mu_5.convert2music21(), r_m21_5)
+        self.assertEqual(r_mu_6.convert2music21(), r_m21_6)
+        self.assertEqual(r_mu_7.convert2music21(), r_m21_7)
 
 
 class TestPitchConverter(unittest.TestCase):

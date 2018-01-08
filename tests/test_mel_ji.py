@@ -364,7 +364,7 @@ class JIPitchTest(unittest.TestCase):
         p2 = ji.r(5, 12)
         self.assertEqual(p0.differential(p1), p2)
         self.assertEqual(p1.differential(p0), p2)
-        p0.multiply = 2
+        p0 += ji.r(2, 1)
         p3 = ji.r(13, 6)
         self.assertEqual(p0.differential(p1), p3)
 

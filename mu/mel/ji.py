@@ -1,9 +1,10 @@
 from mu.mel import abstract
 from mu.mel import mel
 from mu.abstract import muobjects
+from mu.utils import prime_factors
 from fractions import Fraction
-import pyprimes
-from pyprimes import factors
+import primesieve
+import primesieve.numpy
 import functools
 import itertools
 import math
@@ -33,7 +34,7 @@ class Monzo:
 
     def __init__(self, iterable, val_border=1):
         self._vector = Monzo._shift_vector(
-            tuple(iterable), pyprimes.prime_count(val_border))
+            tuple(iterable), primesieve.count_primes(val_border))
         self.val_border = val_border
 
     @classmethod
@@ -128,20 +129,20 @@ class Monzo:
 
     @staticmethod
     def ratio2monzo(ratio: Fraction, val_shift=0) -> Type["Monzo"]:
-        gen_pos = factors.factors(ratio.numerator)
-        gen_neg = factors.factors(ratio.denominator)
+        gen_pos = prime_factors.factors(ratio.numerator)
+        gen_neg = prime_factors.factors(ratio.denominator)
 
-        biggest_prime = max(factors.factorise(
-            ratio.numerator) + factors.factorise(ratio.denominator))
-        monzo = [0] * pyprimes.prime_count(biggest_prime)
+        biggest_prime = max(prime_factors.factorise(
+            ratio.numerator) + prime_factors.factorise(ratio.denominator))
+        monzo = [0] * primesieve.count_primes(biggest_prime)
 
         for num, fac in gen_pos:
             if num > 1:
-                monzo[pyprimes.prime_count(num) - 1] += fac
+                monzo[primesieve.count_primes(num) - 1] += fac
 
         for num, fac in gen_neg:
             if num > 1:
-                monzo[pyprimes.prime_count(num) - 1] -= fac
+                monzo[primesieve.count_primes(num) - 1] -= fac
 
         return Monzo(monzo[val_shift:])
 
@@ -159,7 +160,7 @@ class Monzo:
 
     @property
     def val(self) -> tuple:
-        return tuple(pyprimes.nprimes(
+        return tuple(primesieve.numpy.n_primes(
             len(self) + self._val_shift))[self._val_shift:]
 
     @property
@@ -167,13 +168,13 @@ class Monzo:
         if self._val_shift == 0:
             return 1
         else:
-            return tuple(pyprimes.nprimes(
+            return tuple(primesieve.numpy.n_primes(
                 len(self) + self._val_shift))[self._val_shift - 1]
 
     @val_border.setter
     def val_border(self, v: int):
-        difference = pyprimes.prime_count(
-            v) - pyprimes.prime_count(self.val_border)
+        difference = primesieve.count_primes(
+            v) - primesieve.count_primes(self.val_border)
         self._val_shift += difference
 
     def set_val_border(self, val_border: int) -> Type["Monzo"]:
@@ -218,7 +219,8 @@ class Monzo:
 
     @property
     def primes(self) -> tuple:
-        p = factors.factorise(self.ratio.numerator * self.ratio.denominator)
+        p = prime_factors.factorise(
+            self.ratio.numerator * self.ratio.denominator)
         return tuple(sorted(tuple(set(p))))[self._val_shift:]
 
     @property
@@ -366,7 +368,7 @@ class Monzo:
 class MonzoFilter(Monzo):
     @staticmethod
     def mk_filter_vec(*prime):
-        numbers = tuple(pyprimes.prime_count(p) for p in prime)
+        numbers = tuple(primesieve.count_primes(p) for p in prime)
         iterable = [1] * max(numbers)
         for n in numbers:
             iterable[n - 1] = 0
@@ -388,7 +390,7 @@ class JIPitch(Monzo, abstract.AbstractPitch):
 
     def __init__(self, iterable, val_border=1, multiply=1):
         self._vector = tuple(Monzo._shift_vector(
-            iterable, pyprimes.prime_count(val_border)))
+            iterable, primesieve.count_primes(val_border)))
         self.val_border = val_border
         self.multiply = multiply
 
