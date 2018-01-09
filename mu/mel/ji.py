@@ -81,7 +81,7 @@ class Monzo:
     @staticmethod
     def _init_vector(iterable, val_border):
         return Monzo.discard_nulls(Monzo._shift_vector(
-            tuple(iterable), primesieve.count_primes(val_border)))
+            tuple(iterable), Monzo.count_primes(val_border)))
 
     @staticmethod
     def adjusted_monzos(m0, m1) -> tuple:
@@ -115,6 +115,20 @@ class Monzo:
             return r
 
     @staticmethod
+    def adjust_float(f: float, val_border: int) -> float:
+        if val_border > 1:
+            while f > val_border:
+                try:
+                    f /= val_border
+                except OverflowError:
+                    f //= val_border
+            while f < 1:
+                f *= val_border
+            return f
+        else:
+            return f
+
+    @staticmethod
     def discard_nulls(iterable):
         """discard all 0 after the last not 0 - element
         of an iterable"""
@@ -137,8 +151,7 @@ class Monzo:
             if exponent > 0:
                 numerator *= pow(number, exponent)
             elif exponent < 0:
-                exponent *= -1
-                denominator *= pow(number, exponent)
+                denominator *= pow(number, -exponent)
         return numerator, denominator
 
     @staticmethod
@@ -149,7 +162,11 @@ class Monzo:
     @staticmethod
     def monzo2float(monzo: tuple, val: tuple, val_border: int) -> float:
         num, den = Monzo.monzo2pair(monzo, val, val_border)
-        return Monzo.adjust_ratio(num / den, val_border)
+        try:
+            calc = num / den
+        except OverflowError:
+            calc = num // den
+        return Monzo.adjust_float(calc, val_border)
 
     @staticmethod
     def ratio2monzo(ratio: Fraction, val_shift=0) -> Type["Monzo"]:
@@ -158,25 +175,25 @@ class Monzo:
 
         biggest_prime = max(prime_factors.factorise(
             ratio.numerator) + prime_factors.factorise(ratio.denominator))
-        monzo = [0] * primesieve.count_primes(biggest_prime)
+        monzo = [0] * Monzo.count_primes(biggest_prime)
 
         for num, fac in gen_pos:
             if num > 1:
-                monzo[primesieve.count_primes(num) - 1] += fac
+                monzo[Monzo.count_primes(num) - 1] += fac
 
         for num, fac in gen_neg:
             if num > 1:
-                monzo[primesieve.count_primes(num) - 1] -= fac
+                monzo[Monzo.count_primes(num) - 1] -= fac
 
         return Monzo(monzo[val_shift:])
 
     @staticmethod
     def _shift_vector(vec, shiftval) -> tuple:
         if shiftval > 0:
-            m = [0] * shiftval + list(vec)
+            m = (0,) * shiftval + tuple(vec)
         else:
-            m = vec[abs(shiftval):]
-        return tuple(m)
+            m = tuple(vec[abs(shiftval):])
+        return m
 
     @staticmethod
     def gcd(*args) -> int:
@@ -199,6 +216,21 @@ class Monzo:
         else:
             return primesieve.n_primes(arg)
 
+    @staticmethod
+    def count_primes(arg):
+        if arg <= 70:
+            data = (0, 0, 1, 2, 2, 3, 3, 4, 4, 4,
+                    4, 5, 5, 6, 6, 6, 6, 7, 7, 8,
+                    8, 8, 8, 9, 9, 9, 9, 9, 9, 10,
+                    10, 11, 11, 11, 11, 11, 11, 12,
+                    12, 12, 12, 13, 13, 14, 14, 14,
+                    14, 15, 15, 15, 15, 15, 15, 16,
+                    16, 16, 16, 16, 16, 17, 17, 18,
+                    18, 18, 18, 18, 18, 19, 19, 19)
+            return data[arg]
+        else:
+            return primesieve.count_primes(arg)
+
     @property
     def val(self) -> tuple:
         return tuple(Monzo.n_primes(
@@ -214,8 +246,8 @@ class Monzo:
 
     @val_border.setter
     def val_border(self, v: int):
-        difference = primesieve.count_primes(
-            v) - primesieve.count_primes(self.val_border)
+        difference = Monzo.count_primes(
+            v) - Monzo.count_primes(self.val_border)
         self._val_shift += difference
 
     def set_val_border(self, val_border: int) -> Type["Monzo"]:
@@ -228,6 +260,22 @@ class Monzo:
     @property
     def ratio(self) -> Fraction:
         return Monzo.monzo2ratio(self, self.val, self.val_border)
+
+    @property
+    def numerator(self) -> int:
+        numerator = 1
+        for number, exponent in zip(self.val, self):
+            if exponent > 0:
+                numerator *= pow(number, exponent)
+        return numerator
+
+    @property
+    def denominator(self) -> int:
+        denominator = 1
+        for number, exponent in zip(self.val, self):
+            if exponent < 0:
+                denominator *= pow(number, -exponent)
+        return denominator
 
     @property
     def float(self) -> float:
@@ -421,7 +469,7 @@ class Monzo:
 class MonzoFilter(Monzo):
     @staticmethod
     def mk_filter_vec(*prime):
-        numbers = tuple(primesieve.count_primes(p) for p in prime)
+        numbers = tuple(Monzo.count_primes(p) for p in prime)
         iterable = [1] * max(numbers)
         for n in numbers:
             iterable[n - 1] = 0
@@ -601,8 +649,13 @@ class JIContainer:
         else:
             return 1
 
-    def remove(self, pitch):
-        data = [p for p in self if p != pitch]
+    def remove(self, *pitch):
+        def test_allowed(p, pitches):
+            for p1 in pitches:
+                if p1 == p:
+                    return False
+            return True
+        data = [p for p in self if test_allowed(p, pitch)]
         copied = type(self)(data, self.multiply)
         copied.val_border = self.val_border
         return copied
