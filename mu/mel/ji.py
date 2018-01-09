@@ -35,8 +35,7 @@ class Monzo:
     _val_shift = 0
 
     def __init__(self, iterable, val_border=1):
-        self._vector = Monzo._shift_vector(
-            tuple(iterable), primesieve.count_primes(val_border))
+        self._vector = Monzo._init_vector(iterable, val_border)
         self.val_border = val_border
 
     @classmethod
@@ -65,17 +64,7 @@ class Monzo:
 
     @property
     def _vec(self):
-        # TODO: replace ugly implementation
-        vec = self._vector[self._val_shift:]
-        c = 0
-        for i in reversed(vec):
-            if i == 0:
-                c += 1
-            else:
-                break
-        if c:
-            vec = vec[:-c]
-        return vec
+        return self._vector[self._val_shift:]
 
     def __repr__(self):
         return repr(self._vec)
@@ -83,8 +72,16 @@ class Monzo:
     def __len__(self):
         return len(self._vec)
 
+    def __bool__(self):
+        return bool(self._vec)
+
     def index(self, arg):
         return self._vec.index(arg)
+
+    @staticmethod
+    def _init_vector(iterable, val_border):
+        return Monzo.discard_nulls(Monzo._shift_vector(
+            tuple(iterable), primesieve.count_primes(val_border)))
 
     @staticmethod
     def adjusted_monzos(m0, m1) -> tuple:
@@ -118,7 +115,22 @@ class Monzo:
             return r
 
     @staticmethod
-    def monzo2ratio(monzo: tuple, val: tuple, val_border: int) -> Fraction:
+    def discard_nulls(iterable):
+        """discard all 0 after the last not 0 - element
+        of an iterable"""
+        # TODO: replace ugly implementation
+        c = 0
+        for i in reversed(iterable):
+            if i == 0:
+                c += 1
+            else:
+                break
+        if c is not 0:
+            return iterable[:-c]
+        return iterable
+
+    @staticmethod
+    def monzo2pair(monzo: tuple, val: tuple, val_border: int) -> tuple:
         numerator = 1
         denominator = 1
         for number, exponent in zip(val, monzo):
@@ -127,7 +139,17 @@ class Monzo:
             elif exponent < 0:
                 exponent *= -1
                 denominator *= pow(number, exponent)
-        return Monzo.adjust_ratio(Fraction(numerator, denominator), val_border)
+        return numerator, denominator
+
+    @staticmethod
+    def monzo2ratio(monzo: tuple, val: tuple, val_border: int) -> Fraction:
+        num, den = Monzo.monzo2pair(monzo, val, val_border)
+        return Monzo.adjust_ratio(Fraction(num, den), val_border)
+
+    @staticmethod
+    def monzo2float(monzo: tuple, val: tuple, val_border: int) -> float:
+        num, den = Monzo.monzo2pair(monzo, val, val_border)
+        return Monzo.adjust_ratio(num / den, val_border)
 
     @staticmethod
     def ratio2monzo(ratio: Fraction, val_shift=0) -> Type["Monzo"]:
@@ -160,9 +182,26 @@ class Monzo:
     def gcd(*args) -> int:
         return functools.reduce(math.gcd, args)
 
+    @staticmethod
+    def n_primes(arg):
+        """more efficient version of
+        n_primes. use saved primes if n <= 50"""
+        if arg <= 50:
+            primes = (2, 3, 5, 7, 11, 13,
+                      17, 19, 23, 29, 31, 37,
+                      41, 43, 47, 53, 59, 61, 67,
+                      71, 73, 79, 83, 89, 97, 101,
+                      103, 107, 109, 113, 127, 131,
+                      137, 139, 149, 151, 157, 163,
+                      167, 173, 179, 181, 191, 193,
+                      197, 199, 211, 223, 227, 229)
+            return primes[:arg]
+        else:
+            return primesieve.n_primes(arg)
+
     @property
     def val(self) -> tuple:
-        return tuple(primesieve.n_primes(
+        return tuple(Monzo.n_primes(
             len(self) + self._val_shift))[self._val_shift:]
 
     @property
@@ -170,7 +209,7 @@ class Monzo:
         if self._val_shift == 0:
             return 1
         else:
-            return tuple(primesieve.n_primes(
+            return tuple(Monzo.n_primes(
                 len(self) + self._val_shift))[self._val_shift - 1]
 
     @val_border.setter
@@ -192,7 +231,7 @@ class Monzo:
 
     @property
     def float(self) -> float:
-        return float(self.ratio)
+        return Monzo.monzo2float(self, self.val, self.val_border)
 
     @property
     def gender(self) -> bool:
@@ -403,9 +442,7 @@ class JIPitch(Monzo, abstract.AbstractPitch):
     multiply = 1
 
     def __init__(self, iterable, val_border=1, multiply=1):
-        self._vector = tuple(Monzo._shift_vector(
-            iterable, primesieve.count_primes(val_border)))
-        self.val_border = val_border
+        Monzo.__init__(self, iterable, val_border)
         self.multiply = multiply
 
     def __eq__(self, other) -> bool:
@@ -437,7 +474,7 @@ class JIPitch(Monzo, abstract.AbstractPitch):
         return abstract.AbstractPitch.__hash__(self)
 
     def calc(self, factor=1) -> float:
-        return float(self.ratio * self.multiply * factor)
+        return float(self.float * self.multiply * factor)
 
     def copy(self) -> "JIPitch":
         return JIPitch(self, self.val_border, self.multiply)
