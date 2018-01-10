@@ -661,6 +661,7 @@ class JIMelTest(unittest.TestCase):
         self.assertEqual(test_mel1.count_different_pitches(), 2)
         self.assertEqual(test_mel2.count_different_pitches(), 1)
         self.assertEqual(test_mel3.count_different_pitches(), 2)
+        self.assertEqual(test_mel3.count_different_pitches(), 2)
         test_mel3.val_border = 2
         self.assertEqual(test_mel3.count_different_pitches(), 1)
 

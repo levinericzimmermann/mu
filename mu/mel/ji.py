@@ -2,15 +2,15 @@ from mu.mel import abstract
 from mu.mel import mel
 from mu.abstract import muobjects
 from mu.utils import prime_factors
-try:
-    from quicktions import Fraction
-except ImportError:
-    from fractions import Fraction
 import primesieve
 import functools
 import itertools
 import math
 from typing import (Callable, List, Type)
+try:
+    from quicktions import Fraction
+except ImportError:
+    from fractions import Fraction
 
 
 def comparable_bool_decorator(func: Callable) -> Callable:
@@ -110,9 +110,7 @@ class Monzo:
                 r /= val_border
             while r < 1:
                 r *= val_border
-            return r
-        else:
-            return r
+        return r
 
     @staticmethod
     def adjust_float(f: float, val_border: int) -> float:
@@ -124,22 +122,18 @@ class Monzo:
                     f //= val_border
             while f < 1:
                 f *= val_border
-            return f
-        else:
-            return f
+        return f
 
     @staticmethod
     def discard_nulls(iterable):
         """discard all 0 after the last not 0 - element
         of an iterable"""
-        # TODO: replace ugly implementation
         c = 0
         for i in reversed(iterable):
-            if i == 0:
-                c += 1
-            else:
+            if i != 0:
                 break
-        if c is not 0:
+            c += 1
+        if c != 0:
             return iterable[:-c]
         return iterable
 
@@ -200,10 +194,10 @@ class Monzo:
         return functools.reduce(math.gcd, args)
 
     @staticmethod
-    def n_primes(arg):
+    def nth_prime(arg):
         """more efficient version of
         n_primes. use saved primes if n <= 50"""
-        if arg <= 50:
+        try:
             primes = (2, 3, 5, 7, 11, 13,
                       17, 19, 23, 29, 31, 37,
                       41, 43, 47, 53, 59, 61, 67,
@@ -212,12 +206,23 @@ class Monzo:
                       137, 139, 149, 151, 157, 163,
                       167, 173, 179, 181, 191, 193,
                       197, 199, 211, 223, 227, 229)
-            return primes[:arg]
+            return primes[arg]
+        except IndexError:
+            return primesieve.nth_prime(arg)
+
+    @staticmethod
+    def n_primes(arg):
+        """more efficient version of
+        n_primes. use saved primes if n <= 50"""
+        if arg <= 50:
+            return Monzo.nth_prime(slice(0, arg))
         else:
             return primesieve.n_primes(arg)
 
     @staticmethod
     def count_primes(arg):
+        """more efficient version of
+        count_primes. use saved primes if n <= 70"""
         if arg <= 70:
             data = (0, 0, 1, 2, 2, 3, 3, 4, 4, 4,
                     4, 5, 5, 6, 6, 6, 6, 7, 7, 8,
@@ -233,16 +238,15 @@ class Monzo:
 
     @property
     def val(self) -> tuple:
-        return tuple(Monzo.n_primes(
-            len(self) + self._val_shift))[self._val_shift:]
+        return Monzo.n_primes(
+            len(self) + self._val_shift)[self._val_shift:]
 
     @property
     def val_border(self) -> int:
         if self._val_shift == 0:
             return 1
         else:
-            return tuple(Monzo.n_primes(
-                len(self) + self._val_shift))[self._val_shift - 1]
+            return Monzo.nth_prime(self._val_shift - 1)
 
     @val_border.setter
     def val_border(self, v: int):
@@ -494,7 +498,14 @@ class JIPitch(Monzo, abstract.AbstractPitch):
         self.multiply = multiply
 
     def __eq__(self, other) -> bool:
-        return abstract.AbstractPitch.__eq__(self, other)
+        try:
+            vb = self.val_border
+            if other.val_border != vb:
+                other = other.set_val_border(vb)
+            return all((self.multiply == other.multiply,
+                       self._vec == other._vec))
+        except AttributeError:
+            return abstract.AbstractPitch.__eq__(self, other)
 
     def __repr__(self) -> str:
         return str(self.ratio)
@@ -627,7 +638,11 @@ class JIContainer:
         return d
 
     def summed_summed(self):
-        return functools.reduce(lambda x, y: x + y, self.summed())
+        summed = self.summed()
+        if summed:
+            return functools.reduce(lambda x, y: x + y, summed)
+        else:
+            return 0
 
     def count_root(self):
         return sum(map(lambda p: 1 if p.is_root else 0, self))
@@ -733,8 +748,8 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
     def div(self, other: "JIMel") -> "JIMel":
         return JIMel((m0 / m1 for m0, m1 in zip(self, other)))
 
-    def remove(self, pitch):
-        return JIContainer.remove(self, pitch)
+    def remove(self, *pitch):
+        return JIContainer.remove(self, *pitch)
 
     @property
     def val_border(self) -> int:
@@ -845,8 +860,8 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
     def calc(self, factor=1) -> tuple:
         return tuple(t.calc(self.multiply * factor) for t in self)
 
-    def remove(self, pitch):
-        return JIContainer.remove(self, pitch)
+    def remove(self, *pitch):
+        return JIContainer.remove(self, *pitch)
 
     @classmethod
     def mk_line_and_inverse(cls, reference, count):
@@ -1027,6 +1042,10 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
     @property
     def differential(self):
         return type(self)([h.differential for h in self])
+
+    @property
+    def avg_lv(self):
+        return tuple(h.avg_lv for h in self)
 
     def without_nulls(self):
         return type(self)(h for h in self if h)
