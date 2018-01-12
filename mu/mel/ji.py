@@ -85,6 +85,17 @@ class Monzo:
 
     @staticmethod
     def adjusted_monzos(m0, m1):
+        r"""
+        Adjust two Monzos, e.g. makes their length equal. The length of the
+        longer Monzo is the reference.
+            >>> m0 = (1, 0, -1)
+            >>> m1 = (1,)
+            >>> m0_adjusted, m1_adjusted = Monzo.adjusted_monzos(m0, m1)
+            >>> m0
+            (1, 0, -1)
+            >>> m1
+            (1, 0, 0)
+        """
         m0 = m0._vec
         m1 = m1._vec
         l0 = len(m0)
@@ -96,17 +107,57 @@ class Monzo:
 
     @staticmethod
     def is_comparable(m0: "Monzo", m1: "Monzo") -> bool:
+        r"""
+        Checks whether two Monzo - Objects are comparable,
+        e.g. have the same val_border.
+            >>> m0 = Monzo((1, 0, -1), val_border=1)
+            >>> m1 = Monzo((1,), val_border=2)
+            >>> m2 = Monzo((1, 0, -1), val_border=2)
+            >>> Monzo.is_comparable(m0, m1)
+            False
+            >>> Monzo.is_comparable(m1, m2)
+            True
+        """
         try:
             return m0._val_shift == m1._val_shift
         except AttributeError:
             return False
 
     @staticmethod
-    def calc_iterables(iterable0, iterable1, operation) -> iter:
+    def calc_iterables(iterable0: iter, iterable1: iter, operation) -> iter:
+        r"""
+        Return a new generator - object, whose elements are
+        the results of a input function ('operation'), applied on
+        every pair of zip(iterable0, iterable1).
+            >>> tuple0 = (1, 0, 2, 3)
+            >>> tuple1 = (2, 1, -3, 3)
+            >>> tuple2 = (4)
+            >>> plus = lambda x, y: x + y
+            >>> minus = lambda x, y: x - y
+            >>> Monzo.calc_iterables(tuple0, tuple1, plus)
+            <generator object <genexpr> at 0x7fb74d087468>
+            >>> tuple(Monzo.calc_iterables(tuple0, tuple1, plus))
+            (3, 1, -1, 6)
+            >>> tuple(Monzo.calc_iterables(tuple0, tuple1, minus))
+            (-1, -1, 5, 0)
+            >>> tuple(Monzo.calc_iterables(tuple0, tuple2, plus))
+            (5,)
+        """
         return (operation(x, y) for x, y in zip(iterable0, iterable1))
 
     @staticmethod
     def adjust_ratio(r: Fraction, val_border: int) -> Fraction:
+        r"""
+        Multiply / divide a Fraction - Object with the val_border - argument,
+        until it is equal or bigger than 1 and smaller than val_border.
+            >>> ratio0 = Fraction(1, 3)
+            >>> ratio1 = Fraction(8, 3)
+            >>> val_border = 2
+            >>> Monzo.adjust_ratio(ratio0, val_border)
+            Fraction(4, 3)
+            >>> Monzo.adjust_ratio(ratio1, val_border)
+            Fraction(4, 3)
+        """
         if val_border > 1:
             while r > val_border:
                 r /= val_border
@@ -116,6 +167,17 @@ class Monzo:
 
     @staticmethod
     def adjust_float(f: float, val_border: int) -> float:
+        r"""
+        Multiply / divide a float - Object with the val_border - argument,
+        until it is equal or bigger than 1 and smaller than val_border.
+            >>> float0 = 0.5
+            >>> float1 = 2
+            >>> val_border = 2
+            >>> Monzo.adjust_ratio(float0, val_border)
+            1
+            >>> Monzo.adjust_ratio(float1, val_border)
+            1
+        """
         if val_border > 1:
             while f > val_border:
                 try:
@@ -128,8 +190,17 @@ class Monzo:
 
     @staticmethod
     def discard_nulls(iterable):
-        """discard all 0 after the last not 0 - element
-        of an iterable"""
+        r"""
+        Discard all zeros after the last not 0 - element
+        of an arbitary iterable. Return a tuple.
+            >>> tuple0 = (1, 0, 2, 3, 0, 0, 0)
+            >>> ls = [1, 3, 5, 0, 0, 0, 2, 0]
+            >>> Monzo.discard_nulls(tuple0)
+            (1, 0, 2, 3)
+            >>> Monzo.discard_nulls(ls)
+            (1, 3, 5, 0, 0, 0, 2)
+        """
+        iterable = tuple(iterable)
         c = 0
         for i in reversed(iterable):
             if i != 0:
@@ -197,8 +268,8 @@ class Monzo:
 
     @staticmethod
     def nth_prime(arg):
-        """more efficient version of
-        n_primes. use saved primes if n <= 50"""
+        """More efficient version of
+        nth_prime. Use saved primes if arg <= 50."""
         try:
             primes = (2, 3, 5, 7, 11, 13,
                       17, 19, 23, 29, 31, 37,
@@ -214,7 +285,7 @@ class Monzo:
 
     @staticmethod
     def n_primes(arg):
-        """more efficient version of
+        """More efficient version of
         n_primes. use saved primes if n <= 50"""
         if arg <= 50:
             return Monzo.nth_prime(slice(0, arg))
@@ -223,7 +294,7 @@ class Monzo:
 
     @staticmethod
     def count_primes(arg):
-        """more efficient version of
+        """More efficient version of
         count_primes. use saved primes if n <= 70"""
         if arg <= 70:
             data = (0, 0, 1, 2, 2, 3, 3, 4, 4, 4,
@@ -589,7 +660,7 @@ class JIContainer:
         return self[0].val_border
 
     @val_border.setter
-    def val_border(self, arg) -> None:
+    def val_border(self, arg: int) -> None:
         self._val_border = arg
         shift_val = Monzo.count_primes(arg)
         for f in self:
@@ -614,7 +685,7 @@ class JIContainer:
         else:
             return 0
 
-    def set_multiply(self, arg):
+    def set_multiply(self, arg: float):
         """set the multiply - argument of
         every containing pitch - element to
         the input argument."""
@@ -622,7 +693,7 @@ class JIContainer:
             if p is not None:
                 p.multiply = arg
 
-    def set_muliplied_multiply(self, arg):
+    def set_muliplied_multiply(self, arg: float):
         """set the multiply - argument of
         every containing pitch - element to itself
         multiplied with the input argument."""
@@ -898,7 +969,10 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
 
     @property
     def val_border(self) -> int:
-        return JIContainer.val_border.__get__(self)
+        if self:
+            for p in self:
+                return p.val_border
+        return 1
 
     @val_border.setter
     def val_border(self, arg) -> None:
