@@ -84,13 +84,15 @@ class Monzo:
             tuple(iterable), Monzo.count_primes(val_border)))
 
     @staticmethod
-    def adjusted_monzos(m0, m1) -> tuple:
-        m0, m1 = list(m0), list(m1)
-        while len(m1) < len(m0):
-            m1.append(0)
-        while len(m0) < len(m1):
-            m0.append(0)
-        return tuple(m0), tuple(m1)
+    def adjusted_monzos(m0, m1):
+        m0 = m0._vec
+        m1 = m1._vec
+        l0 = len(m0)
+        l1 = len(m1)
+        if l0 > l1:
+            return m0, m1 + (0,) * (l0 - l1)
+        else:
+            return m0 + (0,) * (l1 - l0), m1
 
     @staticmethod
     def is_comparable(m0: "Monzo", m1: "Monzo") -> bool:
@@ -250,9 +252,7 @@ class Monzo:
 
     @val_border.setter
     def val_border(self, v: int):
-        difference = Monzo.count_primes(
-            v) - Monzo.count_primes(self.val_border)
-        self._val_shift += difference
+        self._val_shift = Monzo.count_primes(v)
 
     def set_val_border(self, val_border: int) -> Type["Monzo"]:
         """Return a new Monzo-Object
@@ -499,11 +499,8 @@ class JIPitch(Monzo, abstract.AbstractPitch):
 
     def __eq__(self, other) -> bool:
         try:
-            vb = self.val_border
-            if other.val_border != vb:
-                other = other.set_val_border(vb)
             return all((self.multiply == other.multiply,
-                       self._vec == other._vec))
+                        self._vec == other._vector[self._val_shift:]))
         except AttributeError:
             return abstract.AbstractPitch.__eq__(self, other)
 
@@ -586,6 +583,17 @@ class JIContainer:
         super(type(self), self).__init__(iterable)
         self.multiply = multiply
         self._val_border = 1
+
+    @property
+    def val_border(self) -> int:
+        return self[0].val_border
+
+    @val_border.setter
+    def val_border(self, arg) -> None:
+        self._val_border = arg
+        shift_val = Monzo.count_primes(arg)
+        for f in self:
+            f._val_shift = shift_val
 
     @classmethod
     def mk_line(cls, reference, count):
@@ -753,13 +761,15 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
 
     @property
     def val_border(self) -> int:
+        # TODO: inherit method from superclass
         return self[0].val_border
 
     @val_border.setter
     def val_border(self, arg) -> None:
-        for f in self:
-            f.val_border = arg
         self._val_border = arg
+        shift_val = Monzo.count_primes(arg)
+        for f in self:
+            f._val_shift = shift_val
 
     @property
     def pitch_rate(self):
@@ -897,9 +907,10 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
 
     @val_border.setter
     def val_border(self, arg) -> None:
-        for f in self:
-            f.val_border = arg
         self._val_border = arg
+        shift_val = Monzo.count_primes(arg)
+        for f in self:
+            f._val_shift = shift_val
 
     def converted2root(self):
         root = self.root

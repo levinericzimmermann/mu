@@ -6,6 +6,7 @@ from mu.mel import mel
 from mu.mel import ji
 from mu.mel.abstract import AbstractPitch
 from mu.utils import music21
+from mu.time import time
 
 
 class Tone(abstract.UniformEvent):
@@ -14,8 +15,8 @@ class Tone(abstract.UniformEvent):
         if not duration:
             duration = delay
         self.pitch = pitch
-        self._dur = duration
-        self.delay = delay
+        self._dur = rhy.RhyUnit(duration)
+        self.delay = rhy.RhyUnit(delay)
 
     def __hash__(self) -> int:
         return hash((self.pitch, self.delay, self.duration))
@@ -77,6 +78,23 @@ class Chord(abstract.SimultanEvent):
     def __repr__(self):
         return str((repr(self.harmony), repr(self.delay), repr(self.duration)))
 
+    @music21.decorator
+    def convert2music21(self):
+        stream = music21.m21.stream.Stream()
+        pitches = tuple(p.convert2music21() for p in self.harmony)
+        duration = self.duration.convert2music21()
+        if pitches:
+            chord = music21.m21.chord.Chord(pitches,
+                                            duration=duration)
+        else:
+            chord = music21.m21.note.Rest(duration=duration)
+        stream.append(chord)
+        difference = self.delay - self.duration
+        if difference != 0:
+            rhythm = rhy.RhyUnit(difference).convert2music21()
+            stream.append(music21.m21.note.Rest(duration=rhythm))
+        return stream
+
 
 class Melody(abstract.MultiSequentialEvent):
     """A Melody contains sequentially played Pitches."""
@@ -93,6 +111,10 @@ class Melody(abstract.MultiSequentialEvent):
     @property
     def freq(self) -> Tuple[float, float, float]:
         return self.mel.freq
+
+    @property
+    def duration(self):
+        return time.Time(sum(element.delay for element in self))
 
     @music21.decorator
     def convert2music21(self):
@@ -124,6 +146,15 @@ class Cadence(abstract.MultiSequentialEvent):
     @property
     def freq(self):
         return self.harmony.freq
+
+    @music21.decorator
+    def convert2music21(self):
+        stream = music21.m21.stream.Stream()
+        for c in self:
+            m21_chord = c.convert2music21()
+            for sub in m21_chord:
+                stream.append(sub)
+        return stream
 
 
 class JICadence(Cadence):
@@ -158,11 +189,27 @@ class Polyphon(abstract.SimultanEvent):
             if t.delay != 0:
                 harmony = t_set.pop_by_time(acc).convert2melody().mel
                 harmony = harmony_class(
-                        (p for p in harmony if p is not None))
+                    (p for p in harmony if p is not None))
                 new_chord = Chord(harmony, t.delay)
                 cadence.append(new_chord)
                 acc += t.delay
         return cadence_class(cadence)
+
+    def fill(self):
+        """
+        Add Rests to all Voices, which stop earlier than the
+        longest voice, so that
+        sum(Polyphon[0].rhy) == sum(Polyphon[1].rhy) == ...
+        """
+        total = self.duration
+        for v in self:
+            summed = sum(v.rhy)
+            if summed < total:
+                v.append(Rest(rhy.RhyUnit(total - summed)))
+
+        @property
+        def duration(self):
+            return time.Time(max(tuple(sum(element.dur) for element in self)))
 
 
 class Instrument:
