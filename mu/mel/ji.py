@@ -761,15 +761,11 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
 
     @property
     def val_border(self) -> int:
-        # TODO: inherit method from superclass
-        return self[0].val_border
+        return JIContainer.val_border.__get__(self)
 
     @val_border.setter
     def val_border(self, arg) -> None:
-        self._val_border = arg
-        shift_val = Monzo.count_primes(arg)
-        for f in self:
-            f._val_shift = shift_val
+        JIContainer.val_border.__set__(self, arg)
 
     @property
     def pitch_rate(self):
@@ -902,15 +898,11 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
 
     @property
     def val_border(self) -> int:
-        for x in self:
-            return x.val_border
+        return JIContainer.val_border.__get__(self)
 
     @val_border.setter
     def val_border(self, arg) -> None:
-        self._val_border = arg
-        shift_val = Monzo.count_primes(arg)
-        for f in self:
-            f._val_shift = shift_val
+        JIContainer.val_border.__set__(self, arg)
 
     def converted2root(self):
         root = self.root
@@ -974,13 +966,11 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
 
     @property
     def val_border(self) -> int:
-        return self[0].val_border
+        return JIContainer.val_border.__get__(self)
 
     @val_border.setter
     def val_border(self, arg) -> None:
-        for f in self:
-            f.val_border = arg
-        self._val_border = arg
+        JIContainer.val_border.__set__(self, arg)
 
     @property
     def root(self):
