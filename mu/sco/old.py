@@ -177,7 +177,7 @@ class Polyphon(abstract.SimultanEvent):
 
     def chordify(self, cadence_class=Cadence, harmony_class=mel.Harmony):
         """
-        similar to music21.stream.Stream.chordify() - method:
+        Similar to music21.stream.Stream.chordify() - method:
         Create a chordal reduction of polyphonic music, where each
         change to a new pitch results in a new chord.
         """

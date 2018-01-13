@@ -6,6 +6,7 @@ import primesieve
 import functools
 import itertools
 import math
+import json
 from typing import (Callable, List, Type)
 try:
     from quicktions import Fraction
@@ -51,6 +52,26 @@ class Monzo:
         obj = cls(arg, val_border)
         obj.multiply = multiply
         return obj
+
+    @classmethod
+    def from_json(cls, data) -> Type["Monzo"]:
+        arg = data[0]
+        val_border = data[1]
+        obj = cls(arg, val_border)
+        return obj
+
+    @classmethod
+    def load_json(cls, name: str) -> Type["Monzo"]:
+        with open(name, "r") as f:
+            encoded = json.loads(f.read())
+        return cls.from_json(encoded)
+
+    def convert2json(self):
+        return json.dumps((self._vec, self.val_border))
+
+    def export2json(self, name: str):
+        with open(name, "w") as f:
+            f.write(self.convert2json())
 
     def __getitem__(self, idx):
         res = self._vec[idx]
@@ -367,8 +388,7 @@ class Monzo:
             elif maxima <= 0 and minima < 0 or (
                     minima < 0 and self.index(minima) > self.index(maxima)):
                 return False
-        else:
-            return True
+        return True
 
     @property
     def harmonic(self) -> int:
@@ -465,10 +485,6 @@ class Monzo:
         else:
             return False
 
-    @comparable_bool_decorator
-    def __eq__(self: "Monzo", other: "Monzo") -> bool:
-        return tuple.__eq__(self._vec, other._vec)
-
     def summed(self) -> int:
         return sum(map(lambda x: abs(x), self))
 
@@ -493,6 +509,9 @@ class Monzo:
     def __math(self, other, operation) -> "Monzo":
         m0, m1 = Monzo.adjusted_monzos(self, other)
         return Monzo(Monzo.calc_iterables(m0, m1, operation), self.val_border)
+
+    def __eq__(self: "Monzo", other: "Monzo") -> bool:
+        return tuple.__eq__(self._vector, other._vector)
 
     def __add__(self, other: "Monzo") -> "Monzo":
         return self.__math(other, lambda x, y: x + y)
@@ -606,6 +625,21 @@ class JIPitch(Monzo, abstract.AbstractPitch):
     def copy(self) -> "JIPitch":
         return JIPitch(self, self.val_border, self.multiply)
 
+    @classmethod
+    def from_json(cls, data) -> Type["JIPitch"]:
+        arg = data[0]
+        val_border = data[1]
+        try:
+            multiply = data[2]
+        except IndexError:
+            multiply = 1
+        obj = cls(arg, val_border)
+        obj.multiply = multiply
+        return obj
+
+    def convert2json(self):
+        return json.dumps((self._vec, self.val_border, self.multiply))
+
     @property
     def identity_adjusted(self):
         """unstable, experimental method.
@@ -684,6 +718,28 @@ class JIContainer:
             return sum(p.lv for p in self) / len(self)
         else:
             return 0
+
+    @staticmethod
+    def from_json(cls, data):
+        iterable = data[0]
+        multiply = data[1]
+        obj = cls(tuple(JIPitch.from_json(p) for p in iterable))
+        obj.multiply = multiply
+        return obj
+
+    def convert2json(self):
+        return json.dumps((tuple((p._vec, p.val_border, p.multiply)
+                                 for p in self), self.multiply))
+
+    @staticmethod
+    def load_json(cls, name: str):
+        with open(name, "r") as f:
+            encoded = json.loads(f.read())
+        return cls.from_json(encoded)
+
+    def export2json(self, name: str):
+        with open(name, "w") as f:
+            f.write(self.convert2json())
 
     def set_multiply(self, arg: float):
         """set the multiply - argument of
@@ -790,6 +846,20 @@ class JIContainer:
 class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
     def __init__(self, iterable, multiply=260):
         JIContainer.__init__(self, iterable, multiply)
+
+    @classmethod
+    def from_json(cls, js):
+        return JIContainer.from_json(cls, js)
+
+    def convert2json(self):
+        return JIContainer.convert2json(self)
+
+    @classmethod
+    def load_json(cls, name: str):
+        return JIContainer.load_json(cls, name)
+
+    def export2json(self, name: str):
+        return JIContainer.export2json(self, name)
 
     def calc(self):
         return mel.Mel.calc(self)
@@ -920,19 +990,67 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
     def __init__(self, iterable, multiply=260):
         return JIContainer.__init__(self, iterable, multiply)
 
+    @classmethod
+    def from_json(cls, js):
+        return JIContainer.from_json(cls, js)
+
+    def convert2json(self):
+        return JIContainer.convert2json(self)
+
+    @classmethod
+    def load_json(cls, name: str):
+        return JIContainer.load_json(cls, name)
+
+    def export2json(self, name: str):
+        return JIContainer.export2json(self, name)
+
     @property
     def intervals(self):
         """return all present intervals between single notes"""
+        data = tuple(self)
         intervals = JIHarmony([])
-        for p0 in self:
-            for p1 in self:
-                if p0 != p1:
-                    if p0 > p1:
-                        interval = p0 - p1
-                    else:
-                        interval = p1 - p0
-                        intervals.add(interval)
+        for i, p0 in enumerate(data):
+            for p1 in data[i + 1:]:
+                if p1 > p0:
+                    interval = p1 - p0
+                else:
+                    interval = p0 - p1
+                intervals.add(interval)
         return intervals
+
+    def dot(self: "JIHarmony", other: "JIHarmony") -> int:
+        """
+        Calculates dot _ product between every Pitch of itself with every
+        Pitch of the other JIHarmony - Objects and accumulates the results.
+        """
+        h0 = self.copy()
+        h0._val_shift = 1
+        h1 = other.copy()
+        h1._val_shift = 1
+        acc = 0
+        for p0 in h0:
+            for p1 in h1:
+                acc += p0.dot(p1)
+        return acc
+
+    def diff(self: "JIHarmony", other: "JIHarmony") -> float:
+        """
+        Calculates difference between two Harmony - Objects.
+        Return a float - value.
+        """
+        h0 = self.copy()
+        h0._val_shift = 1
+        h1 = other.copy()
+        h1._val_shift = 1
+        diff = r(1, 1)
+        length = len(h0) + len(h1)
+        if length != 0:
+            for p0 in h0:
+                for p1 in h1:
+                    diff += p0 - p1
+            return diff.summed() / length
+        else:
+            return 0.0
 
     def calc(self, factor=1) -> tuple:
         return tuple(t.calc(self.multiply * factor) for t in self)
@@ -1037,6 +1155,22 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
         super(type(self), self).__init__(iterable)
         self.multiply = multiply
         self._val_border = 1
+
+    @classmethod
+    def from_json(cls, data):
+        return cls([JIHarmony.from_json(h) for h in data])
+
+    def convert2json(self):
+        return json.dumps(tuple((tuple(
+            (p._vec, p.val_border, p.multiply)
+            for p in chord), chord.multiply) for chord in self))
+
+    @classmethod
+    def load_json(cls, name: str):
+        return JIContainer.load_json(cls, name)
+
+    def export2json(self, name: str):
+        return JIContainer.export2json(self, name)
 
     @property
     def val_border(self) -> int:
