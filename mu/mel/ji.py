@@ -129,7 +129,7 @@ class Monzo:
     @staticmethod
     def is_comparable(m0: "Monzo", m1: "Monzo") -> bool:
         r"""
-        Checks whether two Monzo - Objects are comparable,
+        Check whether two Monzo - Objects are comparable,
         e.g. have the same val_border.
             >>> m0 = Monzo((1, 0, -1), val_border=1)
             >>> m1 = Monzo((1,), val_border=2)
@@ -232,7 +232,24 @@ class Monzo:
         return iterable
 
     @staticmethod
-    def monzo2pair(monzo: tuple, val: tuple, val_border: int) -> tuple:
+    def monzo2pair(monzo: tuple, val: tuple) -> tuple:
+        r"""
+        Transform a Monzo to a (numerator, denominator) - pair
+        (two element tuple).
+        Arguments are:
+            * Monzo -> The exponents of prime numbers
+            * Val -> the referring prime numbers
+            >>> myMonzo0 = (1, 0, -1)
+            >>> myMonzo1 = (0, 2, 0)
+            >>> myVal0 = (2, 3, 5)
+            >>> myVal1 = (3, 5, 7)
+            >>> Monzo.monzo2pair(myMonzo0, myVal0)
+            (2, 5)
+            >>> Monzo.monzo2pair(myMonzo0, myVal1)
+            (3, 7)
+            >>> Monzo.monzo2pair(myMonzo1, myVal1)
+            (25, 1)
+        """
         numerator = 1
         denominator = 1
         for number, exponent in zip(val, monzo):
@@ -243,13 +260,73 @@ class Monzo:
         return numerator, denominator
 
     @staticmethod
-    def monzo2ratio(monzo: tuple, val: tuple, val_border: int) -> Fraction:
-        num, den = Monzo.monzo2pair(monzo, val, val_border)
+    def monzo2ratio(monzo: tuple, _val: tuple, _val_shift: int) -> Fraction:
+        r"""
+        Transform a Monzo to a Fraction - Object
+        (if installed to a quicktions.Fraction - Object,
+        otherwise to a fractions.Fraction - Object).
+        Arguments are:
+            * Monzo -> The exponents of prime numbers
+            * _val -> the referring prime numbers for the underlying
+                      ._vector - Argument (see Monzo._vector).
+            * _val-shift -> how many prime numbers shall be skipped
+                            (see Monzo._val_shift)
+            >>> myMonzo0 = (1, 0, -1)
+            >>> myMonzo1 = (0, 2, 0)
+            >>> myVal0 = (2, 3, 5)
+            >>> myVal1 = (2, 3, 5, 7)
+            >>> myValShift0 = 0
+            >>> myValShift1 = 1
+            >>> Monzo.monzo2ratio(myMonzo0, myVal0, myValShift0)
+            2/5
+            >>> Monzo.monzo2ratio(myMonzo0, myVal1, myValShift1)
+            12/7
+            >>> Monzo.monzo2ratio(myMonzo1, myVal1, myValShift1)
+            25/16
+        """
+        if _val_shift > 0:
+            val_border = _val_shift - 1
+            try:
+                val_border = _val[val_border]
+            except IndexError:
+                val_border = 1
+        else:
+            val_border = 1
+        num, den = Monzo.monzo2pair(monzo, _val[_val_shift:])
         return Monzo.adjust_ratio(Fraction(num, den), val_border)
 
     @staticmethod
-    def monzo2float(monzo: tuple, val: tuple, val_border: int) -> float:
-        num, den = Monzo.monzo2pair(monzo, val, val_border)
+    def monzo2float(monzo: tuple, _val: tuple, _val_shift: int) -> float:
+        r"""
+        Transform a Monzo to a float.
+        Arguments are:
+            * Monzo -> The exponents of prime numbers
+            * _val -> the referring prime numbers for the underlying
+                      ._vector - Argument (see Monzo._vector).
+            * _val-shift -> how many prime numbers shall be skipped
+                            (see Monzo._val_shift)
+            >>> myMonzo0 = (1, 0, -1)
+            >>> myMonzo1 = (0, 2, 0)
+            >>> myVal0 = (2, 3, 5)
+            >>> myVal1 = (2, 3, 5, 7)
+            >>> myValShift0 = 0
+            >>> myValShift1 = 1
+            >>> Monzo.monzo2ratio(myMonzo0, myVal0, myValShift0)
+            0.4
+            >>> Monzo.monzo2ratio(myMonzo0, myVal1, myValShift1)
+            1.7142857142857142
+            >>> Monzo.monzo2ratio(myMonzo1, myVal1, myValShift1)
+            1.5625
+        """
+        if _val_shift > 0:
+            val_border = _val_shift - 1
+            try:
+                val_border = _val[val_border]
+            except IndexError:
+                val_border = 1
+        else:
+            val_border = 1
+        num, den = Monzo.monzo2pair(monzo, _val[_val_shift:])
         try:
             calc = num / den
         except OverflowError:
@@ -258,6 +335,27 @@ class Monzo:
 
     @staticmethod
     def ratio2monzo(ratio: Fraction, val_shift=0) -> Type["Monzo"]:
+        r"""
+        Transform a Fraction - Object to a Monzo.
+        Arguments are:
+            * ratio -> The Fraction, which shall be transformed
+            * val_shift -> how many prime numbers shall be skipped
+                           (see Monzo._val_shift)
+            >>> try:
+            >>>     from quicktions import Fraction
+            >>> except ImportError:
+            >>>     from fractions import Fraction
+            >>> myRatio0 = Fraction(3, 2)
+            >>> myRatio1 = Fraction(7, 6)
+            >>> myValShift0 = 0
+            >>> myValShift1 = 1
+            >>> Monzo.ratio2monzo(myRatio0, myValShift0)
+            (-1, 1)
+            >>> Monzo.ratio2monzo(myRatio0, myValShift1)
+            (1,)
+            >>> Monzo.monzo2ratio(myRatio1, myValShift1)
+            (-1, 0, 1)
+        """
         gen_pos = prime_factors.factors(ratio.numerator)
         gen_neg = prime_factors.factors(ratio.denominator)
 
@@ -277,6 +375,22 @@ class Monzo:
 
     @staticmethod
     def _shift_vector(vec, shiftval) -> tuple:
+        r"""
+        Add Zeros to the beginning of a tuple / discard elements from a tuple.
+        Arguments are:
+            * vec -> The tuple, which shall be modified
+            * shiftval -> how many elements shall be shifted
+            >>> myVec0 = (0, 1, -1)
+            >>> myVec1 = (1, -1, 1)
+            >>> Monzo._shift_vector(myVec0, 0)
+            (0, 1, -1)
+            >>> Monzo._shift_vector(myVec0, 1)
+            (0, 0, 1, -1)
+            >>> Monzo._shift_vector(myVec0, -1)
+            (1, -1)
+            >>> Monzo._shift_vector(myVec1, -2)
+            (1,)
+        """
         if shiftval > 0:
             m = (0,) * shiftval + tuple(vec)
         else:
@@ -331,9 +445,13 @@ class Monzo:
             return primesieve.count_primes(arg)
 
     @property
-    def val(self) -> tuple:
+    def _val(self) -> tuple:
         return Monzo.n_primes(
-            len(self) + self._val_shift)[self._val_shift:]
+            len(self) + self._val_shift)
+
+    @property
+    def val(self) -> tuple:
+        return self._val[self._val_shift:]
 
     @property
     def val_border(self) -> int:
@@ -355,7 +473,7 @@ class Monzo:
 
     @property
     def ratio(self) -> Fraction:
-        return Monzo.monzo2ratio(self, self.val, self.val_border)
+        return Monzo.monzo2ratio(self, self._val, self._val_shift)
 
     @property
     def numerator(self) -> int:
@@ -375,7 +493,7 @@ class Monzo:
 
     @property
     def float(self) -> float:
-        return Monzo.monzo2float(self, self.val, self.val_border)
+        return Monzo.monzo2float(self, self._val, self._val_shift)
 
     @property
     def gender(self) -> bool:
@@ -404,8 +522,8 @@ class Monzo:
     @property
     def primes(self) -> tuple:
         p = prime_factors.factorise(
-            self.ratio.numerator * self.ratio.denominator)
-        return tuple(sorted(tuple(set(p))))[self._val_shift:]
+            self.numerator * self.denominator)
+        return tuple(sorted(tuple(set(p))))
 
     @property
     def quantity(self) -> int:
@@ -679,6 +797,8 @@ class JIPitch(Monzo, abstract.AbstractPitch):
     def differential(self, other):
         """calculates differential tone between pitch and other pitch"""
         diff_ratio = abs(self.ratio - other.ratio)
+        print(self.ratio)
+        print(other.ratio)
         return type(self).from_ratio(
             diff_ratio.numerator, diff_ratio.denominator)
 
