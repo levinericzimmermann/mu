@@ -334,6 +334,10 @@ class MonzoTest(unittest.TestCase):
         m0 = ji.Monzo((0, 0, 1), val_border=1)
         self.assertEqual(m0.sparsity, 2/3)
 
+    def test_adjusted_register(self):
+        m0 = ji.Monzo.from_ratio(9, 8, val_border=2)
+        self.assertEqual(m0.adjust_register(0).ratio, Fraction(9, 4))
+
 
 class JIPitchTest(unittest.TestCase):
     def test_calc(self):

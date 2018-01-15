@@ -109,13 +109,16 @@ class Monzo:
         r"""
         Adjust two Monzos, e.g. makes their length equal. The length of the
         longer Monzo is the reference.
-            >>> m0 = (1, 0, -1)
-            >>> m1 = (1,)
-            >>> m0_adjusted, m1_adjusted = Monzo.adjusted_monzos(m0, m1)
-            >>> m0
-            (1, 0, -1)
-            >>> m1
-            (1, 0, 0)
+        Arguments:
+            * m0: first monzo to adjust
+            * m1: second monzo to adjust
+        >>> m0 = (1, 0, -1)
+        >>> m1 = (1,)
+        >>> m0_adjusted, m1_adjusted = Monzo.adjusted_monzos(m0, m1)
+        >>> m0
+        (1, 0, -1)
+        >>> m1
+        (1, 0, 0)
         """
         m0 = m0._vec
         m1 = m1._vec
@@ -131,13 +134,16 @@ class Monzo:
         r"""
         Check whether two Monzo - Objects are comparable,
         e.g. have the same val_border.
-            >>> m0 = Monzo((1, 0, -1), val_border=1)
-            >>> m1 = Monzo((1,), val_border=2)
-            >>> m2 = Monzo((1, 0, -1), val_border=2)
-            >>> Monzo.is_comparable(m0, m1)
-            False
-            >>> Monzo.is_comparable(m1, m2)
-            True
+        Arguments:
+            * m0: first monzo to compare
+            * m1: second monzo to compare
+        >>> m0 = Monzo((1, 0, -1), val_border=1)
+        >>> m1 = Monzo((1,), val_border=2)
+        >>> m2 = Monzo((1, 0, -1), val_border=2)
+        >>> Monzo.is_comparable(m0, m1)
+        False
+        >>> Monzo.is_comparable(m1, m2)
+        True
         """
         try:
             return m0._val_shift == m1._val_shift
@@ -145,24 +151,32 @@ class Monzo:
             return False
 
     @staticmethod
-    def calc_iterables(iterable0: iter, iterable1: iter, operation) -> iter:
+    def calc_iterables(iterable0: iter, iterable1: iter,
+                       operation: callable) -> iter:
         r"""
         Return a new generator - object, whose elements are
         the results of a input function ('operation'), applied on
         every pair of zip(iterable0, iterable1).
-            >>> tuple0 = (1, 0, 2, 3)
-            >>> tuple1 = (2, 1, -3, 3)
-            >>> tuple2 = (4)
-            >>> plus = lambda x, y: x + y
-            >>> minus = lambda x, y: x - y
-            >>> Monzo.calc_iterables(tuple0, tuple1, plus)
-            <generator object <genexpr> at 0x7fb74d087468>
-            >>> tuple(Monzo.calc_iterables(tuple0, tuple1, plus))
-            (3, 1, -1, 6)
-            >>> tuple(Monzo.calc_iterables(tuple0, tuple1, minus))
-            (-1, -1, 5, 0)
-            >>> tuple(Monzo.calc_iterables(tuple0, tuple2, plus))
-            (5,)
+        Arguments:
+            * iterable0: first iterable to calculate
+            * iterable1: second iterable to calculate
+            * operation: function with two input arguments,
+              to call on the first element of iterable0 and the first element
+              of iterable1, on the seconds element of iterable0
+              and the second element on iterable1, ...
+        >>> tuple0 = (1, 0, 2, 3)
+        >>> tuple1 = (2, 1, -3, 3)
+        >>> tuple2 = (4,)
+        >>> plus = lambda x, y: x + y
+        >>> minus = lambda x, y: x - y
+        >>> Monzo.calc_iterables(tuple0, tuple1, plus)
+        <generator object <genexpr> at 0x7fb74d087468>
+        >>> tuple(Monzo.calc_iterables(tuple0, tuple1, plus))
+        (3, 1, -1, 6)
+        >>> tuple(Monzo.calc_iterables(tuple0, tuple1, minus))
+        (-1, -1, 5, 0)
+        >>> tuple(Monzo.calc_iterables(tuple0, tuple2, plus))
+        (5,)
         """
         return (operation(x, y) for x, y in zip(iterable0, iterable1))
 
@@ -171,13 +185,16 @@ class Monzo:
         r"""
         Multiply / divide a Fraction - Object with the val_border - argument,
         until it is equal or bigger than 1 and smaller than val_border.
-            >>> ratio0 = Fraction(1, 3)
-            >>> ratio1 = Fraction(8, 3)
-            >>> val_border = 2
-            >>> Monzo.adjust_ratio(ratio0, val_border)
-            Fraction(4, 3)
-            >>> Monzo.adjust_ratio(ratio1, val_border)
-            Fraction(4, 3)
+        Arguments:
+            * r: The Ratio, which shall be adjusted
+            * val_border
+        >>> ratio0 = Fraction(1, 3)
+        >>> ratio1 = Fraction(8, 3)
+        >>> val_border = 2
+        >>> Monzo.adjust_ratio(ratio0, val_border)
+        Fraction(4, 3)
+        >>> Monzo.adjust_ratio(ratio1, val_border)
+        Fraction(4, 3)
         """
         if val_border > 1:
             while r > val_border:
@@ -191,13 +208,16 @@ class Monzo:
         r"""
         Multiply / divide a float - Object with the val_border - argument,
         until it is equal or bigger than 1 and smaller than val_border.
-            >>> float0 = 0.5
-            >>> float1 = 2
-            >>> val_border = 2
-            >>> Monzo.adjust_ratio(float0, val_border)
-            1
-            >>> Monzo.adjust_ratio(float1, val_border)
-            1
+        Arguments:
+            * r: The Ratio, which shall be adjusted
+            * val_border
+        >>> float0 = 0.5
+        >>> float1 = 2
+        >>> val_border = 2
+        >>> Monzo.adjust_ratio(float0, val_border)
+        1
+        >>> Monzo.adjust_ratio(float1, val_border)
+        1
         """
         if val_border > 1:
             while f > val_border:
@@ -214,12 +234,15 @@ class Monzo:
         r"""
         Discard all zeros after the last not 0 - element
         of an arbitary iterable. Return a tuple.
-            >>> tuple0 = (1, 0, 2, 3, 0, 0, 0)
-            >>> ls = [1, 3, 5, 0, 0, 0, 2, 0]
-            >>> Monzo.discard_nulls(tuple0)
-            (1, 0, 2, 3)
-            >>> Monzo.discard_nulls(ls)
-            (1, 3, 5, 0, 0, 0, 2)
+        Arguments:
+            * iterable: the iterable, whose 0 - elements shall
+              be discarded
+        >>> tuple0 = (1, 0, 2, 3, 0, 0, 0)
+        >>> ls = [1, 3, 5, 0, 0, 0, 2, 0]
+        >>> Monzo.discard_nulls(tuple0)
+        (1, 0, 2, 3)
+        >>> Monzo.discard_nulls(ls)
+        (1, 3, 5, 0, 0, 0, 2)
         """
         iterable = tuple(iterable)
         c = 0
@@ -239,16 +262,16 @@ class Monzo:
         Arguments are:
             * Monzo -> The exponents of prime numbers
             * Val -> the referring prime numbers
-            >>> myMonzo0 = (1, 0, -1)
-            >>> myMonzo1 = (0, 2, 0)
-            >>> myVal0 = (2, 3, 5)
-            >>> myVal1 = (3, 5, 7)
-            >>> Monzo.monzo2pair(myMonzo0, myVal0)
-            (2, 5)
-            >>> Monzo.monzo2pair(myMonzo0, myVal1)
-            (3, 7)
-            >>> Monzo.monzo2pair(myMonzo1, myVal1)
-            (25, 1)
+        >>> myMonzo0 = (1, 0, -1)
+        >>> myMonzo1 = (0, 2, 0)
+        >>> myVal0 = (2, 3, 5)
+        >>> myVal1 = (3, 5, 7)
+        >>> Monzo.monzo2pair(myMonzo0, myVal0)
+        (2, 5)
+        >>> Monzo.monzo2pair(myMonzo0, myVal1)
+        (3, 7)
+        >>> Monzo.monzo2pair(myMonzo1, myVal1)
+        (25, 1)
         """
         numerator = 1
         denominator = 1
@@ -271,18 +294,18 @@ class Monzo:
                       ._vector - Argument (see Monzo._vector).
             * _val-shift -> how many prime numbers shall be skipped
                             (see Monzo._val_shift)
-            >>> myMonzo0 = (1, 0, -1)
-            >>> myMonzo1 = (0, 2, 0)
-            >>> myVal0 = (2, 3, 5)
-            >>> myVal1 = (2, 3, 5, 7)
-            >>> myValShift0 = 0
-            >>> myValShift1 = 1
-            >>> Monzo.monzo2ratio(myMonzo0, myVal0, myValShift0)
-            2/5
-            >>> Monzo.monzo2ratio(myMonzo0, myVal1, myValShift1)
-            12/7
-            >>> Monzo.monzo2ratio(myMonzo1, myVal1, myValShift1)
-            25/16
+        >>> myMonzo0 = (1, 0, -1)
+        >>> myMonzo1 = (0, 2, 0)
+        >>> myVal0 = (2, 3, 5)
+        >>> myVal1 = (2, 3, 5, 7)
+        >>> myValShift0 = 0
+        >>> myValShift1 = 1
+        >>> Monzo.monzo2ratio(myMonzo0, myVal0, myValShift0)
+        2/5
+        >>> Monzo.monzo2ratio(myMonzo0, myVal1, myValShift1)
+        12/7
+        >>> Monzo.monzo2ratio(myMonzo1, myVal1, myValShift1)
+        25/16
         """
         if _val_shift > 0:
             val_border = _val_shift - 1
@@ -305,18 +328,18 @@ class Monzo:
                       ._vector - Argument (see Monzo._vector).
             * _val-shift -> how many prime numbers shall be skipped
                             (see Monzo._val_shift)
-            >>> myMonzo0 = (1, 0, -1)
-            >>> myMonzo1 = (0, 2, 0)
-            >>> myVal0 = (2, 3, 5)
-            >>> myVal1 = (2, 3, 5, 7)
-            >>> myValShift0 = 0
-            >>> myValShift1 = 1
-            >>> Monzo.monzo2ratio(myMonzo0, myVal0, myValShift0)
-            0.4
-            >>> Monzo.monzo2ratio(myMonzo0, myVal1, myValShift1)
-            1.7142857142857142
-            >>> Monzo.monzo2ratio(myMonzo1, myVal1, myValShift1)
-            1.5625
+        >>> myMonzo0 = (1, 0, -1)
+        >>> myMonzo1 = (0, 2, 0)
+        >>> myVal0 = (2, 3, 5)
+        >>> myVal1 = (2, 3, 5, 7)
+        >>> myValShift0 = 0
+        >>> myValShift1 = 1
+        >>> Monzo.monzo2ratio(myMonzo0, myVal0, myValShift0)
+        0.4
+        >>> Monzo.monzo2ratio(myMonzo0, myVal1, myValShift1)
+        1.7142857142857142
+        >>> Monzo.monzo2ratio(myMonzo1, myVal1, myValShift1)
+        1.5625
         """
         if _val_shift > 0:
             val_border = _val_shift - 1
@@ -341,20 +364,20 @@ class Monzo:
             * ratio -> The Fraction, which shall be transformed
             * val_shift -> how many prime numbers shall be skipped
                            (see Monzo._val_shift)
-            >>> try:
-            >>>     from quicktions import Fraction
-            >>> except ImportError:
-            >>>     from fractions import Fraction
-            >>> myRatio0 = Fraction(3, 2)
-            >>> myRatio1 = Fraction(7, 6)
-            >>> myValShift0 = 0
-            >>> myValShift1 = 1
-            >>> Monzo.ratio2monzo(myRatio0, myValShift0)
-            (-1, 1)
-            >>> Monzo.ratio2monzo(myRatio0, myValShift1)
-            (1,)
-            >>> Monzo.monzo2ratio(myRatio1, myValShift1)
-            (-1, 0, 1)
+        >>> try:
+        >>>     from quicktions import Fraction
+        >>> except ImportError:
+        >>>     from fractions import Fraction
+        >>> myRatio0 = Fraction(3, 2)
+        >>> myRatio1 = Fraction(7, 6)
+        >>> myValShift0 = 0
+        >>> myValShift1 = 1
+        >>> Monzo.ratio2monzo(myRatio0, myValShift0)
+        (-1, 1)
+        >>> Monzo.ratio2monzo(myRatio0, myValShift1)
+        (1,)
+        >>> Monzo.monzo2ratio(myRatio1, myValShift1)
+        (-1, 0, 1)
         """
         gen_pos = prime_factors.factors(ratio.numerator)
         gen_neg = prime_factors.factors(ratio.denominator)
@@ -380,16 +403,16 @@ class Monzo:
         Arguments are:
             * vec -> The tuple, which shall be modified
             * shiftval -> how many elements shall be shifted
-            >>> myVec0 = (0, 1, -1)
-            >>> myVec1 = (1, -1, 1)
-            >>> Monzo._shift_vector(myVec0, 0)
-            (0, 1, -1)
-            >>> Monzo._shift_vector(myVec0, 1)
-            (0, 0, 1, -1)
-            >>> Monzo._shift_vector(myVec0, -1)
-            (1, -1)
-            >>> Monzo._shift_vector(myVec1, -2)
-            (1,)
+        >>> myVec0 = (0, 1, -1)
+        >>> myVec1 = (1, -1, 1)
+        >>> Monzo._shift_vector(myVec0, 0)
+        (0, 1, -1)
+        >>> Monzo._shift_vector(myVec0, 1)
+        (0, 0, 1, -1)
+        >>> Monzo._shift_vector(myVec0, -1)
+        (1, -1)
+        >>> Monzo._shift_vector(myVec1, -2)
+        (1,)
         """
         if shiftval > 0:
             m = (0,) * shiftval + tuple(vec)
@@ -399,12 +422,32 @@ class Monzo:
 
     @staticmethod
     def gcd(*args) -> int:
+        r"""
+        Calculate the greatest common denominator of many numbers
+        Arguments:
+            * arg -> numbers, whose greatest common denominator shall
+                     be found
+        >>> Monzo.gcd(4, 8)
+        4
+        >>> Monzo.gcd(4, 8, 3)
+        1
+        >>> Monzo.gcd(64, 100, 400)
+        4
+        """
         return functools.reduce(math.gcd, args)
 
     @staticmethod
     def nth_prime(arg):
-        """More efficient version of
-        nth_prime. Use saved primes if arg <= 50."""
+        r"""
+        Find the nth - prime. More efficient version than
+        primesieve.nth_primes, since it uses saved Primes for n < 50.
+        Arguments:
+            * n -> number, which Prime shall be found
+        >>> Monzo.nth_prime(3)
+        5
+        >>> Monzo.nth_prime(10)
+        29
+        """
         try:
             primes = (2, 3, 5, 7, 11, 13,
                       17, 19, 23, 29, 31, 37,
@@ -420,8 +463,16 @@ class Monzo:
 
     @staticmethod
     def n_primes(arg):
-        """More efficient version of
-        n_primes. use saved primes if n <= 50"""
+        r"""
+        List the first n - primes. More efficient version than
+        primesieve.n_primes, since it uses saved Primes for n < 50.
+        Arguments:
+            * n -> number, which Prime shall be found
+        >>> Monzo.nth_prime(3)
+        (2, 3, 5)
+        >>> Monzo.nth_prime(10)
+        (2, 3, 5, 7, 11, 13, 17, 19, 23, 29)
+        """
         if arg <= 50:
             return Monzo.nth_prime(slice(0, arg))
         else:
@@ -429,8 +480,16 @@ class Monzo:
 
     @staticmethod
     def count_primes(arg):
-        """More efficient version of
-        count_primes. use saved primes if n <= 70"""
+        r"""
+        Count prime numbers. More efficient version than
+        primesieve.count_primes, since it uses saved Primes for n < 70.
+        Arguments:
+            * n -> number, which Prime shall be found
+        >>> Monzo.nth_prime(3)
+        (2, 3, 5)
+        >>> Monzo.nth_prime(10)
+        (2, 3, 5, 7, 11, 13, 17, 19, 23, 29)
+        """
         if arg <= 70:
             data = (0, 0, 1, 2, 2, 3, 3, 4, 4, 4,
                     4, 5, 5, 6, 6, 6, 6, 7, 7, 8,
@@ -495,6 +554,76 @@ class Monzo:
     def float(self) -> float:
         return Monzo.monzo2float(self, self._val, self._val_shift)
 
+    def simplify(self):
+        """
+        Change all elements in self._vector to 0,
+        whose index is bigger than self._val_shift.
+        >>> monzo0 = Monzo((1, -1), val_border=1)
+        >>> monzo0.val_border = 2
+        >>> monzo0._vector
+        (1, -1)
+        >>> monzo0_simplified = monzo0.simplify()
+        >>> monzo0._vector
+        (0, -1)
+        """
+        v_shift = self._val_shift
+        new = self.copy()
+        if v_shift > 0:
+            new._vector = (0,) * v_shift + self._vec
+        return new
+
+    def adjust_register(self, startperiod: float = 3,
+                        limitup: float = 2**6):
+        """
+        Adjust register of the Interval. Change the val_border to 1.
+        >>> monzo0 = Monzo((1, -1), val_border=2)
+        """
+        def period_generator(val_border):
+            result = val_border ** startperiod
+            while True:
+                yield result
+                result *= val_border
+        v_shift = self._val_shift
+        v_border = self.val_border
+        if v_border == 1:
+            v_border = 2
+        i = 1
+        periods = [i]
+        while i < limitup:
+            i *= v_border
+            periods.append(i)
+        amount_periods = len(periods)
+        identity_pitch = self.identity
+        if identity_pitch.gender is True:
+            ratio = identity_pitch.ratio
+            id_num, id_den = ratio.numerator, ratio.denominator
+        else:
+            identity_simplified = identity_pitch.simplify()
+            identity_simplified._val_shift = 0
+            id_num = identity_simplified.numerator
+            id_den = identity_simplified.denominator
+            while id_num * v_border < id_den:
+                id_num *= v_border
+        id_pitch = type(self).from_ratio(id_num, id_den, val_border=1)
+        id_pitch_scaled = id_pitch.scalar(self.lv)
+        id_pitch_scaled_float = id_pitch_scaled.float
+        resulting_period = 0
+        for i, per in enumerate(period_generator(v_border)):
+            if per > id_pitch_scaled_float:
+                break
+            resulting_period = i
+        for i, per in enumerate(period_generator(1 / v_border)):
+            if per < id_pitch_scaled_float:
+                if i > 0:
+                    resulting_period = -i
+                break
+        adjusted_period = resulting_period % (amount_periods - 1)
+        diff = resulting_period - adjusted_period
+        sub_pitch_monzo = ((0,) * (v_shift - 1)) + (diff,)
+        sub_pitch = type(self).from_monzo(*sub_pitch_monzo)
+        resulting_pitch = id_pitch_scaled - sub_pitch
+        return resulting_pitch
+
     @property
     def gender(self) -> bool:
         if self:
@@ -545,9 +674,10 @@ class Monzo:
     @property
     def identity(self) -> Type["Monzo"]:
         if self:
-            filtered = type(self)([1 / self.lv] * len(self), self.val_border)
+            val_border = self.val_border
+            filtered = type(self)([1 / self.lv] * len(self), val_border)
             monzo = tuple(int(x) for x in self * filtered)
-            return type(self)(monzo, self.val_border)
+            return type(self)(monzo, val_border)
         else:
             return type(self)([], self.val_border)
 
@@ -788,17 +918,9 @@ class JIPitch(Monzo, abstract.AbstractPitch):
         else:
             return id
 
-    @property
-    def adjusted_register(self):
-        return type(self)(
-            self.identity_adjusted.scalar(self.lv),
-            1, self.identity_adjusted.multiply)
-
     def differential(self, other):
         """calculates differential tone between pitch and other pitch"""
         diff_ratio = abs(self.ratio - other.ratio)
-        print(self.ratio)
-        print(other.ratio)
         return type(self).from_ratio(
             diff_ratio.numerator, diff_ratio.denominator)
 
@@ -1364,9 +1486,8 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
     def virtual_root(self):
         return tuple(h.virtual_root for h in self)
 
-    @property
-    def adjusted_register(self):
-        return type(self)([h.adjusted_register for h in self])
+    def adjust_register(self, *args):
+        return type(self)([h.adjust_register(*args) for h in self])
 
     @property
     def differential(self):
