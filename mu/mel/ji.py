@@ -572,10 +572,15 @@ class Monzo:
             new._vector = (0,) * v_shift + self._vec
         return new
 
-    def adjust_register(self, startperiod: float = 3,
-                        limitup: float = 2**6):
+    def adjust_register(self, limitup: float = 2**6,
+                        startperiod: int = 3,
+                        concert_pitch_period: int = 3):
         """
         Adjust register of the Interval. Change the val_border to 1.
+        Arguments:
+            * startperiod
+            * limitup
+            * concert_pitch_period
         >>> monzo0 = Monzo((1, -1), val_border=2)
         """
         def period_generator(val_border):
@@ -622,7 +627,14 @@ class Monzo:
         sub_pitch_monzo = ((0,) * (v_shift - 1)) + (diff,)
         sub_pitch = type(self).from_monzo(*sub_pitch_monzo)
         resulting_pitch = id_pitch_scaled - sub_pitch
-        return resulting_pitch
+        concert_pitch_adjustment_diff = concert_pitch_period - startperiod
+        concert_pitch_adjustment_monzo = ((0,) * (v_shift - 1)) + (
+            concert_pitch_adjustment_diff,)
+        concert_pitch_adjustment = type(self).from_monzo(
+            *concert_pitch_adjustment_monzo)
+        res_pitch_for_concert_pitch_adjusted = resulting_pitch - \
+            concert_pitch_adjustment
+        return res_pitch_for_concert_pitch_adjusted
 
     @property
     def gender(self) -> bool:
@@ -888,36 +900,6 @@ class JIPitch(Monzo, abstract.AbstractPitch):
     def convert2json(self):
         return json.dumps((self._vec, self.val_border, self.multiply))
 
-    @property
-    def identity_adjusted(self):
-        """unstable, experimental method.
-        works only for 2/1 as a frame and for val_border=2"""
-        id = self.identity
-        if id:
-            id.val_border = 1
-            id -= Monzo([id[0]])
-            if id.gender:
-                while id.float < 1:
-                    id += Monzo([1])
-                while id.float > 2:
-                    id -= Monzo([1])
-                if id.float > 1.7:
-                    id.multiply *= 0.25
-                elif id.float > 1.5:
-                    id.multiply *= 0.5
-            else:
-                while id.float > 1:
-                    id -= Monzo([1])
-                while id.float < 0.5:
-                    id += Monzo([1])
-                if id.float * 2 < 1.2:
-                    id.multiply *= 4
-                elif id.float * 2 < 1.5:
-                    id.multiply *= 2
-            return id
-        else:
-            return id
-
     def differential(self, other):
         """calculates differential tone between pitch and other pitch"""
         diff_ratio = abs(self.ratio - other.ratio)
@@ -1083,6 +1065,55 @@ class JIContainer:
 
     def sub_map(self, pitch):
         return self.map(lambda x: x - pitch)
+
+    def adjust_register_of_identities(self, *identity,
+                                      limitup: float = 2**6,
+                                      concert_pitch_period: int = 3,
+                                      not_listed_startperiod: int = 3):
+        """
+        Adjust register of different pitches in the Container
+        differently (with individual startperiod  values)
+        in respect to their identity. For
+        every Identity there have to be an extra argument.
+        By default not listed identities will
+        be adjusted by startperiod: int=3.
+        The Syntax of every Input - Arguments is:
+        (identity (Pitch or Monzo Object), startperiod: int = 3)
+        Arguments:
+            * identities, as many as wished
+        Keyword-Arugments:
+            * limitup
+            * concert_pitch_period
+            * not_listed_startperiod
+        >>> p0 = r(4, 3, val_border=2)
+        >>> p1 = r(16, 9, val_border=2)
+        >>> p2 = r(7, 4, val_border=2)
+        >>> p3 = r(49, 32, val_border=2)
+        >>> p4 = r(5, 4, val_border=2)
+        >>> h0 = JIHarmony((p0, p1, p2, p3, p4))
+        >>> identities = ((p0.identity, 1), (p1.identity, 1),
+                          (p2.identity, 4))
+        >>> h0.adjust_register_of_identities(*identities)
+        JIHarmony([])
+        """
+        new_container = []
+        for p in self:
+            found = False
+            for p_id, startperiod_id in identity:
+                if p.identity == p_id:
+                    p_new = p.adjust_register(
+                            limitup=limitup,
+                            concert_pitch_period=concert_pitch_period,
+                            startperiod=startperiod_id)
+                    found = True
+                    break
+            if found is False:
+                p_new = p.adjust_register(
+                        limitup=limitup,
+                        concert_pitch_period=concert_pitch_period,
+                        startperiod=not_listed_startperiod)
+            new_container.append(p_new)
+        return type(self)(new_container)
 
 
 class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
@@ -1486,8 +1517,8 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
     def virtual_root(self):
         return tuple(h.virtual_root for h in self)
 
-    def adjust_register(self, *args):
-        return type(self)([h.adjust_register(*args) for h in self])
+    def adjust_register(self, *args, **kwargs):
+        return type(self)([h.adjust_register(*args, **kwargs) for h in self])
 
     @property
     def differential(self):
@@ -1509,6 +1540,15 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
             if h0 == h1:
                 repeats += 1
         return repeats
+
+    def adjust_register_of_identities(self, *identity,
+                                      limitup: float = 2**6,
+                                      concert_pitch_period: int = 3,
+                                      not_listed_startperiod: int = 3):
+        return type(self)(h.adjust_register_of_identities(
+                *identity, limitup=limitup,
+                concert_pitch_period=concert_pitch_period,
+                not_listed_startperiod=not_listed_startperiod) for h in self)
 
 
 class JIScale(JIPitch.mk_iterable(mel.Scale), JIContainer):
