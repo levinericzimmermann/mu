@@ -505,15 +505,73 @@ class Monzo:
 
     @property
     def _val(self) -> tuple:
+        r"""
+        Return complete list of primes (e.g. 'val'), until the
+        highest Prime, which the Monzo / JIPitch contains.
+        This Method ignores the val_border / _val_shift
+        property of an Object.
+        >>> m0 = Monzo((0, 1, 2), 1)
+        >>> m0._val
+        (2, 3, 5)
+        >>> m0.val_border = 2
+        >>> m0._val
+        (2, 3, 5)
+        >>> m1 = Monzo((0, -1, 0, 0, 1), 1)
+        >>> m1._val
+        (2, 3, 5, 7, 11)
+        """
         return Monzo.n_primes(
             len(self) + self._val_shift)
 
     @property
     def val(self) -> tuple:
+        r"""
+        Return complete list of primes (e.g. 'val'), until the
+        highest Prime, which the Monzo / JIPitch contains in respect
+        to the current val_border or _val_shift - property of the object.
+        >>> m0 = Monzo((0, 1, 2), 1)
+        >>> m0.val
+        (2, 3, 5)
+        >>> m0.val_border = 2
+        >>> m0.val
+        (3, 5)
+        >>> m0.val_border = 3
+        >>> m0.val
+        (5,)
+        >>> m1 = Monzo((0, -1, 0, 0, 1), 1)
+        >>> m1._val
+        (2, 3, 5, 7, 11)
+        """
         return self._val[self._val_shift:]
 
     @property
     def val_border(self) -> int:
+        r"""
+        The val - border property of an Monzo / JIPitch - Object
+        denotes the first Prime, which shall be ignored by the Monzo / JIPitch
+        Object. Speaking in terms of scales, it actually descripes the period
+        of a scale; in most known scales the period is an octave,
+        e.g. after an octave the same pitch classes are repeating.
+        For example D3 and a D4 are seen as the same pitch classes,
+        just in different registers. Intervals of such a scale would
+        set their val_border to 2, since they are octavely repeating.
+        If pitch classes are never repeating, e.g. every pitch class of
+        every octave is understood as an indidual pitch,
+        the correct val_border - argument may be 1.
+        In scales with a period of an octave plus a fifth (for example
+        the famous Bohlen-Pierce-Scale) the proper value for the
+        val_border would be 3 (third Harmonic Tone is an octave plus
+        a fifth).
+        >>> m0 = Monzo((0, 1), 1)
+        >>> m0.ratio
+        Fraction(3, 1)
+        >>> m0.val_border = 2
+        >>> m0.ratio
+        Fraction(3, 2)
+        >>> m0.val_border = 3
+        >>> m0.ratio
+        Fraction(1, 1)
+        """
         if self._val_shift == 0:
             return 1
         else:
@@ -525,11 +583,11 @@ class Monzo:
 
     def set_val_border(self, val_border: int) -> Type["Monzo"]:
         """
-        Return a new Monzo / JIPitch -Object
-        with a new val_border.
+        Return a copied version of the Monzo / JIPitch -Object
+        with a new val_border. The Object itself stay unchanged.
         Arguments:
             * val_border: The val_border for the new Monzo
-        >>> m0 = Monzo((1,), val_border2)
+        >>> m0 = Monzo((0, 1,), val_border2)
         >>> m1 = m0.set_val_border(3)
         >>> m1.val_border
         3
@@ -1361,15 +1419,15 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
             fitness = tuple(compare_function(p0, p1)
                             for p0, p1 in zip(ind, ind[1:]))
             return sum(fitness)
-
-        data = tuple(self)
-        permutations = tuple(itertools.permutations(data))
+        permutations = itertools.permutations(self)
         if pitch is not None:
-            permutations = tuple((pitch,) + per for per in permutations)
-        fitness = tuple(calc_fitness(ind) for ind in permutations)
-        minima = min(fitness)
-        all_minima = (i for i, f in enumerate(fitness) if f == minima)
-        return tuple(type(self)(permutations[idx]) for idx in all_minima)
+            permutations = ((pitch,) + per for per in permutations)
+
+        fitness = tuple((ind, calc_fitness(ind)) for ind in permutations)
+        minima = min(fitness, key=lambda x: x[1])
+        all_minima = (type(self)(f[0])
+                      for i, f in enumerate(fitness) if f[1] == minima[1])
+        return tuple(all_minima)
 
 
 class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
