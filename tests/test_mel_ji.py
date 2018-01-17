@@ -280,6 +280,20 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m0.is_congeneric(m2), False)
         self.assertEqual(m0.is_congeneric(m3), True)
 
+    def test_sibling(self):
+        m0 = ji.Monzo([1], 1)
+        m1 = ji.Monzo([-2, 1], 1)
+        m2 = ji.Monzo([0, 1], 1)
+        m3 = ji.Monzo([-1], 1)
+        m4 = ji.Monzo([2], 1)
+        m5 = ji.Monzo([10], 1)
+        self.assertEqual(m0.is_sibling(m0), True)
+        self.assertEqual(m0.is_sibling(m1), False)
+        self.assertEqual(m0.is_sibling(m2), False)
+        self.assertEqual(m0.is_sibling(m3), False)
+        self.assertEqual(m0.is_sibling(m4), True)
+        self.assertEqual(m0.is_sibling(m5), True)
+
     def test_inheritance(self):
         for method in dir(ji.Monzo):
             self.assertIn(method, dir(ji.Monzo))
@@ -336,7 +350,7 @@ class MonzoTest(unittest.TestCase):
 
     def test_adjusted_register(self):
         m0 = ji.Monzo.from_ratio(9, 8, val_border=2)
-        self.assertEqual(m0.adjust_register(0).ratio, Fraction(9, 4))
+        self.assertEqual(m0.adjust_register().ratio, Fraction(9, 4))
 
 
 class JIPitchTest(unittest.TestCase):

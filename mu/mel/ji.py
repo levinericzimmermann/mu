@@ -524,8 +524,18 @@ class Monzo:
         self._val_shift = Monzo.count_primes(v)
 
     def set_val_border(self, val_border: int) -> Type["Monzo"]:
-        """Return a new Monzo-Object
-        with a new val_border"""
+        """
+        Return a new Monzo / JIPitch -Object
+        with a new val_border.
+        Arguments:
+            * val_border: The val_border for the new Monzo
+        >>> m0 = Monzo((1,), val_border2)
+        >>> m1 = m0.set_val_border(3)
+        >>> m1.val_border
+        3
+        >>> m0.val_border
+        2
+        """
         copied = self.copy()
         copied.val_border = val_border
         return copied
@@ -733,6 +743,28 @@ class Monzo:
 
     @comparable_bool_decorator
     def is_related(self: "Monzo", other: "Monzo") -> bool:
+        """
+        Two Monzo or JIPitch - Objects are considered as related if
+        they share at least one common prime.
+        Arguments:
+            * Monzo or JIPitch to compare with
+        >>> monzo0 = Monzo((1, -1), val_border=2)
+        >>> monzo1 = Monzo((-1, 1), val_border=2)
+        >>> monzo2 = Monzo((2, -2), val_border=2)
+        >>> monzo3 = Monzo((0, -1), val_border=2)
+        >>> monzo4 = Monzo((4,), val_border=2)
+        >>> monzo5 = Monzo((0, 0, 2), val_border=2)
+        >>> monzo0.is_related(monzo1)
+        True
+        >>> monzo0.is_related(monzo2)
+        True
+        >>> monzo0.is_related(monzo3)
+        True
+        >>> monzo0.is_related(monzo4)
+        True
+        >>> monzo0.is_related(monzo5)
+        False
+        """
         for p in self.primes:
             if p in other.primes:
                 return True
@@ -740,7 +772,55 @@ class Monzo:
 
     @comparable_bool_decorator
     def is_congeneric(self: "Monzo", other: "Monzo") -> bool:
+        """
+        Two Monzo or JIPitch - Objects are considered as congeneric if
+        their primes are equal.
+        Arguments:
+            * Monzo or JIPitch to compare with
+        >>> monzo0 = Monzo((1, -1), val_border=2)
+        >>> monzo1 = Monzo((-1, 1), val_border=2)
+        >>> monzo2 = Monzo((2, -2), val_border=2)
+        >>> monzo3 = Monzo((0, -1), val_border=2)
+        >>> monzo4 = Monzo((2, -1), val_border=2)
+        >>> monzo0.is_congeneric(monzo1)
+        True
+        >>> monzo0.is_congeneric(monzo2)
+        True
+        >>> monzo0.is_congeneric(monzo3)
+        False
+        >>> monzo0.is_congeneric(monzo4)
+        True
+        """
         if self.primes == other.primes:
+            return True
+        else:
+            return False
+
+    @comparable_bool_decorator
+    def is_sibling(self: "Monzo", other: "Monzo") -> bool:
+        """
+        Two Monzo or JIPitch - Objects are considered as siblings if
+        their primes and their gender are equal.
+        Arguments:
+            * Monzo or JIPitch to compare with
+        >>> monzo0 = Monzo((1, -1), val_border=2)
+        >>> monzo1 = Monzo((-1, 1), val_border=2)
+        >>> monzo2 = Monzo((2, -2), val_border=2)
+        >>> monzo3 = Monzo((3, -3), val_border=2)
+        >>> monzo4 = Monzo((0, -1), val_border=2)
+        >>> monzo5 = Monzo((2, -1), val_border=2)
+        >>> monzo0.is_sibling(monzo1)
+        False
+        >>> monzo0.is_sibling(monzo2)
+        True
+        >>> monzo0.is_sibling(monzo3)
+        True
+        >>> monzo0.is_sibling(monzo4)
+        False
+        >>> monzo0.is_sibling(monzo5)
+        True
+        """
+        if self.primes == other.primes and self.gender == other.gender:
             return True
         else:
             return False
@@ -966,17 +1046,21 @@ class JIContainer:
             f.write(self.convert2json())
 
     def set_multiply(self, arg: float):
-        """set the multiply - argument of
+        """
+        set the multiply - argument of
         every containing pitch - element to
-        the input argument."""
+        the input argument.
+        """
         for p in self:
             if p is not None:
                 p.multiply = arg
 
     def set_muliplied_multiply(self, arg: float):
-        """set the multiply - argument of
+        """
+        set the multiply - argument of
         every containing pitch - element to itself
-        multiplied with the input argument."""
+        multiplied with the input argument.
+        """
         for p in self:
             if p is not None:
                 p.multiply *= arg
@@ -987,8 +1071,10 @@ class JIContainer:
         return tuple(sorted(r, key=lambda t: t[2]))
 
     def dot_sum(self):
-        """Return the sum of the dot-product of each Monzo
-        with each other Monzo in the Container"""
+        """
+        Return the sum of the dot-product of each Monzo
+        with each other Monzo in the Container
+        """
         d = 0
         for m_out in self:
             for m_in in self:
@@ -1035,27 +1121,17 @@ class JIContainer:
         return copied
 
     def find_by(self, pitch, compare_function) -> Type["JIPitch"]:
-        """This method compares every pitch of a Container-Object
+        """
+        This method compares every pitch of a Container-Object
         with the arguments pitch through the compare_function.
         The compare_function shall return a float or integer number.
         This float or integer number represents the fitness of the specific
-        pitch. The return-value is the pitch with the lowest fitness."""
+        pitch. The return-value is the pitch with the lowest fitness (Minima).
+        """
         result = tuple((p, compare_function(p, pitch)) for p in self)
         if result:
             result_sorted = sorted(result, key=lambda el: el[1])
             return result_sorted[0][0]
-
-    def find_by_walk(self, pitch, compare_function) -> Type["JIContainer"]:
-        """Iterative usage of the find_by - method. The input pitch
-        is the first argument, the resulting pitch is next input Argument etc.
-        until the Container might be empty."""
-        test_container = self.copy()
-        result = [pitch]
-        while len(test_container):
-            pitch = test_container.find_by(pitch, compare_function)
-            test_container = test_container.remove(pitch)
-            result.append(pitch)
-        return type(self)(result)
 
     def map(self, function):
         return type(self)((function(x) for x in self))
@@ -1094,7 +1170,7 @@ class JIContainer:
         >>> identities = ((p0.identity, 1), (p1.identity, 1),
                           (p2.identity, 4))
         >>> h0.adjust_register_of_identities(*identities)
-        JIHarmony([])
+        JIHarmony([]) #TODO write proper solution
         """
         new_container = []
         for p in self:
@@ -1257,6 +1333,43 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
     def separate(self):
         subverted = JIMel((self[0],)) + self.intervals.subvert()
         return type(self)(subverted, self.multiply).accumulate()
+
+    def find_by_walk(self, pitch, compare_function) -> Type["JIMel"]:
+        """
+        Iterative usage of the find_by - method. The input pitch
+        is the first argument, the resulting pitch is next input Argument etc.
+        until the Container might be empty.
+        """
+        test_container = self.copy()
+        result = [pitch]
+        while len(test_container):
+            pitch = test_container.find_by(pitch, compare_function)
+            test_container = test_container.remove(pitch)
+            result.append(pitch)
+        return type(self)(result)
+
+    def find_by_walk_best(
+            self, pitch, compare_function) -> tuple:
+        """
+        Iterative usage of the find_by - method. The input pitch
+        is the first argument, the resulting pitch is next input Argument etc.
+        until the Container might be empty. Unlike the find_by_walk - method
+        the find_by_walk_best - method will always return the best result
+        (e. g. with the lowest summed fitness)
+        """
+        def calc_fitness(ind):
+            fitness = tuple(compare_function(p0, p1)
+                            for p0, p1 in zip(ind, ind[1:]))
+            return sum(fitness)
+
+        data = tuple(self)
+        permutations = tuple(itertools.permutations(data))
+        if pitch is not None:
+            permutations = tuple((pitch,) + per for per in permutations)
+        fitness = tuple(calc_fitness(ind) for ind in permutations)
+        minima = min(fitness)
+        all_minima = (i for i, f in enumerate(fitness) if f == minima)
+        return tuple(type(self)(permutations[idx]) for idx in all_minima)
 
 
 class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
