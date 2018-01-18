@@ -141,6 +141,12 @@ class ToneSetTest(unittest.TestCase):
         self.assertEqual(test_set0, test_set_compare0)
         self.assertEqual(test_set1, test_set_compare1)
 
+    def test_pop_by_correct_dur_and_delay(self):
+        poped_by = self.set0.pop_by_pitch(self.p0, self.p5)
+        melody = poped_by.convert2melody()
+        self.assertEqual(melody[0].delay, rhy.RhyUnit(5))
+        self.assertEqual(melody[0].duration, rhy.RhyUnit(1))
+
 
 class PolyTest(unittest.TestCase):
     p0 = ji.r(5, 4)

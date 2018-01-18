@@ -550,13 +550,13 @@ class Monzo:
         The val - border property of an Monzo / JIPitch - Object
         denotes the first Prime, which shall be ignored by the Monzo / JIPitch
         Object. Speaking in terms of scales, it actually descripes the period
-        of a scale; in most known scales the period is an octave,
+        of a scale; in most known scales the period may be an octave,
         e.g. after an octave the same pitch classes are repeating.
-        For example D3 and a D4 are seen as the same pitch classes,
+        For example D3 and a D4 are seen as the same pitch class,
         just in different registers. Intervals of such a scale would
         set their val_border to 2, since they are octavely repeating.
-        If pitch classes are never repeating, e.g. every pitch class of
-        every octave is understood as an indidual pitch,
+        If pitch classes are never repeating, meaning that every pitch class of
+        every register is understood as an indidual pitch,
         the correct val_border - argument may be 1.
         In scales with a period of an octave plus a fifth (for example
         the famous Bohlen-Pierce-Scale) the proper value for the
@@ -587,7 +587,7 @@ class Monzo:
         with a new val_border. The Object itself stay unchanged.
         Arguments:
             * val_border: The val_border for the new Monzo
-        >>> m0 = Monzo((0, 1,), val_border2)
+        >>> m0 = Monzo((0, 1,), val_border=2)
         >>> m1 = m0.set_val_border(3)
         >>> m1.val_border
         3
@@ -600,10 +600,30 @@ class Monzo:
 
     @property
     def ratio(self) -> Fraction:
+        """
+        Return the Monzo transformed to a Ratio (Fraction-Object)
+        of a Monzo or JIPitch - Object.
+        >>> m0 = Monzo((0, 1,), val_border=2)
+        >>> m0.ratio
+        Fraction(5, 4)
+        >>> m0 = Monzo.from_ratio(3, 2)
+        >>> m0.ratio
+        Fraction(3, 2)
+        """
         return Monzo.monzo2ratio(self, self._val, self._val_shift)
 
     @property
     def numerator(self) -> int:
+        """
+        Return the numerator of a Monzo or JIPitch - object.
+        This metod ignores the val_border - property of the object,
+        meaning that myMonzo.ratio.numerator != myMonzo.numerator.
+        >>> m0 = Monzo((0, -1,), val_border=2)
+        >>> m0.numerator
+        1
+        >>> m0.ratio.numerator
+        8
+        """
         numerator = 1
         for number, exponent in zip(self.val, self):
             if exponent > 0:
@@ -612,6 +632,16 @@ class Monzo:
 
     @property
     def denominator(self) -> int:
+        """
+        Return the denominator of a Monzo or JIPitch - object.
+        This metod ignores the val_border - property of the object,
+        meaning that myMonzo.ratio.denominator != myMonzo.denominator.
+        >>> m0 = Monzo((0, 1,), val_border=2)
+        >>> m0.denominator
+        1
+        >>> m0.ratio.denominator
+        5
+        """
         denominator = 1
         for number, exponent in zip(self.val, self):
             if exponent < 0:
@@ -620,6 +650,18 @@ class Monzo:
 
     @property
     def float(self) -> float:
+        """
+        Return the ratio of a Monzo or JIPitch - object,
+        transformed to a float number, meaning that
+        float(myMonzo.ratio) == myMonzo.float. Note the
+        difference that the second version might be slightly
+        more performant.
+        >>> m0 = Monzo((1,), val_border=2)
+        >>> m0.float
+        1.5
+        >>> float(m0.ratio)
+        1.5
+        """
         return Monzo.monzo2float(self, self._val, self._val_shift)
 
     def simplify(self):
@@ -650,7 +692,7 @@ class Monzo:
             * limitup
             * concert_pitch_period
         >>> monzo0 = Monzo((1, -1), val_border=2)
-        """
+        """  # TODO: add proper description with example
         def period_generator(val_border):
             result = val_border ** startperiod
             while True:
@@ -706,6 +748,24 @@ class Monzo:
 
     @property
     def gender(self) -> bool:
+        """
+        Return the gender (bool) of a Monzo or JIPitch - object.
+        The gender of a Monzo or JIPitch - may be True if
+        the exponent of the highest occurring prime number is a
+        positive number and False if the exponent is a
+        negative number.
+        special case: The gender of a Monzo or JIPitch - object
+        containing an empty val is True.
+        >>> m0 = Monzo((-2. 1), val_border=2)
+        >>> m0.gender
+        True
+        >>> m1 = Monzo((-2, -1), val_border=2)
+        >>> m1.gender
+        False
+        >>> m2 = Monzo([], val_border=2)
+        >>> m2.gender
+        True
+        """
         if self:
             maxima = max(self)
             minima = min(self)
@@ -719,6 +779,24 @@ class Monzo:
 
     @property
     def harmonic(self) -> int:
+        """
+        Return the nth - harmonic / subharmonic, which
+        the Monzo or JIPitch - object might be.
+        May be positive for harmonic and negative for
+        subharmonic pitches. If the return - value is 0,
+        the interval may occur neither between the first harmonic
+        and any other pitch of the harmonic scale nor
+        between the first subharmonic in the and any other
+        pitch of the subharmonic scale.
+        >>> m0 = Monzo((1,), val_border=2)
+        >>> m0.ratio
+        Fraction(3, 2)
+        >>> m0.harmonic
+        3
+        >>> m1 = Monzo((-1,), 2)
+        >>> m1.harmonic
+        -3
+        """
         if self.ratio.denominator % 2 == 0:
             return self.ratio.numerator
         elif self.ratio.numerator % 2 == 0:
@@ -730,12 +808,40 @@ class Monzo:
 
     @property
     def primes(self) -> tuple:
+        """
+        Return all occurring prime numbers of
+        a Monzo or JIPitch - object.
+        >>> m0 = Monzo((1,), val_border=2)
+        >>> m0.ratio
+        Fraction(3, 2)
+        >>> m0.harmonic # a fifth may be the 3th pitch of the harmonic scale
+        3
+        >>> m1 = Monzo((-1,), 2)
+        >>> m1.harmonic #a fourth may be the 3th pitch of the subharmonic scale
+        -3
+        """
         p = prime_factors.factorise(
             self.numerator * self.denominator)
         return tuple(sorted(tuple(set(p))))
 
     @property
     def quantity(self) -> int:
+        """
+        Count how many different prime numbers are occurring in
+        the Monzo or JIPitch - object.
+        >>> m0 = Monzo((1,), val_border=2)
+        >>> m0.quantity
+        1
+        >>> m1 = Monzo((1, 1), val_border=2)
+        >>> m1.quantity
+        2
+        >>> m2 = Monzo((1, 1, -1), val_border=2)
+        >>> m2.quantity
+        3
+        >>> m3 = Monzo((0, 1, -1), val_border=2)
+        >>> m3.quantity # one exponent is zero now
+        2
+        """
         return len(self.primes)
 
     @property
@@ -1420,13 +1526,26 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
                             for p0, p1 in zip(ind, ind[1:]))
             return sum(fitness)
         permutations = itertools.permutations(self)
-        if pitch is not None:
-            permutations = ((pitch,) + per for per in permutations)
+        result = []
+        current_min = None
+        for ind in permutations:
+            if pitch is not None:
+                ind = (pitch,) + ind
+            fitness = calc_fitness(ind)
+            if current_min is not None:
+                if fitness == current_min:
+                    current_min = fitness
+                    result.append((ind, fitness))
+                elif fitness < current_min:
+                    current_min = fitness
+                    result = [(ind, fitness)]
+            else:
+                current_min = fitness
+                result.append((ind, fitness))
 
-        fitness = tuple((ind, calc_fitness(ind)) for ind in permutations)
-        minima = min(fitness, key=lambda x: x[1])
+        minima = min(result, key=lambda x: x[1])
         all_minima = (type(self)(f[0])
-                      for i, f in enumerate(fitness) if f[1] == minima[1])
+                      for i, f in enumerate(result) if f[1] == minima[1])
         return tuple(all_minima)
 
 

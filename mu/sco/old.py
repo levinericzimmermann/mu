@@ -162,7 +162,9 @@ class JICadence(Cadence):
 
 
 class Polyphon(abstract.SimultanEvent):
-    """A Container for Melody - Objects"""
+    """
+    A Container for Melody - Objects.
+    """
     @music21.decorator
     def convert2music21(self):
         score = music21.m21.stream.Score(id='mainScore')
@@ -190,7 +192,7 @@ class Polyphon(abstract.SimultanEvent):
                 harmony = t_set.pop_by_time(acc).convert2melody().mel
                 harmony = harmony_class(
                     (p for p in harmony if p is not None))
-                new_chord = Chord(harmony, t.delay)
+                new_chord = Chord(harmony, t.delay, t.duration)
                 cadence.append(new_chord)
                 acc += t.delay
         return cadence_class(cadence)
