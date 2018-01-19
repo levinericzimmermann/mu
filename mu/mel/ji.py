@@ -33,6 +33,46 @@ def comparable_monzo_decorator(func: Callable) -> Callable:
 
 
 class Monzo:
+    """
+    A Monzo - Object is a representation or notation of a musical
+    interval in just intonation, named after the American
+    composer Joe Monzo (http://xenharmonic.wikispaces.com/Monzos).
+    A Monzo could be understood as a vector, which contains
+    exponents for prime numbers. The corresponding prime numbers
+    are saved in a similar vector called "val". Hence, every Monzo
+    object contains a "val" - property.
+    If the val of a Monzo - Object would be (2, 3, 5) and
+    the Monzo of the Object would be (-2, 0, 1) the resulting
+    interval in p/q - notation would be 5/4, since
+    2^-2 * 3^0 * 5^-1 = 1/4 * 1 * 5 = 5/4.
+    If you write the monzo-vector straight over the val-vector
+    the relationship between both becomes clear:
+    (-2, 0, 1)
+    (+2, 3, 5)
+    You might generate a Monzo - Object through passing an
+    iterable (tuple, list) containing the wished exponents
+    to the Monzo class:
+    >>> m0 = Monzo((-2, 0,, 1))
+    >>> m0.ratio
+    Fraction(5, 4)
+
+    In some music, a couple of Primes are ignored, meaining
+    two pitches are considered as the same pitch class,
+    no matter whether these ignored primes are contained
+    by one of theses pitches or not.
+    For instance in most western music two pitches are considered
+    equal if there is an octave difference between both
+    (same pitch class in different registers). For this
+    music the prime number 2 makes no difference in meaning.
+    For a proper representation of intervals in such a tuning
+    Monzo - Objects contain a val_border - property. The
+    val_border property marks the first prime, which shall be
+    ignored by the object. You could pass the val_border as
+    a second argument to the Monzo - class.
+    >>> m0 = Monzo((0, 1), val_border=2)
+    >>> m0.ratio
+    Fraction(5, 4)
+    """
     _val_shift = 0
 
     def __init__(self, iterable, val_border=1):
@@ -846,6 +886,16 @@ class Monzo:
 
     @property
     def components(self) -> tuple:
+        r"""
+        Seperate a monzo object in its different primes.
+        >>> m0 = (1, 0, -1)
+        >>> m1 = (1,)
+        >>> m0_adjusted, m1_adjusted = Monzo.adjusted_monzos(m0, m1)
+        >>> m0
+        (1, 0, -1)
+        >>> m1
+        (1, 0, 0)
+        """
         vectors = [[0] * c + [x] for c, x in enumerate(self) if x != 0]
         return tuple(type(self)(
             vec, val_border=self.val_border) for vec in vectors)
@@ -1314,7 +1364,7 @@ class JIContainer:
         Adjust register of different pitches in the Container
         differently (with individual startperiod  values)
         in respect to their identity. For
-        every Identity there have to be an extra argument.
+        every Identity there has to be an extra argument.
         By default not listed identities will
         be adjusted by startperiod: int=3.
         The Syntax of every Input - Arguments is:
