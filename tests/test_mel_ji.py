@@ -352,6 +352,34 @@ class MonzoTest(unittest.TestCase):
         m0 = ji.Monzo.from_ratio(9, 8, val_border=2)
         self.assertEqual(m0.adjust_register().ratio, Fraction(9, 4))
 
+    def test_indigestibility(self):
+        self.assertEqual(ji.Monzo.indigestibility(1), 0)
+        self.assertEqual(ji.Monzo.indigestibility(2), 1)
+        self.assertEqual(ji.Monzo.indigestibility(4), 2)
+        self.assertEqual(ji.Monzo.indigestibility(5), 6.4)
+        self.assertEqual(ji.Monzo.indigestibility(6), 3.6666666666666665)
+        self.assertEqual(ji.Monzo.indigestibility(8), 3)
+
+    def test_harmonicity_barlow(self):
+        m0 = ji.Monzo((1,), val_border=2)
+        m1 = ji.Monzo([], val_border=2)
+        m2 = ji.Monzo((0, 1), val_border=2)
+        m3 = ji.Monzo((0, -1), val_border=2)
+        self.assertEqual(m0.harmonicity_barlow, 0.27272727272727276)
+        self.assertEqual(m1.harmonicity_barlow, float("inf"))
+        self.assertEqual(m2.harmonicity_barlow, 0.11904761904761904)
+        self.assertEqual(m3.harmonicity_barlow, -0.10638297872340426)
+
+    def test_harmonicity_euler(self):
+        m0 = ji.Monzo((1,), val_border=2)
+        m1 = ji.Monzo([], val_border=2)
+        m2 = ji.Monzo((0, 1), val_border=2)
+        m3 = ji.Monzo((0, -1), val_border=2)
+        self.assertEqual(m0.harmonicity_euler, 4)
+        self.assertEqual(m1.harmonicity_euler, 1)
+        self.assertEqual(m2.harmonicity_euler, 7)
+        self.assertEqual(m3.harmonicity_euler, 8)
+
 
 class JIPitchTest(unittest.TestCase):
     def test_calc(self):

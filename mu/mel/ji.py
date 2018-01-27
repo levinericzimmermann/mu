@@ -6,6 +6,7 @@ import primesieve
 import functools
 import itertools
 import math
+import collections
 import json
 from typing import (Callable, List, Type)
 try:
@@ -33,7 +34,7 @@ def comparable_monzo_decorator(func: Callable) -> Callable:
 
 
 class Monzo:
-    """
+    r"""
     A Monzo - Object is a representation or notation of a musical
     interval in just intonation, named after the American
     composer Joe Monzo (http://xenharmonic.wikispaces.com/Monzos).
@@ -57,7 +58,7 @@ class Monzo:
     Fraction(5, 4)
 
     In some music, a couple of Primes are ignored, meaining
-    two pitches are considered as the same pitch class,
+    two pitches are considered as belonging to the same pitch class,
     no matter whether these ignored primes are contained
     by one of theses pitches or not.
     For instance in most western music two pitches are considered
@@ -543,6 +544,27 @@ class Monzo:
         else:
             return primesieve.count_primes(arg)
 
+    @staticmethod
+    def indigestibility(num: int) -> float:
+        """
+        Calculate indigestibility of a number, following
+        Clarence Barlows definition given in 'The Ratio Book' (1992).
+        Arguments:
+            * num -> integer, whose indigestibility value shall be found
+        >>> Monzo.indigestibility(1)
+        0
+        >>> Monzo.indigestibility(2)
+        1
+        >>> Monzo.indigestibility(3)
+        2.6666666666666665
+        """
+        decomposed = prime_factors.factorise(num)
+        decomposed = collections.Counter(decomposed)
+        decomposed = zip(decomposed.values(), decomposed.keys())
+        summed = ((power * pow(prime - 1, 2)) / prime
+                  for power, prime in decomposed)
+        return 2 * sum(summed)
+
     @property
     def _val(self) -> tuple:
         r"""
@@ -899,6 +921,91 @@ class Monzo:
         vectors = [[0] * c + [x] for c, x in enumerate(self) if x != 0]
         return tuple(type(self)(
             vec, val_border=self.val_border) for vec in vectors)
+
+    @property
+    def harmonicity_wilson(self) -> int:
+        ratio = self.ratio
+        num = ratio.numerator
+        de = ratio.denominator
+        while num % 2 == 0:
+            num /= 2
+        while de % 2 == 0:
+            de /= 2
+        return int(sum(filter(lambda x: x > 1, (num, de))))
+
+    @property
+    def harmonicity_vogel(self) -> int:
+        ratio = self.ratio
+        num = ratio.numerator
+        de = ratio.denominator
+        fac0 = 0
+        while num % 2 == 0:
+            num /= 2
+            fac0 += 1
+        while de % 2 == 0:
+            de /= 2
+            fac0 += 1
+        return int(sum(filter(lambda x: x > 1, (num, de))) + fac0)
+
+    @property
+    def harmonicity_euler(self) -> int:
+        """
+        Return the 'gradus suavitatis' of euler.
+        A higher number means a less consonant interval /
+        a more complicated harmony.
+        euler(1/1) is definied as 1.
+        >>> m0 = Monzo((1,), val_border=2)
+        >>> m1 = Monzo([], val_border=2)
+        >>> m2 = Monzo((0, 1,), val_border=2)
+        >>> m3 = Monzo((0, -1,), val_border=2)
+        >>> m0.harmonicity_euler
+        4
+        >>> m1.harmonicity_euler
+        1
+        >>> m2.harmonicity_euler
+        7
+        >>> m3.harmonicity_euler
+        8
+        """
+        ratio = self.ratio
+        num = ratio.numerator
+        de = ratio.denominator
+        decomposed_num = prime_factors.factorise(num)
+        decomposed_de = prime_factors.factorise(de)
+        decomposed = decomposed_num + decomposed_de
+        return 1 + sum(x - 1 for x in decomposed)
+
+    @property
+    def harmonicity_barlow(self) -> float:
+        r"""
+        Calculate the harmonicity of an interval
+        following Clarence Barlows definition, given
+        in 'The Ratio Book' (1992). A higher number
+        means a more consonant interval / a less
+        complicated harmony.
+        barlow(1/1) is definied as infinite.
+        >>> m0 = Monzo((1,), val_border=2)
+        >>> m1 = Monzo([], val_border=2)
+        >>> m2 = Monzo((0, 1,), val_border=2)
+        >>> m3 = Monzo((0, -1,), val_border=2)
+        >>> m0.harmonicity_barlow
+        0.27272727272727276
+        >>> m1.harmonicity_barlow # 1/1 is infinite harmonic
+        inf
+        >>> m2.harmonicity_barlow
+        0.11904761904761904
+        >>> m3.harmonicity_barlow
+        -0.10638297872340426
+        """
+        def sign(x): return (1, -1)[x < 0]
+        ratio = self.ratio
+        if ratio == Fraction(1, 1):
+            return float('inf')
+        num = ratio.numerator
+        de = ratio.denominator
+        ind_num = Monzo.indigestibility(num)
+        ind_de = Monzo.indigestibility(de)
+        return sign(ind_num - ind_de) / (ind_num + ind_de)
 
     @property
     def lv(self) -> int:
@@ -1392,16 +1499,16 @@ class JIContainer:
             for p_id, startperiod_id in identity:
                 if p.identity == p_id:
                     p_new = p.adjust_register(
-                            limitup=limitup,
-                            concert_pitch_period=concert_pitch_period,
-                            startperiod=startperiod_id)
+                        limitup=limitup,
+                        concert_pitch_period=concert_pitch_period,
+                        startperiod=startperiod_id)
                     found = True
                     break
             if found is False:
                 p_new = p.adjust_register(
-                        limitup=limitup,
-                        concert_pitch_period=concert_pitch_period,
-                        startperiod=not_listed_startperiod)
+                    limitup=limitup,
+                    concert_pitch_period=concert_pitch_period,
+                    startperiod=not_listed_startperiod)
             new_container.append(p_new)
         return type(self)(new_container)
 
@@ -1886,9 +1993,9 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
                                       concert_pitch_period: int = 3,
                                       not_listed_startperiod: int = 3):
         return type(self)(h.adjust_register_of_identities(
-                *identity, limitup=limitup,
-                concert_pitch_period=concert_pitch_period,
-                not_listed_startperiod=not_listed_startperiod) for h in self)
+            *identity, limitup=limitup,
+            concert_pitch_period=concert_pitch_period,
+            not_listed_startperiod=not_listed_startperiod) for h in self)
 
 
 class JIScale(JIPitch.mk_iterable(mel.Scale), JIContainer):
