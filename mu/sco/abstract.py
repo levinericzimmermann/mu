@@ -105,7 +105,11 @@ class MultiSequentialEvent(ComplexEvent):
                 *data) for data in zip(*self.sequences)]
 
     def __getitem__(self, idx):
-        return self.mk_sequence()[idx]
+        seq = self.mk_sequence()[idx]
+        if type(idx) == slice:
+            return type(self)(seq)
+        else:
+            return seq
 
     def __repr__(self):
         return repr(self.mk_sequence())

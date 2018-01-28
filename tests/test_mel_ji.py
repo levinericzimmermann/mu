@@ -831,6 +831,21 @@ class JIHarmonyTest(unittest.TestCase):
         self.assertEqual(h0.intervals, h0_intervals)
         self.assertEqual(h1.intervals, h1_intervals)
 
+    def test_adjust_register_by_func(self):
+        def func(h, identities):
+            adjusted = h.adjust_register_of_identities(*identities)
+            return sum(p.harmonicity_vogel for p in adjusted.intervals)
+        m0 = ji.JIPitch((1,), val_border=2)
+        m1 = ji.JIPitch((2,), val_border=2)
+        m2 = ji.JIPitch((0, 1), val_border=2)
+        m3 = ji.JIPitch((0, 3), val_border=2)
+        m4 = ji.JIPitch((0, -1), val_border=2)
+        h0 = ji.JIHarmony([m0, m1, m2, m3, m4])
+        h0.val_border = 2
+        h0.identity
+        h1 = h0.copy()
+        self.assertEqual(h0.adjust_register_by_fitness(func), h1)
+
 
 class JICadenceTest(unittest.TestCase):
     def test_identity(self):

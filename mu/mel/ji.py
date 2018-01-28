@@ -80,6 +80,9 @@ class Monzo:
         self._vector = Monzo._init_vector(iterable, val_border)
         self.val_border = val_border
 
+    def __hash__(self):
+        return hash((self._val_shift, self._vec))
+
     @classmethod
     def from_ratio(cls, num: int, den: int, val_border=1, multiply=1
                    ) -> Type["Monzo"]:
@@ -1172,7 +1175,10 @@ class Monzo:
         return Monzo(Monzo.calc_iterables(m0, m1, operation), self.val_border)
 
     def __eq__(self: "Monzo", other: "Monzo") -> bool:
-        return tuple.__eq__(self._vector, other._vector)
+        try:
+            return tuple.__eq__(self._vector, other._vector)
+        except AttributeError:
+            return False
 
     def __add__(self, other: "Monzo") -> "Monzo":
         return self.__math(other, lambda x, y: x + y)
@@ -1868,6 +1874,26 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
                     diff = p0.differential(p1)
                     harmony.add(diff)
         return harmony
+
+    def adjust_register_by_fitness(self, function, range_harmonies=None):
+        """
+        # TODO: add documentation, make implementation better understandable
+        """
+        identities = self.identity
+        length_identities = len(identities)
+        if range_harmonies is None:
+            range_harmonies = tuple(range(8))
+        possible_solutions = itertools.combinations(
+                range_harmonies * length_identities, length_identities)
+        data = []
+        for solution in possible_solutions:
+            solution = tuple(zip(identities, solution))
+            fit = function(self, solution)
+            data.append((solution, fit))
+        minima = min(data, key=lambda i: i[1])
+        minimas = (sol for sol in data if sol[1] == minima[1])
+        return tuple(self.adjust_register_of_identities(*minima[0])
+                     for minima in minimas)
 
 
 class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
