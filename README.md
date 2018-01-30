@@ -1,5 +1,7 @@
 # mu
 
+[![Coverage Status](https://coveralls.io/repos/github/uummoo/mu/badge.svg?branch=master)](https://coveralls.io/github/uummoo/mu?branch=master)
+
 Python-representation of classical musical content, e.g. Harmony, Melody and Rhythm.
 Might be useful for algorithmic composition.
 

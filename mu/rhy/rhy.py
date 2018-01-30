@@ -83,10 +83,57 @@ class PulseChroma(muobjects.MUInt):
                 subpulse = functools.reduce(operator.mul, primes_unique)
                 self.subpulse = (PulseChroma(subpulse),)
         else:
-            self.subpulse = None
+            if length != 1:
+                self.subpulse = PulseChroma(1),
+            else:
+                self.subpulse = 0,
+
+    def __hash__(self):
+        return hash((int(self), self.subpulse))
+
+    def __eq__(self, other):
+        try:
+            sub0 = set(self.subpulse)
+            sub1 = set(other.subpulse)
+            return int.__eq__(self, other) and sub0 == sub1
+        except AttributeError:
+            return False
 
     def count_subpulse(self):
         try:
             return tuple(self / sub for sub in self.subpulse)
-        except TypeError:
+        except ZeroDivisionError:
             return 0,
+
+    def specify(self):
+        """
+        """
+        try:
+            subpath = tuple(sub.specify() for sub in self.subpulse)
+            subpath = tuple(functools.reduce(operator.add, subpath))
+        except AttributeError:
+            return SpecifiedPulseChroma(self, 0),
+        return tuple(SpecifiedPulseChroma(self, sub) for sub in subpath)
+
+
+class SpecifiedPulseChroma:
+    def __init__(self, length, subpulse):
+        self._length = int(length)
+        self.subpulse = subpulse
+
+    def __repr__(self):
+        return repr(self._length)
+
+    def __eq__(self, other):
+        try:
+            test0 = self._length == other._length
+            test1 = self.subpulse == other.subpulse
+            return test0 and test1
+        except AttributeError:
+            return False
+
+    def count_subpulse(self):
+        try:
+            return self._length / self.subpulse
+        except ZeroDivisionError:
+            return 0
