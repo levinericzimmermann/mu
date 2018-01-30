@@ -33,17 +33,40 @@ class Tone(abstract.UniformEvent):
 
     @music21.decorator
     def convert2music21(self):
+        raise ValueError()
         stream = music21.m21.stream.Stream()
-        duration = self.duration.convert2music21()
+        duration_mu = self.duration
+        duration = duration_mu.convert2music21()
         if self.pitch is not None:
             pitch = self.pitch.convert2music21()
-            stream.append(music21.m21.note.Note(pitch, duration=duration))
+            if duration_mu > 4:
+                am_4 = int(duration_mu // 4)
+                rest = int(duration_mu % 4)
+                for i in range(am_4):
+                    stream.append(music21.m21.note.Note(
+                        pitch,
+                        duration=music21.m21.duration.Duration(4),
+                        tie=music21.m21.tie.Tie()))
+                if rest > 0:
+                    stream.append(music21.m21.note.Note(
+                        pitch,
+                        duration=music21.m21.duration.Duration(rest),
+                        tie=music21.m21.tie.Tie("stop")))
+            else:
+                stream.append(music21.m21.note.Note(pitch, duration=duration))
             difference = self.delay - self.duration
             if difference != 0:
                 rhythm = rhy.RhyUnit(difference).convert2music21()
                 stream.append(music21.m21.note.Rest(duration=rhythm))
         else:
-            stream.append(music21.m21.note.Rest(duration=duration))
+            if duration > 4:
+                am_4 = duration // 4
+                rest = duration % 4
+                for i in range(am_4):
+                    stream.append(music21.m21.note.Rest(duration=4))
+                stream.append(music21.m21.note.Rest(duration=rest))
+            else:
+                stream.append(music21.m21.note.Rest(duration=duration))
         return stream
 
 
@@ -80,15 +103,42 @@ class Chord(abstract.SimultanEvent):
 
     @music21.decorator
     def convert2music21(self):
+        # TODO: make a proper implementation of this
         stream = music21.m21.stream.Stream()
         pitches = tuple(p.convert2music21() for p in self.harmony)
+        duration_mu = float(self.duration)
         duration = self.duration.convert2music21()
         if pitches:
-            chord = music21.m21.chord.Chord(pitches,
-                                            duration=duration)
+            if duration_mu > 4:
+                am_4 = int(duration_mu // 4)
+                rest = duration_mu % 4
+                for i in range(am_4):
+                    if i == 0:
+                        tie = "start"
+                    elif i == am_4 - 1 and rest < 1:
+                        tie = "stop"
+                    else:
+                        tie = "continue"
+                    chord = music21.m21.chord.Chord(
+                            tuple(p.convert2music21() for p in self.harmony),
+                            duration=music21.m21.duration.Duration(4))
+                    chord.tie = music21.m21.tie.Tie(tie)
+                    stream.append(chord)
+                if rest > 0:
+                    chord = music21.m21.chord.Chord(
+                            tuple(p.convert2music21() for p in self.harmony),
+                            duration=music21.m21.duration.Duration(rest))
+                    chord.tie = music21.m21.tie.Tie("stop")
+                    stream.append(chord)
+
+            else:
+                chord = music21.m21.chord.Chord(
+                        pitches, duration=duration)
+                stream.append(chord)
+
         else:
             chord = music21.m21.note.Rest(duration=duration)
-        stream.append(chord)
+            stream.append(chord)
         difference = self.delay - self.duration
         if difference != 0:
             rhythm = rhy.RhyUnit(difference).convert2music21()
