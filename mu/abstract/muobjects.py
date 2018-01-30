@@ -23,6 +23,9 @@ class MUSet(mutate.mutate_class(set)):
         return type(self)([t.copy() for t in self])
 
 
+MUInt = mutate.mutate_class(int)
+
+
 MUFloat = mutate.mutate_class(float)
 
 

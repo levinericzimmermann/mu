@@ -686,6 +686,8 @@ class Monzo:
         >>> m0 = Monzo((0, -1,), val_border=2)
         >>> m0.numerator
         1
+        >>> m0.ratio
+        Fraction(8, 5)
         >>> m0.ratio.numerator
         8
         """
@@ -704,8 +706,10 @@ class Monzo:
         >>> m0 = Monzo((0, 1,), val_border=2)
         >>> m0.denominator
         1
+        >>> m0.ratio
+        Fraction(5, 4)
         >>> m0.ratio.denominator
-        5
+        4
         """
         denominator = 1
         for number, exponent in zip(self.val, self):

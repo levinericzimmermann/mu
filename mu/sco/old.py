@@ -33,7 +33,6 @@ class Tone(abstract.UniformEvent):
 
     @music21.decorator
     def convert2music21(self):
-        raise ValueError()
         stream = music21.m21.stream.Stream()
         duration_mu = self.duration
         duration = duration_mu.convert2music21()

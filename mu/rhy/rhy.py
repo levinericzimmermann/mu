@@ -1,13 +1,18 @@
 from mu.time import time
 from mu.abstract import muobjects
 from mu.utils import music21
+from mu.utils import prime_factors
 import abc
 import functools
+import operator
+import itertools
 from typing import Union
 
 
 class AbstractRhythm(abc.ABC):
-    """A Rhythm shall be a structure to organise time."""
+    """
+    A Rhythm may be a structure to organise time.
+    """
     @abc.abstractmethod
     def flat(self):
         raise NotImplementedError
@@ -59,3 +64,29 @@ class RhyCompound(AbstractRhythm, muobjects.MUList):
         if id(arg) == id(self):
             arg = arg.copy()
         list.append(self, arg)
+
+
+class PulseChroma(muobjects.MUInt):
+    def __init__(self, length):
+        muobjects.MUInt.__init__(length)
+        primes = prime_factors.factorise(length)
+        length_primes = len(primes)
+        if length_primes > 1:
+            primes_unique = tuple(set(primes))
+            if length_primes == len(primes_unique):
+                combinations_num = len(primes_unique) - 1
+                subpulse = itertools.combinations(primes, combinations_num)
+                subpulse = (PulseChroma(functools.reduce(operator.mul, sub))
+                            for sub in subpulse)
+                self.subpulse = tuple(subpulse)
+            else:
+                subpulse = functools.reduce(operator.mul, primes_unique)
+                self.subpulse = (PulseChroma(subpulse),)
+        else:
+            self.subpulse = None
+
+    def count_subpulse(self):
+        try:
+            return tuple(self / sub for sub in self.subpulse)
+        except TypeError:
+            return 0,
