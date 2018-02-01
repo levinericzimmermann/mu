@@ -380,6 +380,16 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m2.harmonicity_euler, 7)
         self.assertEqual(m3.harmonicity_euler, 8)
 
+    def test_harmonicity_tenney(self):
+        m0 = ji.Monzo((1,), val_border=2)
+        m1 = ji.Monzo([], val_border=2)
+        m2 = ji.Monzo((0, 1), val_border=2)
+        m3 = ji.Monzo((0, -1), val_border=2)
+        self.assertEqual(m0.harmonicity_tenney, 2.584962500721156)
+        self.assertEqual(m1.harmonicity_tenney, 0)
+        self.assertEqual(m2.harmonicity_tenney, 4.321928094887363)
+        self.assertEqual(m3.harmonicity_tenney, 5.321928094887363)
+
 
 class JIPitchTest(unittest.TestCase):
     def test_calc(self):

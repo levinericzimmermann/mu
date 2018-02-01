@@ -1015,6 +1015,32 @@ class Monzo:
         return sign(ind_num - ind_de) / (ind_num + ind_de)
 
     @property
+    def harmonicity_tenney(self) -> float:
+        r"""
+        Calculate the harmonic distance of an interval
+        following James Tenneys definition. A higher number
+        means a more consonant interval / a less
+        complicated harmony.
+        tenneys(1/1) is definied as infinite.
+        >>> m0 = Monzo((1,), val_border=2)
+        >>> m1 = Monzo([], val_border=2)
+        >>> m2 = Monzo((0, 1,), val_border=2)
+        >>> m3 = Monzo((0, -1,), val_border=2)
+        >>> m0.harmonicity_tenney
+        2.584962500721156
+        >>> m1.harmonicity_tenney
+        0.0
+        >>> m2.harmonicity_tenney
+        4.321928094887363
+        >>> m3.harmonicity_tenney
+        -0.10638297872340426
+        """
+        ratio = self.ratio
+        num = ratio.numerator
+        de = ratio.denominator
+        return math.log(num * de, 2)
+
+    @property
     def lv(self) -> int:
         if self:
             return abs(Monzo.gcd(*tuple(filter(lambda x: x != 0, self))))
