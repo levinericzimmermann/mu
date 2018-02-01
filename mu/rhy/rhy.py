@@ -66,7 +66,7 @@ class RhyCompound(AbstractRhythm, muobjects.MUList):
         list.append(self, arg)
 
 
-class PulseChroma(muobjects.MUInt):
+class PulseChroma(int):
     def __init__(self, length):
         muobjects.MUInt.__init__(length)
         primes = prime_factors.factorise(length)
@@ -116,17 +116,17 @@ class PulseChroma(muobjects.MUInt):
         return tuple(SpecifiedPulseChroma(self, sub) for sub in subpath)
 
 
-class SpecifiedPulseChroma:
+class SpecifiedPulseChroma(int):
     def __init__(self, length, subpulse):
-        self._length = int(length)
+        muobjects.MUInt.__init__(length)
         self.subpulse = subpulse
 
-    def __repr__(self):
-        return repr(self._length)
+    def __new__(cls, *args, **kwargs):
+        return muobjects.MUInt.__new__(cls, *args[:-1], **kwargs)
 
     def __eq__(self, other):
         try:
-            test0 = self._length == other._length
+            test0 = int.__eq__(self, other)
             test1 = self.subpulse == other.subpulse
             return test0 and test1
         except AttributeError:
@@ -134,6 +134,6 @@ class SpecifiedPulseChroma:
 
     def count_subpulse(self):
         try:
-            return self._length / self.subpulse
+            return self / self.subpulse
         except ZeroDivisionError:
             return 0

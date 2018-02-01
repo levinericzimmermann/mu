@@ -16,6 +16,7 @@ class MelodyTest(unittest.TestCase):
     d0 = rhy.RhyUnit(400)
     d1 = rhy.RhyUnit(800)
     t0 = old.Tone(p0, d0)
+    t1 = old.Tone(p1, d1)
     mel0 = mel.Mel([p0] * 3)
     mel1 = mel.Mel([p1] * 3)
     rhy0 = rhy.RhyCompound([d0] * 3)
@@ -31,6 +32,8 @@ class MelodyTest(unittest.TestCase):
 
     def test_duration(self):
         self.assertEqual(self.melody0.duration, sum(self.rhy0))
+        melody1 = old.Melody([old.Rest(3)])
+        self.assertEqual(melody1.duration, 3)
 
     def test_get_attributes(self):
         self.assertEqual(self.melody0.get_mel(), self.mel0)
@@ -79,6 +82,12 @@ class MelodyTest(unittest.TestCase):
 
     def test_freq(self):
         self.assertEqual(self.melody0.freq, self.mel0.freq)
+
+    def test_add(self):
+        compound = old.Melody([self.t0, self.t1, self.t1])
+        melody0 = old.Melody([self.t0])
+        melody1 = old.Melody([self.t1] * 2)
+        self.assertEqual(melody0 + melody1, compound)
 
 
 class ToneSetTest(unittest.TestCase):

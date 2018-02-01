@@ -83,8 +83,8 @@ class PulseChromaTest(unittest.TestCase):
     def test_specify(self):
         chrome0 = rhy.PulseChroma(10)
         specified000 = rhy.SpecifiedPulseChroma(1, 0)
-        specified00 = rhy.SpecifiedPulseChroma(5, specified000)
-        specified01 = rhy.SpecifiedPulseChroma(2, specified000)
+        specified00 = rhy.SpecifiedPulseChroma(2, specified000)
+        specified01 = rhy.SpecifiedPulseChroma(5, specified000)
         specified0 = rhy.SpecifiedPulseChroma(10, specified00)
         specified1 = rhy.SpecifiedPulseChroma(10, specified01)
-        self.assertEqual(chrome0.specify(), (specified1, specified0))
+        self.assertEqual(chrome0.specify(), (specified0, specified1))

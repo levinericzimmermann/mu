@@ -252,15 +252,39 @@ class Polyphon(abstract.SimultanEvent):
         longest voice, so that
         sum(Polyphon[0].rhy) == sum(Polyphon[1].rhy) == ...
         """
+        poly = self.copy()
         total = self.duration
-        for v in self:
+        for v in poly:
             summed = sum(v.rhy)
             if summed < total:
                 v.append(Rest(rhy.RhyUnit(total - summed)))
+        return poly
 
-        @property
-        def duration(self):
-            return time.Time(max(tuple(sum(element.dur) for element in self)))
+    @property
+    def duration(self):
+        dur_sub = tuple(element.duration for element in self)
+        try:
+            return time.Time(max(dur_sub))
+        except ValueError:
+            return None
+
+    def horizontal_add(self, other: "Polyphon", fill=True):
+        voices = []
+        poly0 = self.copy()
+        if fill is True:
+            poly0 = poly0.fill()
+        for m0, m1 in zip(poly0, other):
+            voices.append(m0 + m1)
+        length0 = len(self)
+        length1 = len(other)
+        for m_rest in poly0[length1:]:
+            voices.append(m_rest.copy())
+        for m_rest in other[length0:]:
+            m_rest = type(m_rest)([Rest(poly0.duration)]) + m_rest
+            voices.append(m_rest.copy())
+        res = type(self)(voices)
+        res = res.fill()
+        return res
 
 
 class Instrument:
