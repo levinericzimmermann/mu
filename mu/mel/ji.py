@@ -8,6 +8,7 @@ import itertools
 import math
 import collections
 import json
+import operator
 from typing import (Callable, List, Type)
 try:
     from quicktions import Fraction
@@ -272,6 +273,33 @@ class Monzo:
             while f < 1:
                 f *= val_border
         return f
+
+    @staticmethod
+    def adjust_monzo(vector: tuple, val: tuple, val_border: int) -> tuple:
+        r"""
+        Adjust a vector and its val depening on the val_border.
+        Arguments:
+            * vector: The monzo, which shall be adjusted
+            * val: Its corresponding val
+            * val_border
+        >>> vector0 = (1,)
+        >>> val0 = (3,)
+        >>> val_border = 2
+        >>> Monzo.adjust_monzo(vector0, val0, val_border)
+        ((-1, 1), (2, 3))
+        """  # TODO Make proper description what actually happens
+        if vector:
+            if val_border > 1:
+                multiplied = functools.reduce(
+                    operator.mul, (p ** e for p, e in zip(val, vector)))
+                res = math.log(val_border / multiplied, val_border)
+                if res < 0:
+                    res -= 1
+                res = int(res)
+                val = (val_border,) + val
+                vector = (res,) + vector
+            return vector, val
+        return (1,), (1,)
 
     @staticmethod
     def discard_nulls(iterable):
@@ -664,6 +692,24 @@ class Monzo:
         return copied
 
     @property
+    def factorised(self) -> tuple:
+        """
+        Return factorised / decomposed version of itsef.
+        >>> m0 = Monzo((0, 1,), val_border=2)
+        >>> m0.factorised
+        (2, 2, 5)
+        >>> m1 = Monzo.from_ratio(7, 6)
+        >>> m1.factorised
+        (2, 3, 7)
+        """
+        vec = self._vec
+        val = self.val
+        border = self.val_border
+        vec_adjusted, val_adjusted = type(self).adjust_monzo(vec, val, border)
+        decomposed = ([p] * abs(e) for p, e in zip(val_adjusted, vec_adjusted))
+        return tuple(functools.reduce(operator.add, decomposed))
+
+    @property
     def ratio(self) -> Fraction:
         """
         Return the Monzo transformed to a Ratio (Fraction-Object)
@@ -931,28 +977,15 @@ class Monzo:
 
     @property
     def harmonicity_wilson(self) -> int:
-        ratio = self.ratio
-        num = ratio.numerator
-        de = ratio.denominator
-        while num % 2 == 0:
-            num /= 2
-        while de % 2 == 0:
-            de /= 2
-        return int(sum(filter(lambda x: x > 1, (num, de))))
+        decomposed = self.factorised
+        return int(sum(filter(lambda x: x != 2, decomposed)))
 
     @property
     def harmonicity_vogel(self) -> int:
-        ratio = self.ratio
-        num = ratio.numerator
-        de = ratio.denominator
-        fac0 = 0
-        while num % 2 == 0:
-            num /= 2
-            fac0 += 1
-        while de % 2 == 0:
-            de /= 2
-            fac0 += 1
-        return int(sum(filter(lambda x: x > 1, (num, de))) + fac0)
+        decomposed = self.factorised
+        decomposed_filtered = tuple(filter(lambda x: x != 2, decomposed))
+        am_2 = len(decomposed) - len(decomposed_filtered)
+        return int(sum(decomposed_filtered) + am_2)
 
     @property
     def harmonicity_euler(self) -> int:
@@ -974,12 +1007,7 @@ class Monzo:
         >>> m3.harmonicity_euler
         8
         """
-        ratio = self.ratio
-        num = ratio.numerator
-        de = ratio.denominator
-        decomposed_num = prime_factors.factorise(num)
-        decomposed_de = prime_factors.factorise(de)
-        decomposed = decomposed_num + decomposed_de
+        decomposed = self.factorised
         return 1 + sum(x - 1 for x in decomposed)
 
     @property
@@ -1021,7 +1049,7 @@ class Monzo:
         following James Tenneys definition. A higher number
         means a more consonant interval / a less
         complicated harmony.
-        tenneys(1/1) is definied as infinite.
+        tenney(1/1) is definied as 0.
         >>> m0 = Monzo((1,), val_border=2)
         >>> m1 = Monzo([], val_border=2)
         >>> m2 = Monzo((0, 1,), val_border=2)
@@ -1181,6 +1209,11 @@ class Monzo:
 
     def summed(self) -> int:
         return sum(map(lambda x: abs(x), self))
+
+    def normalize(self, prime) -> "Monzo":
+        ratio = self.ratio
+        adjusted = type(self).adjust_ratio(ratio, prime)
+        return type(self).from_ratio(adjusted.numerator, adjusted.denominator)
 
     def subvert(self) -> list:
         def ispos(num):
@@ -1914,7 +1947,7 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         if range_harmonies is None:
             range_harmonies = tuple(range(8))
         possible_solutions = itertools.combinations(
-                range_harmonies * length_identities, length_identities)
+            range_harmonies * length_identities, length_identities)
         data = []
         for solution in possible_solutions:
             solution = tuple(zip(identities, solution))

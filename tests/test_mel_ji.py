@@ -69,6 +69,16 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m1.val, (3, 5))
         self.assertEqual(m2.val, (5, 7, 11, 13, 17))
 
+    def test_factorised(self):
+        m0 = ji.Monzo([-1, 1], 1)
+        m1 = ji.Monzo([-1, 1], 2)
+        m2 = ji.Monzo([2], 2)
+        m3 = ji.Monzo([2, -1], 2)
+        self.assertEqual(m0.factorised, (2, 3))
+        self.assertEqual(m1.factorised, (3, 5))
+        self.assertEqual(m2.factorised, (2, 2, 2, 3, 3))
+        self.assertEqual(m3.factorised, (3, 3, 5))
+
     def test_lv(self):
         m0 = ji.Monzo([1], 2)
         m1 = ji.Monzo([2], 2)
@@ -117,6 +127,29 @@ class MonzoTest(unittest.TestCase):
             Fraction(15, 7), 2), Fraction(15, 14))
         self.assertEqual(ji.Monzo.adjust_ratio(
             Fraction(15, 7), 3), Fraction(15, 7))
+
+    def test_adjust_monzo(self):
+        vec0 = (1,)
+        val0 = (3,)
+        vec0res = (-1, 1)
+        val0res = (2, 3)
+        self.assertEqual(
+            ji.Monzo.adjust_monzo(vec0, val0, 2),
+            (vec0res, val0res))
+        vec1 = (0, 1)
+        val1 = (3, 5)
+        vec1res = (-2, 0, 1)
+        val1res = (2, 3, 5)
+        self.assertEqual(
+            ji.Monzo.adjust_monzo(vec1, val1, 2),
+            (vec1res, val1res))
+        vec2 = (-1, 1)
+        val2 = (3, 5)
+        vec2res = (0, -1, 1)
+        val2res = (2, 3, 5)
+        self.assertEqual(
+            ji.Monzo.adjust_monzo(vec2, val2, 2),
+            (vec2res, val2res))
 
     def test_ratio2monzo(self):
         self.assertEqual(ji.Monzo.ratio2monzo(
@@ -332,6 +365,11 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(abs(p0), p2)
         self.assertEqual(abs(p1), p3)
 
+    def test_normalize(self):
+        p0 = ji.JIPitch((0, 1), 1)
+        p1 = ji.JIPitch((-1, 1), 1)
+        self.assertEqual(p0.normalize(2), p1)
+
     def test_is_symmetric(self):
         p0 = ji.JIPitch((1, -1), 2)
         p1 = ji.JIPitch((2, -2, 0, -2), 2)
@@ -346,7 +384,7 @@ class MonzoTest(unittest.TestCase):
 
     def test_sparsity(self):
         m0 = ji.Monzo((0, 0, 1), val_border=1)
-        self.assertEqual(m0.sparsity, 2/3)
+        self.assertEqual(m0.sparsity, 2 / 3)
 
     def test_adjusted_register(self):
         m0 = ji.Monzo.from_ratio(9, 8, val_border=2)
