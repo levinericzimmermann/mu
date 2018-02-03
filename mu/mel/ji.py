@@ -1,3 +1,11 @@
+# @Author: Levin Eric Zimmermann
+# @Date:   2018-02-02T15:56:18+01:00
+# @Email:  levin-eric.zimmermann@folkwang-uni.de
+# @Project: mu
+# @Last modified by:   Levin_Eric_Zimmermann
+# @Last modified time: 2018-02-03T12:47:38+01:00
+
+
 from mu.mel import abstract
 from mu.mel import mel
 from mu.abstract import muobjects
@@ -91,6 +99,11 @@ class Monzo:
         obj.val_border = val_border
         obj.multiply = multiply
         return obj
+
+    @classmethod
+    def from_str(cls, string) -> Type["Monzo"]:
+        num, den = string.split("/")
+        return cls.from_ratio(int(num), int(den))
 
     @classmethod
     def from_monzo(cls, *arg, val_border=1, multiply=1) -> Type["Monzo"]:
@@ -1239,7 +1252,9 @@ class Monzo:
 
     def __eq__(self: "Monzo", other: "Monzo") -> bool:
         try:
-            return tuple.__eq__(self._vector, other._vector)
+            test0 = tuple.__eq__(self._vec, other._vec)
+            test1 = self._val_shift == other._val_shift
+            return test0 and test1
         except AttributeError:
             return False
 
@@ -1382,6 +1397,11 @@ class JIContainer:
         super(type(self), self).__init__(iterable)
         self.multiply = multiply
         self._val_border = 1
+
+    @staticmethod
+    def from_str(cls, string):
+        ratios = string.split(", ")
+        return cls(JIPitch.from_str(r) for r in ratios)
 
     @property
     def val_border(self) -> int:
@@ -1587,6 +1607,10 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
         JIContainer.__init__(self, iterable, multiply)
 
     @classmethod
+    def from_str(cls, string) -> "JIMel":
+        return JIContainer.from_str(cls, string)
+
+    @classmethod
     def from_json(cls, js):
         return JIContainer.from_json(cls, js)
 
@@ -1778,6 +1802,10 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
 class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
     def __init__(self, iterable, multiply=260):
         return JIContainer.__init__(self, iterable, multiply)
+
+    @classmethod
+    def from_str(cls, string) -> "JIHarmony":
+        return JIContainer.from_str(cls, string)
 
     @classmethod
     def from_json(cls, js):

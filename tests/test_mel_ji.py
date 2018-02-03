@@ -1,9 +1,52 @@
+# @Author: Levin Eric Zimmermann <levin>
+# @Date:   2018-02-03T12:40:48+01:00
+# @Email:  levin-eric.zimmermann@folkwang-uni.de
+# @Project: mu
+# @Last modified by:   Levin_Eric_Zimmermann
+# @Last modified time: 2018-02-03T12:47:51+01:00
+
+
 import unittest
 from mu.mel import ji
 from fractions import Fraction
 
 
 class MonzoTest(unittest.TestCase):
+    def test_from_ratio(self):
+        m0 = ji.Monzo([0, 1], 2)
+        m0B = ji.Monzo.from_ratio(5, 4, val_border=2)
+        m1 = ji.Monzo([2, ], 2)
+        m1B = ji.Monzo.from_ratio(9, 8, val_border=2)
+        m2 = ji.Monzo([-1, 1, 1], 1)
+        m2B = ji.Monzo.from_ratio(15, 2, val_border=1)
+        self.assertEqual(m0B, m0)
+        self.assertEqual(m1B, m1)
+        self.assertEqual(m2B, m2)
+
+    def test_from_str(self):
+        m0 = ji.Monzo([0, 1], 2)
+        m0B = ji.Monzo.from_str("5/4")
+        m0B._val_shift = 1
+        m1 = ji.Monzo([2, ], 2)
+        m1B = ji.Monzo.from_str("9/8")
+        m1B._val_shift = 1
+        m2 = ji.Monzo([-1, 1, 1], 1)
+        m2B = ji.Monzo.from_str("15/2")
+        self.assertEqual(m0B, m0)
+        self.assertEqual(m1B, m1)
+        self.assertEqual(m2B, m2)
+
+    def test_from_monzo(self):
+        m0 = ji.Monzo([0, 1], 2)
+        m0B = ji.Monzo.from_monzo(0, 1, val_border=2)
+        m1 = ji.Monzo([2], 2)
+        m1B = ji.Monzo.from_monzo(2, val_border=2)
+        m2 = ji.Monzo([-1, 1, 1], 1)
+        m2B = ji.Monzo.from_monzo(-1, 1, 1, val_border=1)
+        self.assertEqual(m0B, m0)
+        self.assertEqual(m1B, m1)
+        self.assertEqual(m2B, m2)
+
     def test_gcd(self):
         self.assertEqual(ji.Monzo.gcd(2, 4), 2)
         self.assertEqual(ji.Monzo.gcd(3, 9), 3)
@@ -487,6 +530,12 @@ class JIScaleTest(unittest.TestCase):
 
 
 class JIMelTest(unittest.TestCase):
+    def test_from_str(self):
+        m0 = ji.JIMel([ji.r(1, 1), ji.r(4, 3),
+                       ji.r(5, 4), ji.r(9, 8)])
+        m0B = ji.JIMel.from_str("1/1, 4/3, 5/4, 9/8")
+        self.assertEqual(m0, m0B)
+
     def test_math(self):
         n0 = ji.JIPitch([0, 1])
         n1 = ji.JIPitch([0, 0, 1])
