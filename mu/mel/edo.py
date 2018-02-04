@@ -1,3 +1,11 @@
+# @Author: Levin Eric Zimmermann <Levin_Eric_Zimmermann>
+# @Date:   2018-01-05T23:56:21+01:00
+# @Email:  levin-eric.zimmermann@folkwang-uni.de
+# @Project: mu
+# @Last modified by:   Levin_Eric_Zimmermann
+# @Last modified time: 2018-02-04T00:52:10+01:00
+
+
 from mu.mel import abstract
 from mu.mel import mel
 import math
@@ -19,9 +27,11 @@ class EdoPitch(abstract.AbstractPitch):
         return str((self.pitchclass, self.multiply))
 
     @staticmethod
-    def isPower(num, base):
-        """https://stackoverflow.com/questions/15352593/how-\
-        to-check-if-a-number-is-a-power-of-base-b"""
+    def is_power(num, base):
+        """
+        https://stackoverflow.com/questions/15352593/how-\
+        to-check-if-a-number-is-a-power-of-base-b
+        """
         if base == 1 and num != 1:
             return False
         if base == 1 and num == 1:
@@ -43,7 +53,7 @@ class EdoPitch(abstract.AbstractPitch):
             self.__pitchclass = arg
         else:
             msg = "Pitchclass can only be between 0 - {0}".format(
-                self.steps - 1)
+                self._steps - 1)
             raise ValueError(msg)
 
     @property
@@ -52,7 +62,7 @@ class EdoPitch(abstract.AbstractPitch):
 
     @multiply.setter
     def multiply(self, arg):
-        if EdoPitch.isPower(arg, self._frame):
+        if arg == 1 or EdoPitch.is_power(arg, self._frame):
             self.__multiply = arg
         else:
             w = "Multiply-Argument has to be a power of the frame {0}.".format(
@@ -65,8 +75,8 @@ class EdoPitch(abstract.AbstractPitch):
 
     @property
     def p0(self):
-        return self._concert_pitch / pow(self.factor,
-                                         self._concert_pitch_shift)
+        return self._concert_pitch / pow(
+            self.factor, self._concert_pitch_shift)
 
     def calc(self, factor: float=1):
         return (self.factor ** self.pitchclass

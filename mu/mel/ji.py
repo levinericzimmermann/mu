@@ -173,9 +173,9 @@ class Monzo:
         >>> m0 = (1, 0, -1)
         >>> m1 = (1,)
         >>> m0_adjusted, m1_adjusted = Monzo.adjusted_monzos(m0, m1)
-        >>> m0
+        >>> m0_adjusted
         (1, 0, -1)
-        >>> m1
+        >>> m1_adjusted
         (1, 0, 0)
         """
         m0 = m0._vec
@@ -594,7 +594,7 @@ class Monzo:
         Calculate indigestibility of a number, following
         Clarence Barlows definition given in 'The Ratio Book' (1992).
         Arguments:
-            * num -> integer, whose indigestibility value shall be found
+            * num -> integer, whose indigestibility value shall be calculated
         >>> Monzo.indigestibility(1)
         0
         >>> Monzo.indigestibility(2)
