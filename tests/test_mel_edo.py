@@ -1,3 +1,11 @@
+# @Author: Levin Eric Zimmermann <Levin_Eric_Zimmermann>
+# @Date:   2018-02-04T01:03:49+01:00
+# @Email:  levin-eric.zimmermann@folkwang-uni.de
+# @Project: mu
+# @Last modified by:   Levin_Eric_Zimmermann
+# @Last modified time: 2018-02-04T01:07:09+01:00
+
+
 import unittest
 from mu.mel import edo
 
