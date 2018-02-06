@@ -1823,7 +1823,9 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
 
     @property
     def intervals(self):
-        """return all present intervals between single notes"""
+        """
+        Return all present intervals between single notes.
+        """
         data = tuple(self)
         intervals = JIHarmony([])
         for i, p0 in enumerate(data):
@@ -2104,6 +2106,26 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
             if h0 == h1:
                 repeats += 1
         return repeats
+
+    @property
+    def chord_rate(self):
+        container = []
+        frequency = []
+        for t in self:
+            if t in container:
+                frequency[container.index(t)] += 1
+            else:
+                container.append(t)
+                frequency.append(1)
+        return tuple(zip(container, frequency))
+
+    @property
+    def chord_rate_sorted(self):
+        return tuple(sorted(self.chord_rate, key=lambda obj: obj[1]))
+
+    @property
+    def different_chords(self):
+        return tuple(zip(*self.chord_rate))[0]
 
     def adjust_register_of_identities(self, *identity,
                                       limitup: float = 2**6,

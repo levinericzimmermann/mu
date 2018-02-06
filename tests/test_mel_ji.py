@@ -991,6 +991,50 @@ class JICadenceTest(unittest.TestCase):
         self.assertEqual(cadence1.has_empty_chords, True)
         self.assertEqual(cadence2.has_empty_chords, False)
 
+    def test_chord_rate(self):
+        n0 = ji.JIPitch([], val_border=2)
+        n1 = ji.JIPitch([1], val_border=2)
+        n2 = ji.JIPitch([1, 1], val_border=2)
+        n3 = ji.JIPitch([0, 1], val_border=2)
+        h0 = ji.JIHarmony([n0, n1, n3])
+        h1 = ji.JIHarmony([n0, n1, n2])
+        h2 = ji.JIHarmony([n0, n1])
+        cadence0 = ji.JICadence((h0, h0, h0))
+        cadence1 = ji.JICadence((h0, h0, h1, h2))
+        self.assertEqual(cadence0.chord_rate, ((h0, 3),))
+        self.assertEqual(cadence1.chord_rate, ((h0, 2), (h1, 1), (h2, 1)))
+
+    def test_chord_rate_sorted(self):
+        n0 = ji.JIPitch([], val_border=2)
+        n1 = ji.JIPitch([1], val_border=2)
+        n2 = ji.JIPitch([1, 1], val_border=2)
+        n3 = ji.JIPitch([0, 1], val_border=2)
+        h0 = ji.JIHarmony([n0, n1, n3])
+        h1 = ji.JIHarmony([n0, n1, n2])
+        h2 = ji.JIHarmony([n0, n1])
+        cadence0 = ji.JICadence((h1, h0, h0, h0))
+        cadence1 = ji.JICadence((h0, h0, h1, h2))
+        self.assertEqual(cadence0.chord_rate_sorted, ((h1, 1), (h0, 3)))
+        self.assertEqual(cadence1.chord_rate_sorted,
+                         ((h1, 1), (h2, 1), (h0, 2)))
+
+    def test_different_chords(self):
+        n0 = ji.JIPitch([], val_border=2)
+        n1 = ji.JIPitch([1], val_border=2)
+        n2 = ji.JIPitch([1, 1], val_border=2)
+        n3 = ji.JIPitch([0, 1], val_border=2)
+        h0 = ji.JIHarmony([n0, n1, n3])
+        h1 = ji.JIHarmony([n0, n1, n2])
+        h2 = ji.JIHarmony([n0, n1])
+        cadence0 = ji.JICadence((h1, h0, h0))
+        cadence1 = ji.JICadence((h0, h0, h1, h2))
+        cadence2 = ji.JICadence((h2, h2, h2))
+        cadence3 = ji.JICadence((h0,))
+        self.assertEqual(cadence0.different_chords, (h1, h0))
+        self.assertEqual(cadence1.different_chords, (h0, h1, h2))
+        self.assertEqual(cadence2.different_chords, (h2,))
+        self.assertEqual(cadence3.different_chords, (h0,))
+
 
 class JIModule(unittest.TestCase):
     def test_m(self):
