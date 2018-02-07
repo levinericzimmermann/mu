@@ -1,3 +1,11 @@
+# @Author: Levin Eric Zimmermann <levin>
+# @Date:   2018-02-07T18:18:59+01:00
+# @Email:  levin-eric.zimmermann@folkwang-uni.de
+# @Project: mu
+# @Last modified by:   uummoo
+# @Last modified time: 2018-02-07T18:20:40+01:00
+
+
 from typing import Callable, Optional, Tuple, Union
 from mu.abstract import muobjects
 from mu.sco import abstract
@@ -176,6 +184,25 @@ class Melody(abstract.MultiSequentialEvent):
 
     def __hash__(self):
         return hash(tuple(hash(t) for t in self))
+
+    def tie(self):
+        def sub(melody):
+            new = []
+            for i, t0 in enumerate(melody):
+                try:
+                    t1 = melody[i + 1]
+                except IndexError:
+                    new.append(t0)
+                    break
+                if t0.duration == t0.delay and t0.pitch == t1.pitch:
+                    t_new = type(t0)(t0.pitch,
+                                     t0.duration + t1.delay,
+                                     t0.duration + t1.duration)
+                    return new + sub([t_new] + melody[i + 2:])
+                else:
+                    new.append(t0)
+            return new
+        return type(self)(sub(list(self)))
 
 
 class JIMelody(Melody):

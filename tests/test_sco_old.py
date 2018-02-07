@@ -1,3 +1,11 @@
+# @Author: Levin Eric Zimmermann <uummoo>
+# @Date:   2018-02-07T18:28:10+01:00
+# @Email:  levin-eric.zimmermann@folkwang-uni.de
+# @Project: mu
+# @Last modified by:   uummoo
+# @Last modified time: 2018-02-07T18:28:16+01:00
+
+
 import unittest
 from mu.sco import old
 from mu.mel import mel
@@ -88,6 +96,16 @@ class MelodyTest(unittest.TestCase):
         melody0 = old.Melody([self.t0])
         melody1 = old.Melody([self.t1] * 2)
         self.assertEqual(melody0 + melody1, compound)
+
+    def test_tie(self):
+        melodyTest0 = old.Melody([old.Tone(self.t0.pitch, self.t0.delay * 3)])
+        self.assertEqual(self.melody0.tie(), melodyTest0)
+        melodyTest1 = old.Melody([old.Tone(self.t0.pitch, self.t0.delay * 2),
+                                  self.t1])
+        melody1 = old.Melody([self.t0, self.t0, self.t1])
+        self.assertEqual(melody1.tie(), melodyTest1)
+        melody2 = old.Melody([self.t0, self.t1, self.t0])
+        self.assertEqual(melody2.tie(), melody2)
 
 
 class ToneSetTest(unittest.TestCase):
