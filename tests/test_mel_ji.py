@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-02-07T18:20:28+01:00
+# @Last modified time: 2018-02-26T22:43:39+01:00
 
 
 import unittest
@@ -1034,6 +1034,38 @@ class JICadenceTest(unittest.TestCase):
         self.assertEqual(cadence1.different_chords, (h0, h1, h2))
         self.assertEqual(cadence2.different_chords, (h2,))
         self.assertEqual(cadence3.different_chords, (h0,))
+
+
+class JIStencilTest(unittest.TestCase):
+    def test_add_zero(self):
+        m0 = ji.Monzo([0, 1], 2)
+        tuple0 = (m0, 2)
+        tuple1 = (m0, 0, 2)
+        stencil = ji.JIStencil(tuple0, tuple1)
+        self.assertEqual(stencil._vector[0], stencil._vector[1])
+
+    def test_convert2harmony(self):
+        p0 = ji.JIPitch((1,), 2)
+        p1 = ji.JIPitch((0, 1), 2)
+        teststencil = ji.JIStencil(
+                (p0, 0, 2), (p1, 1, 3))
+        testharmony = ji.JIHarmony((p0.scalar(0), p0,
+                                    p1, p1 + p1))
+        self.assertEqual(teststencil.convert2harmony(), testharmony)
+
+    def test_primes(self):
+        p0 = ji.JIPitch((1,), 2)
+        p1 = ji.JIPitch((0, 1), 2)
+        teststencil = ji.JIStencil(
+                (p0, 0, 2), (p1, 1, 3))
+        self.assertEqual(teststencil.primes, (3, 5))
+
+    def test_identity(self):
+        p0 = ji.JIPitch((1,), 2)
+        p1 = ji.JIPitch((0, 1), 2)
+        teststencil = ji.JIStencil(
+                (p0, 0, 2), (p1, 1, 3))
+        self.assertEqual(teststencil.identity, (p0, p1))
 
 
 class JIModule(unittest.TestCase):

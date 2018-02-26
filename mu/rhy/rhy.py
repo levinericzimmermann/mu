@@ -1,3 +1,11 @@
+# @Author: Levin Eric Zimmermann
+# @Date:   2018-02-07T20:14:39+01:00
+# @Email:  levin-eric.zimmermann@folkwang-uni.de
+# @Project: mu
+# @Last modified by:   uummoo
+# @Last modified time: 2018-02-08T01:04:30+01:00
+
+
 from mu.time import time
 from mu.abstract import muobjects
 from mu.utils import music21
@@ -131,6 +139,10 @@ class SpecifiedPulseChroma(int):
             return test0 and test1
         except AttributeError:
             return False
+
+    @property
+    def primes(self):
+        return tuple(set(prime_factors.factorise(self)))
 
     def count_subpulse(self):
         try:

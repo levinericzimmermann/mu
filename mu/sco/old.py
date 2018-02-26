@@ -1,4 +1,4 @@
-# @Author: Levin Eric Zimmermann <levin>
+# @Author: Levin Eric Zimmermann
 # @Date:   2018-02-07T18:18:59+01:00
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu

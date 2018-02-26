@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-02-07T18:20:23+01:00
+# @Last modified time: 2018-02-26T22:43:26+01:00
 
 
 from mu.mel import abstract
@@ -2157,6 +2157,56 @@ class JIScale(JIPitch.mk_iterable(mel.Scale), JIContainer):
             if x == item:
                 return c
         raise ValueError("x not in tuple")
+
+
+class JIStencil:
+    """
+    This class implements a non-general
+    specific way to handle just intontation harmony
+    in a logic classified and easily extendable system.
+    To initialize a JIStencil - object tuples containing a
+    Monzo or JIPitch - objects have to be passed:
+    >>> mystencil = JIStencil(
+            (JIPitch((1,), 2), 0, 2), (JIPitch((0, 1), 2), 1, 3))
+
+    The second and the third number in the tuples are
+    specifying the exponents of the passed pitch, e.g.
+    (JIPitch((1,), 2), 0, 2) would result in a harmony
+    containing (JIPitch((0,), 2), JIPitch((1,), 2)).
+
+    If the first number equals 0 it could be skipped, meaining
+    that (JIPitch((1,), 2), 0, 2) == (JIPitch((1,), 2), 2).
+    """
+    def __init__(self, *args):
+        def add_zero(sub):
+            if len(sub) == 2:
+                return (sub[0], 0, sub[1])
+            else:
+                return sub
+        self._vector = tuple(add_zero(arg) for arg in args)
+        self._pitches = tuple(arg[0] for arg in args)
+
+    @property
+    def primes(self):
+        return tuple(set(functools.reduce(
+                operator.add, (p.primes for p in self._pitches))))
+
+    @property
+    def identity(self):
+        return tuple(set(p.identity for p in self._pitches))
+
+    def convert2harmony(self):
+        """
+        Return a converted version of itself (JIHarmony - object).
+        >>> mystencil = JIStencil(
+                (JIPitch((1,), 2), 0, 2), (JIPitch((0, 1), 2), 1, 3))
+        >>> myharmony = mystencil.convert2harmony()
+        JIHarmony({1, 25/16, 3/2, 5/4})
+        """
+        def convertvec2harmony(vec):
+            return tuple(vec[0].scalar(i) for i in range(vec[1], vec[2]))
+        return JIHarmony(functools.reduce(
+                operator.add, (convertvec2harmony(v) for v in self._vector)))
 
 
 """
