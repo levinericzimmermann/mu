@@ -2186,6 +2186,16 @@ class JIStencil:
         self._vector = tuple(add_zero(arg) for arg in args)
         self._pitches = tuple(arg[0] for arg in args)
 
+    def __len__(self):
+        return len(self._vector)
+
+    def __iter__(self):
+        return iter(self._vector)
+
+    @staticmethod
+    def convertvec2harmony(vec):
+        return tuple(vec[0].scalar(i) for i in range(vec[1], vec[2]))
+
     @property
     def primes(self):
         return tuple(set(functools.reduce(
@@ -2203,10 +2213,9 @@ class JIStencil:
         >>> myharmony = mystencil.convert2harmony()
         JIHarmony({1, 25/16, 3/2, 5/4})
         """
-        def convertvec2harmony(vec):
-            return tuple(vec[0].scalar(i) for i in range(vec[1], vec[2]))
         return JIHarmony(functools.reduce(
-                operator.add, (convertvec2harmony(v) for v in self._vector)))
+                operator.add,
+                (self.convertvec2harmony(v) for v in self._vector)))
 
 
 """

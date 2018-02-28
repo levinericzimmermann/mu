@@ -62,7 +62,7 @@ class Tone(abstract.UniformEvent):
             else:
                 stream.append(music21.m21.note.Note(pitch, duration=duration))
             difference = self.delay - self.duration
-            if difference != 0:
+            if difference > 0:
                 rhythm = rhy.RhyUnit(difference).convert2music21()
                 stream.append(music21.m21.note.Rest(duration=rhythm))
         else:
@@ -115,6 +115,7 @@ class Chord(abstract.SimultanEvent):
         pitches = tuple(p.convert2music21() for p in self.harmony)
         duration_mu = float(self.duration)
         duration = self.duration.convert2music21()
+        difference = self.delay - self.duration
         if pitches:
             if duration_mu > 4:
                 am_4 = int(duration_mu // 4)
@@ -146,8 +147,7 @@ class Chord(abstract.SimultanEvent):
         else:
             chord = music21.m21.note.Rest(duration=duration)
             stream.append(chord)
-        difference = self.delay - self.duration
-        if difference != 0:
+        if difference > 0:
             rhythm = rhy.RhyUnit(difference).convert2music21()
             stream.append(music21.m21.note.Rest(duration=rhythm))
         return stream
@@ -356,6 +356,18 @@ class ToneSet(muobjects.MUSet):
                 new_set.add(t)
         return new_set
 
+    @classmethod
+    def from_cadence(cls, cadence: Cadence) -> "ToneSet":
+        new_set = cls()
+        d = 0
+        for chord in cadence:
+            delay = float(chord.delay)
+            for p in chord.harmony:
+                t = Tone(p, rhy.RhyUnit(d), chord.duration)
+                new_set.add(t)
+            d += delay
+        return new_set
+
     def pop_by(self, test: Callable, args) -> "ToneSet":
         new_set = ToneSet()
         for arg in args:
@@ -390,3 +402,23 @@ class ToneSet(muobjects.MUSet):
             t.delay = rhy.RhyUnit(diff)
         sorted_by_delay[-1].delay = rhy.RhyUnit(sorted_by_delay[-1].duration)
         return Melody(sorted_by_delay)
+
+    def convert2cadence(self) -> Cadence:
+        sorted_by_delay = sorted(list(self.copy()), key=lambda t: t.delay)
+        first = sorted_by_delay[0].delay
+        if first != 0:
+            sorted_by_delay.insert(0, Rest(0))
+        cadence = Cadence([])
+        harmony = mel.Harmony([])
+        for t, t_after in zip(sorted_by_delay, sorted_by_delay[1:] + [0]):
+            try:
+                diff = t_after.delay - t.delay
+            except AttributeError:
+                diff = t.duration
+            harmony.add(t.pitch)
+            if diff != 0:
+                cadence.append(Chord(
+                        harmony, rhy.RhyUnit(diff), rhy.RhyUnit(t.duration)))
+                harmony = mel.Harmony([])
+        cadence[-1].delay = rhy.RhyUnit(sorted_by_delay[-1].duration)
+        return Cadence(cadence)

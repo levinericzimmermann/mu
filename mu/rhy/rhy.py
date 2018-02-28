@@ -52,6 +52,9 @@ class RhyUnit(AbstractRhythm, time.Time):
     def convert2music21(self):
         return music21.m21.duration.Duration(self)
 
+    def copy(self):
+        return type(self)(self)
+
 
 class RhyCompound(AbstractRhythm, muobjects.MUList):
     def flat(self):
