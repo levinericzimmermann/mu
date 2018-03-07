@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-02-26T22:43:26+01:00
+# @Last modified time: 2018-03-07T15:13:37+01:00
 
 
 from mu.mel import abstract
@@ -2106,6 +2106,32 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
             if h0 == h1:
                 repeats += 1
         return repeats
+
+    def count_pitch(self, pitch) -> int:
+        """
+        Count how often the asked pitch occurs in the Cadence.
+        """
+        c = 0
+        for harmony in self:
+            for p in harmony:
+                if p == pitch:
+                    c += 1
+                    break
+        return c
+
+    def count_different_pitches(self) -> int:
+        """
+        Count how many different pitches occur in the Cadence.
+        """
+        c = 0
+        already = []
+        for harmony in self:
+            for p in harmony:
+                if p not in already:
+                    c += 1
+                    already.append(p)
+                    break
+        return c
 
     @property
     def chord_rate(self):

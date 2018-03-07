@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-02-26T22:43:39+01:00
+# @Last modified time: 2018-03-07T15:24:41+01:00
 
 
 import unittest
@@ -1034,6 +1034,32 @@ class JICadenceTest(unittest.TestCase):
         self.assertEqual(cadence1.different_chords, (h0, h1, h2))
         self.assertEqual(cadence2.different_chords, (h2,))
         self.assertEqual(cadence3.different_chords, (h0,))
+
+    def test_count_pitch(self):
+        n0 = ji.JIPitch([], val_border=2)
+        n1 = ji.JIPitch([1], val_border=2)
+        n2 = ji.JIPitch([1, 1], val_border=2)
+        n3 = ji.JIPitch([0, 1], val_border=2)
+        h0 = ji.JIHarmony([n0, n1, n3])
+        h1 = ji.JIHarmony([n0, n1, n2])
+        h2 = ji.JIHarmony([n3, n1])
+        cadence0 = ji.JICadence((h1, h0, h0))
+        cadence1 = ji.JICadence((h0, h0, h1, h2))
+        self.assertEqual(cadence0.count_pitch(n0), 3)
+        self.assertEqual(cadence1.count_pitch(n0), 3)
+
+    def test_count_different_pitches(self):
+        n0 = ji.JIPitch([], val_border=2)
+        n1 = ji.JIPitch([1], val_border=2)
+        n2 = ji.JIPitch([1, 1], val_border=2)
+        n3 = ji.JIPitch([0, 1], val_border=2)
+        h0 = ji.JIHarmony([n0, n1, n3])
+        h1 = ji.JIHarmony([n0, n1, n2])
+        h2 = ji.JIHarmony([n3, n1])
+        cadence0 = ji.JICadence((h1, h0, h0))
+        cadence1 = ji.JICadence((h0, h0, h2))
+        self.assertEqual(cadence0.count_different_pitches(), 3)
+        self.assertEqual(cadence1.count_different_pitches(), 3)
 
 
 class JIStencilTest(unittest.TestCase):

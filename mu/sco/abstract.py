@@ -4,7 +4,8 @@ from mu.time import time
 
 
 class Event(abc.ABC):
-    """An Event might be any Object, which contains discrete Information
+    """
+    An Event might be any Object, which contains discrete Information
     about Time and at least one other mu - Object, e.g.
     a Melody might be an Event, since a Melody contains Information
     about Pitch and Duration, while a Harmony isn't an Event, since it could
@@ -18,7 +19,8 @@ class Event(abc.ABC):
         b) Objects of type >Complex< contain other Event-Objects.
 
     It is possible to ask an Event-Object, whether it is type >Uniform<
-    or type >Complex< through its 'is_uniform'-Method."""
+    or type >Complex< through its 'is_uniform'-Method.
+    """
 
     @abc.abstractclassmethod
     def is_uniform(self):
