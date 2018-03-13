@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-02-07T18:20:40+01:00
+# @Last modified time: 2018-03-13T10:39:57+01:00
 
 
 from typing import Callable, Optional, Tuple, Union
@@ -203,6 +203,21 @@ class Melody(abstract.MultiSequentialEvent):
                     new.append(t0)
             return new
         return type(self)(sub(list(self)))
+
+    def split(self):
+        """
+        Split Tones, whose delay may be longer than their
+        duration into Tone-Rest - Pairs.
+        """
+        new = []
+        for t in self:
+            diff = t.delay - t.duration
+            if diff > 0:
+                new.append(type(t)(t.pitch, t.duration))
+                new.append(Rest(diff))
+            else:
+                new.append(t)
+        return type(self)(new)
 
 
 class JIMelody(Melody):

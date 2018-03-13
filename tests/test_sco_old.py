@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-02-07T18:28:16+01:00
+# @Last modified time: 2018-03-13T10:39:43+01:00
 
 
 import unittest
@@ -106,6 +106,17 @@ class MelodyTest(unittest.TestCase):
         self.assertEqual(melody1.tie(), melodyTest1)
         melody2 = old.Melody([self.t0, self.t1, self.t0])
         self.assertEqual(melody2.tie(), melody2)
+
+    def test_split(self):
+        tone0 = old.Tone(ji.r(1, 1, 2), rhy.RhyUnit(2), rhy.RhyUnit(1))
+        tone0B = old.Tone(ji.r(1, 1, 2), rhy.RhyUnit(1), rhy.RhyUnit(1))
+        tone1 = old.Tone(ji.r(1, 1, 2), rhy.RhyUnit(3), rhy.RhyUnit(1))
+        tone1B = old.Tone(ji.r(1, 1, 2), rhy.RhyUnit(1), rhy.RhyUnit(1))
+        pause0 = old.Rest(rhy.RhyUnit(1))
+        pause1 = old.Rest(rhy.RhyUnit(2))
+        melody0 = old.Melody([tone0, tone1])
+        melody1 = old.Melody([tone0B, pause0, tone1B, pause1])
+        self.assertEqual(melody0.split(), melody1)
 
 
 class ToneSetTest(unittest.TestCase):
