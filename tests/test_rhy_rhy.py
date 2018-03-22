@@ -1,3 +1,11 @@
+# @Author: Levin Eric Zimmermann
+# @Date:   2018-03-22T13:37:52+01:00
+# @Email:  levin-eric.zimmermann@folkwang-uni.de
+# @Project: mu
+# @Last modified by:   uummoo
+# @Last modified time: 2018-03-22T13:38:25+01:00
+
+
 import unittest
 from mu.time import time
 from mu.rhy import rhy
@@ -34,6 +42,17 @@ class RhyTest(unittest.TestCase):
         self.assertEqual(rhy_comp0, rhy_comp1.stretch(0.5))
         self.assertEqual(rhy_comp0.stretch(2), rhy_comp1)
         self.assertEqual(rhy_comp0.stretch(0.5), rhy_comp2)
+
+    def test_convert2absolute(self):
+        r0 = rhy.RhyCompound((2, 2, 3, 1))
+        r1 = rhy.RhyCompound((0, 2, 4, 7, 8))
+        self.assertEqual(r0.convert2absolute(), r1[:-1])
+        self.assertEqual(r0.convert2absolute(skiplast=False), r1)
+
+    def test_convert2relative(self):
+        r0 = rhy.RhyCompound((0, 2, 4, 7, 8))
+        r1 = rhy.RhyCompound((2, 2, 3, 1))
+        self.assertEqual(r0.convert2relative(), r1)
 
     def test_convert2music21(self):
         pass

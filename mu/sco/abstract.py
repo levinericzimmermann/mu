@@ -146,7 +146,7 @@ class MultiSequentialEvent(ComplexEvent):
         return type(self)(reversed(self.mk_sequence()))
 
     def copy(self):
-        return type(self)(self[:])
+        return type(self)(item.copy() for item in self[:])
 
     @property
     def duration(self):

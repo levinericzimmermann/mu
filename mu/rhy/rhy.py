@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-02-08T01:04:30+01:00
+# @Last modified time: 2018-03-22T13:38:07+01:00
 
 
 from mu.time import time
@@ -57,6 +57,16 @@ class RhyUnit(AbstractRhythm, time.Time):
 
 
 class RhyCompound(AbstractRhythm, muobjects.MUList):
+    def __init__(self, iterable):
+        iterable = list(iterable)
+        for i, n in enumerate(iterable):
+            if not isinstance(n, RhyCompound) or not isinstance(n, RhyUnit):
+                if isinstance(n, int) or isinstance(n, float):
+                    iterable[i] = RhyUnit(n)
+                else:
+                    raise ValueError("Unknown element {0}.".format(n))
+        muobjects.MUList.__init__(self, iterable)
+
     def flat(self):
         if self:
             return functools.reduce(
@@ -75,6 +85,23 @@ class RhyCompound(AbstractRhythm, muobjects.MUList):
         if id(arg) == id(self):
             arg = arg.copy()
         list.append(self, arg)
+
+    def convert2absolute(self, skiplast=True):
+        new = self.copy()
+        d = 0
+        for i, r in enumerate(self):
+            new[i] = type(new[i])(d)
+            d += r.delay
+        if skiplast is False:
+            new.append(type(new[0])(d))
+        return new
+
+    def convert2relative(self):
+        new = self.copy()[:-1]
+        for i, r0, r1 in zip(range(len(self)), self, self[1:]):
+            diff = r1 - r0
+            new[i] = type(new[i])(diff)
+        return new
 
 
 class PulseChroma(int):
