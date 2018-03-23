@@ -400,7 +400,7 @@ class PolyLine(abstract.SimultanEvent):
         """
         if convert2absolute is True:
             converted_poly = (poly.convert2absolute_time() for poly in self)
-            converted_poly = tuple
+            converted_poly = tuple(converted_poly)
         else:
             converted_poly = tuple(self)
         subpoly = converted_poly[polyidx]
