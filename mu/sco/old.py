@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-03-23T16:04:23+01:00
+# @Last modified time: 2018-03-23T19:53:03+01:00
 
 
 from typing import Callable, Optional, Tuple, Union
@@ -169,6 +169,24 @@ class Chord(abstract.SimultanEvent):
 class AbstractLine(abstract.MultiSequentialEvent):
     _sub_sequences_class_names = ("pitch", "delay", "dur")
 
+    def __init__(self, iterable, time_measure="relative"):
+        abstract.MultiSequentialEvent.__init__(self, iterable)
+        try:
+            assert(any((time_measure == "relative",
+                        time_measure == "absolute")))
+        except AssertionError:
+            raise ValueError("Time can only be 'relative' or 'absolute'.")
+        self._time_measure = time_measure
+
+    def copy(self):
+        copied = abstract.MultiSequentialEvent.copy(self)
+        copied._time_measure = str(self._time_measure)
+        return copied
+
+    @property
+    def time_measure(self):
+        return self._time_measure
+
     @property
     def freq(self) -> Tuple[float]:
         return self.pitch.freq
@@ -183,19 +201,19 @@ class AbstractLine(abstract.MultiSequentialEvent):
     def tie(self):
         def sub(melody):
             new = []
-            for i, item0 in enumerate(melody):
+            for i, it0 in enumerate(melody):
                 try:
-                    item1 = melody[i + 1]
+                    it1 = melody[i + 1]
                 except IndexError:
-                    new.append(item0)
+                    new.append(it0)
                     break
-                if item0.duration == item0.delay and item0.pitch == item1.pitch:
-                    t_new = type(item0)(item0.pitch,
-                                        item0.duration + item1.delay,
-                                        item0.duration + item1.duration)
+                if it0.duration == it0.delay and it0.pitch == it1.pitch:
+                    t_new = type(it0)(it0.pitch,
+                                      it0.duration + it1.delay,
+                                      it0.duration + it1.duration)
                     return new + sub([t_new] + melody[i + 2:])
                 else:
-                    new.append(item0)
+                    new.append(it0)
             return new
         return type(self)(sub(list(self)))
 
@@ -220,9 +238,11 @@ class AbstractLine(abstract.MultiSequentialEvent):
         duration becomes the stoptime of the specific event.
         """
         copy = self.copy()
-        copy.delay = copy.delay.convert2absolute()
-        stop = ((d + s) for d, s in zip(copy.delay, copy.dur))
-        copy.dur = type(copy.dur)(stop)
+        if self.time_measure == "relative":
+            copy.delay = copy.delay.convert2absolute()
+            stop = ((d + s) for d, s in zip(copy.delay, copy.dur))
+            copy.dur = type(copy.dur)(stop)
+            copy._time_measure = "absolute"
         return copy
 
     def convert2relative_time(self):
@@ -231,10 +251,12 @@ class AbstractLine(abstract.MultiSequentialEvent):
         stoptime of specific event becomes its duration.
         """
         copy = self.copy()
-        copy.delay = copy.delay.convert2relative()
-        copy.dur = type(copy.dur)(
+        if self.time_measure == "absolute":
+            copy.delay = copy.delay.convert2relative()
+            copy.dur = type(copy.dur)(
                 dur - delay for dur, delay in zip(self.dur, self.delay))
-        copy.delay.append(copy.dur[-1])
+            copy.delay.append(copy.dur[-1])
+            copy._time_measure = "relative"
         return copy
 
 
@@ -354,6 +376,38 @@ class PolyLine(abstract.SimultanEvent):
     A Container for Melody and Cadence - Objects.
     """
 
+    @staticmethod
+    def find_simultan_events_in_absolute_polyline(polyline, polyidx, itemidx):
+        item = polyline[polyidx][itemidx]
+        istart = item.delay
+        istop = item.duration
+        simultan = []
+        for pnum, poly in enumerate(polyline):
+            for enum, event in enumerate(poly):
+                if (pnum, enum) != (polyidx, itemidx):
+                    estart = event.delay
+                    estop = event.duration
+                    if estart >= istart and estart < istop:
+                        simultan.append(event)
+                    elif estop <= istop and estop > istart:
+                        simultan.append(event)
+                    elif estart <= istart and estop >= istop:
+                        simultan.append(event)
+        return tuple(simultan)
+
+    def __init__(self, iterable, time_measure="relative"):
+        abstract.SimultanEvent.__init__(self, iterable)
+        self._time_measure = time_measure
+
+    @property
+    def time_measure(self):
+        return self._time_measure
+
+    def copy(self):
+        copied = abstract.SimultanEvent.copy(self)
+        copied._time_measure = str(self._time_measure)
+        return copied
+
     def fill(self) -> "PolyLine":
         """
         Add Rests to all Voices, which stop earlier than the
@@ -376,6 +430,30 @@ class PolyLine(abstract.SimultanEvent):
         except ValueError:
             return None
 
+    def convert2absolute_time(self):
+        """
+        Delay becomes the starting time of the specific event,
+        duration becomes the stoptime of the specific event.
+        """
+        copy = self.copy()
+        if self.time_measure == "relative":
+            for i, item in enumerate(copy):
+                copy[i] = item.convert2absolute_time()
+            copy._time_measure = "absolute"
+        return copy
+
+    def convert2relative_time(self):
+        """
+        Starting time of specific event becomes its Delay,
+        stoptime of specific event becomes its duration.
+        """
+        copy = self.copy()
+        if self.time_measure == "absolute":
+            for i, item in enumerate(copy):
+                copy[i] = item.convert2relative_time()
+            copy._time_measure = "relative"
+        return copy
+
     def horizontal_add(self, other: "PolyLine", fill=True) -> "PolyLine":
         voices = []
         poly0 = self.copy()
@@ -394,32 +472,33 @@ class PolyLine(abstract.SimultanEvent):
         res = res.fill()
         return res
 
-    def find_simultan_events(self, polyidx,
-                             itemidx, convert2absolute=True) -> tuple:
+    def find_simultan_events(self, polyidx, itemidx) -> tuple:
         """
         """
-        if convert2absolute is True:
-            converted_poly = (poly.convert2absolute_time() for poly in self)
-            converted_poly = tuple(converted_poly)
-        else:
-            converted_poly = tuple(self)
-        subpoly = converted_poly[polyidx]
-        item = subpoly[itemidx]
-        istart = item.delay
-        istop = item.duration
-        simultan = []
-        for pnum, poly in enumerate(converted_poly):
-            for enum, event in enumerate(poly):
-                if (pnum, enum) != (polyidx, itemidx):
-                    estart = event.delay
-                    estop = event.duration
-                    if estart >= istart and estart < istop:
-                        simultan.append(event)
-                    elif estop <= istop and estop > istart:
-                        simultan.append(event)
-                    elif estart <= istart and estop >= istop:
-                        simultan.append(event)
-        return tuple(simultan)
+        converted_poly = self.convert2absolute_time()
+        return self.find_simultan_events_in_absolute_polyline(
+            converted_poly, polyidx, itemidx)
+
+    def find_exact_simultan_events(self, polyidx, itemidx,
+                                   convert2relative=True) -> tuple:
+        """
+        """
+        converted_poly = self.convert2absolute_time()
+        simultan = self.find_simultan_events_in_absolute_polyline(
+            converted_poly, polyidx, itemidx)
+        item = converted_poly[polyidx][itemidx]
+        item_start = item.delay
+        item_stop = item.duration
+        for event in simultan:
+            if event.delay < item_start:
+                event.delay = item_start
+            if event.duration > item_stop:
+                event.duration = item_stop
+        if convert2relative is True:
+            for event in simultan:
+                event.duration = event.duration - event.delay
+                event.delay = event.duration
+        return simultan
 
 
 class Polyphon(PolyLine):

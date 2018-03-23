@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-03-23T16:03:51+01:00
+# @Last modified time: 2018-03-23T19:53:13+01:00
 
 
 import unittest
@@ -126,11 +126,20 @@ class MelodyTest(unittest.TestCase):
         self.assertEqual(
             self.melody0.convert2absolute_time(), melody_converted)
 
+        melody_converted = old.Melody(
+            (old.Tone(self.p0, self.d0 * 0, self.d0 * 1),
+             old.Tone(self.p0, self.d0 * 1, self.d0 * 2),
+             old.Tone(self.p0, self.d0 * 2, self.d0 * 3)),
+            time_measure="relative")
+        self.assertEqual(
+            self.melody0.convert2absolute_time(), melody_converted)
+
     def test_convert2relative_time(self):
         melody_converted = old.Melody(
             (old.Tone(self.p0, self.d0 * 0, self.d0 * 1),
              old.Tone(self.p0, self.d0 * 1, self.d0 * 2),
-             old.Tone(self.p0, self.d0 * 2, self.d0 * 3)))
+             old.Tone(self.p0, self.d0 * 2, self.d0 * 3)),
+            time_measure="absolute")
         self.assertEqual(
             melody_converted.convert2relative_time(), self.melody0)
 
@@ -218,6 +227,7 @@ class PolyTest(unittest.TestCase):
     t5 = old.Tone(p5, rhy.RhyUnit(1))
     t6 = old.Tone(p0, rhy.RhyUnit(2))
     t7 = old.Tone(p0, rhy.RhyUnit(0.5))
+    t8 = old.Tone(p0, rhy.RhyUnit(1.5))
     melody0 = old.JIMelody((t0, t1))
     melody1 = old.JIMelody((t2, t3))
     melody2 = old.JIMelody((t6, t6, t0, t7))
@@ -235,10 +245,10 @@ class PolyTest(unittest.TestCase):
     def test_find_simultan_events(self):
         simultan_events0 = self.poly0.find_simultan_events(0, 0)
         self.assertEqual(
-                simultan_events0, (self.poly0[1].convert2absolute_time()[0],))
+            simultan_events0, (self.poly0[1].convert2absolute_time()[0],))
         simultan_events1 = self.poly0.find_simultan_events(1, 1)
         self.assertEqual(
-                simultan_events1, (self.poly0[0].convert2absolute_time()[1],))
+            simultan_events1, (self.poly0[0].convert2absolute_time()[1],))
         simultan_events2 = self.poly1.find_simultan_events(0, 1)
         simultan_events2_comp = (self.poly1[1].convert2absolute_time()[1],
                                  self.poly1[1].convert2absolute_time()[2],
@@ -253,6 +263,21 @@ class PolyTest(unittest.TestCase):
                                  self.poly1[2].convert2absolute_time()[2],
                                  self.poly1[2].convert2absolute_time()[3])
         self.assertEqual(simultan_events3, simultan_events3_comp)
+
+    def test_find_exact_simultan_events(self):
+        simultan_events0 = self.poly0.find_exact_simultan_events(0, 0)
+        self.assertEqual(simultan_events0, (self.poly0[1][0],))
+        simultan_events1 = self.poly0.find_exact_simultan_events(0, 0, False)
+        self.assertEqual(simultan_events1,
+                         (self.poly0[1].convert2absolute_time()[0],))
+        simultan_events2 = self.poly1.find_exact_simultan_events(1, 0)
+        simultan_events2_expected = (self.poly1[2][0], self.poly1[2][0])
+        self.assertEqual(simultan_events2, simultan_events2_expected)
+        simultan_events3 = self.poly1.find_exact_simultan_events(1, 1)
+        simultan_events3_expected = (self.t8, self.t7,
+                                     self.t7, self.t7,
+                                     self.t2)
+        self.assertEqual(simultan_events3, simultan_events3_expected)
 
 
 if __name__ == "__main__":
