@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-03-22T14:04:21+01:00
+# @Last modified time: 2018-03-23T16:04:23+01:00
 
 
 from typing import Callable, Optional, Tuple, Union
@@ -19,7 +19,8 @@ from mu.time import time
 
 class Tone(abstract.UniformEvent):
     def __init__(self, pitch: Optional[AbstractPitch], delay: rhy.RhyUnit,
-                 duration: Optional[rhy.RhyUnit] = None) -> None:
+                 duration: Optional[rhy.RhyUnit] = None,
+                 volume: Optional = None) -> None:
         if not duration:
             duration = delay
         self.pitch = pitch
@@ -214,14 +215,26 @@ class AbstractLine(abstract.MultiSequentialEvent):
         return type(self)(new)
 
     def convert2absolute_time(self):
+        """
+        Delay becomes the starting time of the specific event,
+        duration becomes the stoptime of the specific event.
+        """
         copy = self.copy()
-        copy.rhy = copy.rhy.convert2absolute()
+        copy.delay = copy.delay.convert2absolute()
+        stop = ((d + s) for d, s in zip(copy.delay, copy.dur))
+        copy.dur = type(copy.dur)(stop)
         return copy
 
     def convert2relative_time(self):
+        """
+        Starting time of specific event becomes its Delay ,
+        stoptime of specific event becomes its duration.
+        """
         copy = self.copy()
-        copy.rhy = copy.rhy.convert2relative()
-        copy.rhy.append(copy.dur[-1])
+        copy.delay = copy.delay.convert2relative()
+        copy.dur = type(copy.dur)(
+                dur - delay for dur, delay in zip(self.dur, self.delay))
+        copy.delay.append(copy.dur[-1])
         return copy
 
 
@@ -337,7 +350,11 @@ class JICadence(Cadence):
 
 
 class PolyLine(abstract.SimultanEvent):
-    def fill(self):
+    """
+    A Container for Melody and Cadence - Objects.
+    """
+
+    def fill(self) -> "PolyLine":
         """
         Add Rests to all Voices, which stop earlier than the
         longest voice, so that
@@ -352,14 +369,14 @@ class PolyLine(abstract.SimultanEvent):
         return poly
 
     @property
-    def duration(self):
+    def duration(self) -> time.Time:
         dur_sub = tuple(element.duration for element in self)
         try:
             return time.Time(max(dur_sub))
         except ValueError:
             return None
 
-    def horizontal_add(self, other: "PolyLine", fill=True):
+    def horizontal_add(self, other: "PolyLine", fill=True) -> "PolyLine":
         voices = []
         poly0 = self.copy()
         if fill is True:
@@ -377,10 +394,37 @@ class PolyLine(abstract.SimultanEvent):
         res = res.fill()
         return res
 
+    def find_simultan_events(self, polyidx,
+                             itemidx, convert2absolute=True) -> tuple:
+        """
+        """
+        if convert2absolute is True:
+            converted_poly = (poly.convert2absolute_time() for poly in self)
+            converted_poly = tuple
+        else:
+            converted_poly = tuple(self)
+        subpoly = converted_poly[polyidx]
+        item = subpoly[itemidx]
+        istart = item.delay
+        istop = item.duration
+        simultan = []
+        for pnum, poly in enumerate(converted_poly):
+            for enum, event in enumerate(poly):
+                if (pnum, enum) != (polyidx, itemidx):
+                    estart = event.delay
+                    estop = event.duration
+                    if estart >= istart and estart < istop:
+                        simultan.append(event)
+                    elif estop <= istop and estop > istart:
+                        simultan.append(event)
+                    elif estart <= istart and estop >= istop:
+                        simultan.append(event)
+        return tuple(simultan)
+
 
 class Polyphon(PolyLine):
     """
-    A Container for Melody - Objects.
+    Container for Melody - Objects.
     """
     @music21.decorator
     def convert2music21(self):

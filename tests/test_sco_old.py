@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-03-13T10:39:43+01:00
+# @Last modified time: 2018-03-23T16:03:51+01:00
 
 
 import unittest
@@ -118,6 +118,22 @@ class MelodyTest(unittest.TestCase):
         melody1 = old.Melody([tone0B, pause0, tone1B, pause1])
         self.assertEqual(melody0.split(), melody1)
 
+    def test_convert2absolute_time(self):
+        melody_converted = old.Melody(
+            (old.Tone(self.p0, self.d0 * 0, self.d0 * 1),
+             old.Tone(self.p0, self.d0 * 1, self.d0 * 2),
+             old.Tone(self.p0, self.d0 * 2, self.d0 * 3)))
+        self.assertEqual(
+            self.melody0.convert2absolute_time(), melody_converted)
+
+    def test_convert2relative_time(self):
+        melody_converted = old.Melody(
+            (old.Tone(self.p0, self.d0 * 0, self.d0 * 1),
+             old.Tone(self.p0, self.d0 * 1, self.d0 * 2),
+             old.Tone(self.p0, self.d0 * 2, self.d0 * 3)))
+        self.assertEqual(
+            melody_converted.convert2relative_time(), self.melody0)
+
 
 class ToneSetTest(unittest.TestCase):
     p0 = ji.r(5, 4)
@@ -172,10 +188,10 @@ class ToneSetTest(unittest.TestCase):
             self.assertEqual(t, self.t1_set)
         test_set0 = self.set2.pop_by_time(1.5)
         test_set_compare0 = old.ToneSet([self.t1_set,
-                                        self.t6_set])
+                                         self.t6_set])
         test_set1 = self.set2.pop_by_time(2.7)
         test_set_compare1 = old.ToneSet([self.t2_set,
-                                        self.t6_set])
+                                         self.t6_set])
         self.assertEqual(test_set0, test_set_compare0)
         self.assertEqual(test_set1, test_set_compare1)
 
@@ -200,15 +216,43 @@ class PolyTest(unittest.TestCase):
     t3 = old.Tone(p3, rhy.RhyUnit(1))
     t4 = old.Tone(p4, rhy.RhyUnit(1))
     t5 = old.Tone(p5, rhy.RhyUnit(1))
+    t6 = old.Tone(p0, rhy.RhyUnit(2))
+    t7 = old.Tone(p0, rhy.RhyUnit(0.5))
     melody0 = old.JIMelody((t0, t1))
     melody1 = old.JIMelody((t2, t3))
+    melody2 = old.JIMelody((t6, t6, t0, t7))
+    melody3 = old.JIMelody((t7, t6, t2, t2))
+    melody4 = old.JIMelody((t7, t7, t7, t2, t2))
     poly0 = old.Polyphon([melody0, melody1])
+    poly1 = old.Polyphon([melody2, melody3, melody4])
 
     def test_chordify(self):
         chord0 = old.Chord(ji.JIHarmony([self.t0, self.t2]), rhy.RhyUnit(1))
         chord1 = old.Chord(ji.JIHarmony([self.t1, self.t3]), rhy.RhyUnit(1))
         cadence0 = old.Cadence([chord0, chord1])
         self.assertEqual(cadence0, self.poly0.chordify())
+
+    def test_find_simultan_events(self):
+        simultan_events0 = self.poly0.find_simultan_events(0, 0)
+        self.assertEqual(
+                simultan_events0, (self.poly0[1].convert2absolute_time()[0],))
+        simultan_events1 = self.poly0.find_simultan_events(1, 1)
+        self.assertEqual(
+                simultan_events1, (self.poly0[0].convert2absolute_time()[1],))
+        simultan_events2 = self.poly1.find_simultan_events(0, 1)
+        simultan_events2_comp = (self.poly1[1].convert2absolute_time()[1],
+                                 self.poly1[1].convert2absolute_time()[2],
+                                 self.poly1[1].convert2absolute_time()[3],
+                                 self.poly1[2].convert2absolute_time()[-2],
+                                 self.poly1[2].convert2absolute_time()[-1])
+        self.assertEqual(simultan_events2, simultan_events2_comp)
+        simultan_events3 = self.poly1.find_simultan_events(1, 1)
+        simultan_events3_comp = (self.poly1[0].convert2absolute_time()[0],
+                                 self.poly1[0].convert2absolute_time()[1],
+                                 self.poly1[2].convert2absolute_time()[1],
+                                 self.poly1[2].convert2absolute_time()[2],
+                                 self.poly1[2].convert2absolute_time()[3])
+        self.assertEqual(simultan_events3, simultan_events3_comp)
 
 
 if __name__ == "__main__":
