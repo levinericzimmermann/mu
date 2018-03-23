@@ -3,12 +3,14 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-03-07T15:24:41+01:00
+# @Last modified time: 2018-03-23T16:57:50+01:00
 
 
 import unittest
 from mu.mel import ji
 from fractions import Fraction
+import json
+import os
 
 
 class MonzoTest(unittest.TestCase):
@@ -22,6 +24,63 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m0B, m0)
         self.assertEqual(m1B, m1)
         self.assertEqual(m2B, m2)
+
+    def test_hash(self):
+        m0 = ji.Monzo([0, 1, -1], 2)
+        m0B = ji.Monzo([0, 1, -1], 2)
+        m1 = ji.Monzo([0, 2], 2)
+        m1B = ji.Monzo([0, 2], 2)
+        m2 = ji.Monzo([2, -1], 1)
+        m2B = ji.Monzo([2, -1], 1)
+        self.assertEqual(hash(m0), hash(m0B))
+        self.assertEqual(hash(m0), hash((m0._val_shift, m0._vec)))
+        self.assertEqual(hash(m1), hash(m1B))
+        self.assertEqual(hash(m1), hash((m1._val_shift, m1._vec)))
+        self.assertEqual(hash(m2), hash(m2B))
+        self.assertEqual(hash(m2), hash((m2._val_shift, m2._vec)))
+        self.assertNotEqual(hash(m0), hash(m1))
+        self.assertNotEqual(hash(m0), hash(m2))
+        self.assertNotEqual(hash(m1), hash(m2))
+
+    def test_from_json(self):
+        arg = [0, 1, -1]
+        vborder = 2
+        m0 = ji.Monzo(arg, vborder)
+        js = [arg, vborder]
+        self.assertEqual(ji.Monzo.from_json(js), m0)
+
+    def test_convert2json(self):
+        arg = [0, 1, -1]
+        vborder = 2
+        m0 = ji.Monzo(arg, vborder)
+        js = [arg, vborder]
+        js = json.dumps(js)
+        self.assertEqual(m0.convert2json(), js)
+
+    def test_load_json(self):
+        arg = [0, 1, -1]
+        vborder = 2
+        m0 = ji.Monzo(arg, vborder)
+        js = [arg, vborder]
+        js = json.dumps(js)
+        name = "test_load_json.json"
+        with open(name, "w") as f:
+            f.write(js)
+        self.assertEqual(ji.Monzo.load_json(name), m0)
+        os.remove(name)
+
+    def test_export_json(self):
+        arg = [0, 1, -1]
+        vborder = 2
+        m0 = ji.Monzo(arg, vborder)
+        name = "test_load_json.json"
+        m0.export2json(name)
+        self.assertEqual(ji.Monzo.load_json(name), m0)
+        os.remove(name)
+
+    def test_repr(self):
+        m0 = ji.Monzo([0, 1, -1], 2)
+        self.assertEqual(repr(m0), repr(m0._vec))
 
     def test_from_str(self):
         m0 = ji.Monzo([0, 1], 2)
@@ -425,10 +484,6 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(p3.is_symmetric, False)
         self.assertEqual(p4.is_symmetric, True)
 
-    def test_sparsity(self):
-        m0 = ji.Monzo((0, 0, 1), val_border=1)
-        self.assertEqual(m0.sparsity, 2 / 3)
-
     def test_adjusted_register(self):
         m0 = ji.Monzo.from_ratio(9, 8, val_border=2)
         self.assertEqual(m0.adjust_register().ratio, Fraction(9, 4))
@@ -471,6 +526,71 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m2.harmonicity_tenney, 4.321928094887363)
         self.assertEqual(m3.harmonicity_tenney, 5.321928094887363)
 
+    def test_harmonicity_vogel(self):
+        m0 = ji.Monzo((1,), val_border=2)
+        m1 = ji.Monzo([], val_border=2)
+        m2 = ji.Monzo((0, 1), val_border=2)
+        m3 = ji.Monzo((0, -1), val_border=2)
+        self.assertEqual(m0.harmonicity_vogel, 4)
+        self.assertEqual(m1.harmonicity_vogel, 1)
+        self.assertEqual(m2.harmonicity_vogel, 7)
+        self.assertEqual(m3.harmonicity_vogel, 8)
+
+    def test_harmonicity_wilson(self):
+        m0 = ji.Monzo((1,), val_border=2)
+        m1 = ji.Monzo([], val_border=2)
+        m2 = ji.Monzo((0, 1), val_border=2)
+        m3 = ji.Monzo((0, -1), val_border=2)
+        self.assertEqual(m0.harmonicity_wilson, 3)
+        self.assertEqual(m1.harmonicity_wilson, 1)
+        self.assertEqual(m2.harmonicity_wilson, 5)
+        self.assertEqual(m3.harmonicity_wilson, 5)
+
+    def test_sparsity(self):
+        m0 = ji.Monzo((1,), val_border=2)
+        m1 = ji.Monzo([], val_border=2)
+        m2 = ji.Monzo((0, 1), val_border=2)
+        m3 = ji.Monzo((0, -1, 1, 2), val_border=2)
+        self.assertEqual(m0.sparsity, 0)
+        self.assertEqual(m1.sparsity, 0)
+        self.assertEqual(m2.sparsity, 1 / 2)
+        self.assertEqual(m3.sparsity, 1 / 4)
+
+    def test_density(self):
+        m0 = ji.Monzo((1, 2, 1), val_border=2)
+        m1 = ji.Monzo([], val_border=2)
+        m2 = ji.Monzo((0, 1), val_border=2)
+        m3 = ji.Monzo((0, -1, 1, 4), val_border=2)
+        self.assertEqual(m0.density, 1)
+        self.assertEqual(m1.density, 1)
+        self.assertEqual(m2.density, 0.5)
+        self.assertEqual(m3.density, 0.75)
+
+    def test_mk_filter_vec(self):
+        primes0 = (3, 5)
+        expected0 = (1, 0, 0)
+        self.assertEqual(ji.Monzo.mk_filter_vec(*primes0), expected0)
+        primes1 = (3, 5, 11)
+        expected1 = (1, 0, 0, 1, 0)
+        self.assertEqual(ji.Monzo.mk_filter_vec(*primes1), expected1)
+        primes2 = (2, 5, 11, 17)
+        expected2 = (0, 1, 0, 1, 0, 1, 0)
+        self.assertEqual(ji.Monzo.mk_filter_vec(*primes2), expected2)
+
+    def test_filter(self):
+        m0 = ji.Monzo((1, 2, 1), val_border=2)
+        m0B = ji.Monzo((1, 0, 1), val_border=2)
+        m1 = ji.Monzo([3], val_border=2)
+        m1B = ji.Monzo([], val_border=2)
+        m2 = ji.Monzo((0, 1, 1, 1), val_border=2)
+        m2B = ji.Monzo((0, 0, 1), val_border=2)
+        m3 = ji.Monzo((2, -1, 1, 4), val_border=1)
+        m3B = ji.Monzo((0, -1, 1, 4), val_border=1)
+        self.assertEqual(m0.filter(5), m0B)
+        self.assertEqual(m1.filter(3), m1B)
+        self.assertEqual(m2.filter(5, 11), m2B)
+        self.assertEqual(m3.filter(2), m3B)
+
 
 class JIPitchTest(unittest.TestCase):
     def test_calc(self):
@@ -498,6 +618,14 @@ class JIPitchTest(unittest.TestCase):
         self.assertNotEqual(t0, t2)
         self.assertLess(t0, t2)
         self.assertGreater(t2, t1)
+
+    def test_repr(self):
+        r0 = Fraction(3, 2)
+        r1 = Fraction(7, 5)
+        t0 = ji.r(r0.numerator, r0.denominator)
+        t1 = ji.r(r1.numerator, r1.denominator)
+        self.assertEqual(str(r0), repr(t0))
+        self.assertEqual(str(r1), repr(t1))
 
     def test_differential_pitch(self):
         p0 = ji.r(7, 4)

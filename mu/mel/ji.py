@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-03-07T15:13:37+01:00
+# @Last modified time: 2018-03-23T16:58:02+01:00
 
 
 from mu.mel import abstract
@@ -609,6 +609,14 @@ class Monzo:
                   for power, prime in decomposed)
         return 2 * sum(summed)
 
+    @staticmethod
+    def mk_filter_vec(*prime):
+        numbers = tuple(Monzo.count_primes(p) for p in prime)
+        iterable = [1] * max(numbers)
+        for n in numbers:
+            iterable[n - 1] = 0
+        return tuple(iterable)
+
     @property
     def _val(self) -> tuple:
         r"""
@@ -1130,7 +1138,10 @@ class Monzo:
         for i in self:
             if i == 0:
                 zero += 1
-        return zero / len(self._vec)
+        try:
+            return zero / len(self._vec)
+        except ZeroDivisionError:
+            return 0
 
     @property
     def density(self):
@@ -1259,16 +1270,16 @@ class Monzo:
             return False
 
     def __add__(self, other: "Monzo") -> "Monzo":
-        return self.__math(other, lambda x, y: x + y)
+        return self.__math(other, operator.add)
 
     def __sub__(self, other: "Monzo") -> "Monzo":
-        return self.__math(other, lambda x, y: x - y)
+        return self.__math(other, operator.sub)
 
     def __mul__(self, other) -> "Monzo":
-        return self.__math(other, lambda x, y: x * y)
+        return self.__math(other, operator.mul)
 
     def __div__(self, other) -> "Monzo":
-        return self.__math(other, lambda x, y: x / y)
+        return self.__math(other, operator.div)
 
     def __pow__(self, other) -> "Monzo":
         return self.__math(other, lambda x, y: x ** y)
@@ -1301,28 +1312,14 @@ class Monzo:
             self, shiftval), self.val_border)
 
     def filter(self, *prime):
-        return type(self)(MonzoFilter(
-            *prime, val_border=self.val_border) * self, self.val_border)
-
-
-class MonzoFilter(Monzo):
-    @staticmethod
-    def mk_filter_vec(*prime):
-        numbers = tuple(Monzo.count_primes(p) for p in prime)
-        iterable = [1] * max(numbers)
-        for n in numbers:
-            iterable[n - 1] = 0
-        return iterable
-
-    def __init__(self, *prime, val_border=1):
-        Monzo.__init__(self, MonzoFilter.mk_filter_vec(*prime), 1)
-        self.val_border = val_border
-
-    def __mul__(self, other):
-        iterable = list(self._vector)[self._val_shift:]
-        while len(other._vec) > len(iterable):
-            iterable.append(1)
-        return Monzo.__mul__(Monzo(iterable, self.val_border), other)
+        iterable0 = Monzo.mk_filter_vec(*prime)[self._val_shift:]
+        iterable1 = tuple(self._vec)
+        while len(iterable0) < len(iterable1):
+            iterable0 += (1,)
+        while len(iterable1) < len(iterable0):
+            iterable1 += (0,)
+        iterable = Monzo.calc_iterables(iterable0, iterable1, operator.mul)
+        return type(self)(iterable, self.val_border)
 
 
 class JIPitch(Monzo, abstract.AbstractPitch):
