@@ -23,9 +23,12 @@ class Tone(abstract.UniformEvent):
                  volume: Optional = None) -> None:
         if not duration:
             duration = delay
+        if pitch is None:
+            pitch = mel.EmptyPitch()
         self.pitch = pitch
         self._dur = rhy.RhyUnit(duration)
         self.delay = rhy.RhyUnit(delay)
+        self.volume = volume
 
     def __hash__(self) -> int:
         return hash((self.pitch, self.delay, self.duration))
@@ -89,8 +92,11 @@ class Rest(Tone):
         return repr(self.duration)
 
     @property
-    def pitch(self) -> None:
-        return None
+    def pitch(self):
+        return mel.EmptyPitch()
+
+    def copy(self):
+        return type(self)(self.delay.copy())
 
 
 class Chord(abstract.SimultanEvent):

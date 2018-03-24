@@ -1,6 +1,18 @@
 from mu.abstract import muobjects
+from mu.mel import abstract
 from typing import Any
 import collections
+
+
+class EmptyPitch(abstract.AbstractPitch):
+    def calc(self):
+        return 0
+
+    def __repr__(self):
+        return "NoPitch"
+
+    def copy(self):
+        return type(self)()
 
 
 class Mel(muobjects.MUList):
