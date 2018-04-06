@@ -5,8 +5,8 @@ import collections
 
 
 class EmptyPitch(abstract.AbstractPitch):
-    def calc(self):
-        return 0
+    def calc(self, factor=0):
+        return None
 
     def __repr__(self):
         return "NoPitch"
@@ -24,8 +24,7 @@ class Mel(muobjects.MUList):
         return hash(tuple(hash(t) for t in self))
 
     def calc(self, factor: int = 1) -> tuple:
-        return tuple(p.calc(self.multiply * factor)
-                     if p is not None else None for p in self)
+        return tuple(p.calc(self.multiply * factor) for p in self)
 
     @property
     def freq(self) -> tuple:

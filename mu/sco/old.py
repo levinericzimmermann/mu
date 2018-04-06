@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-03-23T19:53:03+01:00
+# @Last modified time: 2018-04-06T14:53:22+02:00
 
 
 from typing import Callable, Optional, Tuple, Union
@@ -84,8 +84,9 @@ class Tone(abstract.UniformEvent):
 
 
 class Rest(Tone):
-    def __init__(self, delay: rhy.RhyUnit) -> None:
-        self._dur = rhy.RhyUnit(0)
+    def __init__(self, delay: rhy.RhyUnit,
+                 duration: rhy.RhyUnit=rhy.RhyUnit(0)) -> None:
+        self._dur = duration
         self.delay = delay
 
     def __repr__(self):
@@ -423,7 +424,7 @@ class PolyLine(abstract.SimultanEvent):
         poly = self.copy()
         total = self.duration
         for v in poly:
-            summed = sum(v.rhy)
+            summed = sum(v.delay)
             if summed < total:
                 v.append(Rest(rhy.RhyUnit(total - summed)))
         return poly
@@ -505,6 +506,66 @@ class PolyLine(abstract.SimultanEvent):
                 event.duration = event.duration - event.delay
                 event.delay = event.duration
         return simultan
+
+    def cut_up_by_time(self, start: rhy.RhyUnit, stop: rhy.RhyUnit,
+                       hard_cut=True, add_earlier=True) -> "PolyLine":
+        """
+        """
+        polyline = self.convert2absolute_time()
+        for i, sub in enumerate(polyline):
+            new = []
+            for event in sub:
+                appendable = False
+                ev_start = event.delay
+                ev_stop = event.duration
+                if ev_start >= start and ev_start < stop:
+                    appendable = True
+                elif ev_stop <= stop and ev_stop > start:
+                    appendable = True
+                elif ev_start <= start and ev_stop >= stop:
+                    appendable = True
+                if ev_start < start and appendable is True:
+                    if add_earlier is True:
+                        appendable = True
+                    else:
+                        appendable = False
+                if appendable is True:
+                    if hard_cut is True:
+                        if ev_stop > stop:
+                            event.duration = stop
+                        if ev_start < start:
+                            event.delay = start
+                    new.append(event)
+            if new:
+                if new[0].delay > start:
+                    new.insert(0, Rest(start, start))
+            else:
+                new.append(Rest(start, stop))
+            polyline[i] = type(polyline[i])(new, "absolute")
+        if hard_cut is False:
+            earliest = min(sub.delay[0] for sub in polyline)
+            if earliest < start:
+                for i, sub in enumerate(polyline):
+                    if sub.delay[0] > earliest:
+                        sub.insert(0, Rest(earliest, earliest))
+                        polyline[i] = sub
+        if self.time_measure is "relative":
+            for sub in polyline:
+                sub.dur = type(sub.dur)(d - sub.delay[0] for d in sub.dur)
+                sub.delay = type(sub.delay)(
+                    d - sub.delay[0] for d in sub.delay)
+            polyline = polyline.convert2relative_time()
+        return polyline
+
+    def cut_up_by_idx(self, polyidx, itemidx,
+                      hard_cut=True, add_earlier=True) -> "PolyLine":
+        """
+        """
+        item = self[polyidx].convert2absolute_time()[itemidx]
+        item_start = item.delay
+        item_stop = item.duration
+        return self.cut_up_by_time(
+                item_start, item_stop, hard_cut, add_earlier)
 
 
 class Polyphon(PolyLine):

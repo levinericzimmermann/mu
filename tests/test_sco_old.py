@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-03-23T19:53:13+01:00
+# @Last modified time: 2018-04-06T14:53:00+02:00
 
 
 import unittest
@@ -265,6 +265,19 @@ class PolyTest(unittest.TestCase):
         self.assertEqual(simultan_events3, simultan_events3_comp)
 
     def test_find_exact_simultan_events(self):
+        poly2 = old.Polyphon(
+            (old.Melody([old.Tone(ji.r(1, 1), 2),
+                         old.Tone(ji.r(1, 1), 3)]),
+             old.Melody([old.Tone(ji.r(3, 2), 3),
+                         old.Tone(ji.r(3, 2), 2)]),
+             old.Melody([old.Tone(ji.r(4, 3), 1),
+                         old.Tone(ji.r(4, 3), 2)])))
+        simultan_events4 = poly2.find_exact_simultan_events(0, 1)
+        simultan_events4_expected = (old.Tone(ji.r(3, 2), 1, 1),
+                                     old.Tone(ji.r(3, 2), 2, 2),
+                                     old.Tone(ji.r(4, 3), 1, 1))
+        self.assertEqual(simultan_events4, simultan_events4_expected)
+
         simultan_events0 = self.poly0.find_exact_simultan_events(0, 0)
         self.assertEqual(simultan_events0, (self.poly0[1][0],))
         simultan_events1 = self.poly0.find_exact_simultan_events(0, 0, False)
@@ -278,6 +291,55 @@ class PolyTest(unittest.TestCase):
                                      self.t7, self.t7,
                                      self.t2)
         self.assertEqual(simultan_events3, simultan_events3_expected)
+
+    def test_cut_up_by_time(self):
+        poly0 = old.Polyphon(
+            (old.Melody([old.Tone(ji.r(1, 1), 2),
+                         old.Tone(ji.r(1, 1), 3)]),
+             old.Melody([old.Tone(ji.r(3, 2), 3),
+                         old.Tone(ji.r(3, 2), 2)]),
+             old.Melody([old.Tone(ji.r(4, 3), 1),
+                         old.Tone(ji.r(4, 3), 2)])))
+        poly0_cut = poly0.cut_up_by_time(1, 3)
+        poly0_cut_expected = old.Polyphon(
+            (old.Melody([old.Tone(ji.r(1, 1), 1),
+                         old.Tone(ji.r(1, 1), 1)]),
+             old.Melody([old.Tone(ji.r(3, 2), 2)]),
+             old.Melody([old.Tone(ji.r(4, 3), 2)])))
+        self.assertEqual(poly0_cut, poly0_cut_expected)
+
+        poly1_cut = poly0.cut_up_by_time(1, 3, add_earlier=False)
+        poly1_cut_expected = old.Polyphon(
+            (old.Melody([old.Rest(1),
+                         old.Tone(ji.r(1, 1), 1)]),
+             old.Melody([old.Rest(2)]),
+             old.Melody([old.Tone(ji.r(4, 3), 2)])))
+        self.assertEqual(poly1_cut, poly1_cut_expected)
+
+        poly2_cut = poly0.cut_up_by_time(1, 3, hard_cut=False)
+        poly2_cut_expected = old.Polyphon(
+            (old.Melody([old.Tone(ji.r(1, 1), 2),
+                         old.Tone(ji.r(1, 1), 3)]),
+             old.Melody([old.Tone(ji.r(3, 2), 3)]),
+             old.Melody([old.Rest(1),
+                         old.Tone(ji.r(4, 3), 2)])))
+        self.assertEqual(poly2_cut, poly2_cut_expected)
+
+    def test_cut_up_by_idx(self):
+        poly0 = old.Polyphon(
+            (old.Melody([old.Tone(ji.r(1, 1), 2),
+                         old.Tone(ji.r(1, 1), 3)]),
+             old.Melody([old.Tone(ji.r(3, 2), 3),
+                         old.Tone(ji.r(3, 2), 2)]),
+             old.Melody([old.Tone(ji.r(4, 3), 1),
+                         old.Tone(ji.r(4, 3), 2)])))
+        poly0_cut = poly0.cut_up_by_idx(2, 1)
+        poly0_cut_expected = old.Polyphon(
+            (old.Melody([old.Tone(ji.r(1, 1), 1),
+                         old.Tone(ji.r(1, 1), 1)]),
+             old.Melody([old.Tone(ji.r(3, 2), 2)]),
+             old.Melody([old.Tone(ji.r(4, 3), 2)])))
+        self.assertEqual(poly0_cut, poly0_cut_expected)
 
 
 if __name__ == "__main__":
