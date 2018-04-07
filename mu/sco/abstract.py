@@ -176,9 +176,6 @@ class MultiSequentialEvent(ComplexEvent):
         parameters = (getattr(self, name).copy() for name
                       in self._sub_sequences_class_names)
         parameters = tuple(parameters)
-        print("parameters[0].multiply")
-        print(parameters[0].multiply)
-        print("parameters[0].multiply")
         return type(self).from_sequences(*parameters)
 
     @property
