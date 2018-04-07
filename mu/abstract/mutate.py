@@ -1,3 +1,11 @@
+# @Author: Levin Eric Zimmermann
+# @Date:   2018-04-07T15:48:42+02:00
+# @Email:  levin-eric.zimmermann@folkwang-uni.de
+# @Project: mu
+# @Last modified by:   uummoo
+# @Last modified time: 2018-04-07T15:53:19+02:00
+
+
 import functools
 from typing import Any, Dict, Tuple
 
@@ -33,6 +41,24 @@ def mutate_class(cls):
             return adapt_result(self, cls, res)
         return property(wrap)
 
+    def getitem(self, idx):
+        if type(idx) == slice:
+            copied = self.copy()
+            length = len(self)
+            indices = idx.indices(length)
+            start, stop = indices[0], indices[1]
+            del_end = length - stop
+            if del_end > 0:
+                for i in range(del_end):
+                    del copied[-1]
+            del_start = start
+            if del_start > 0:
+                for i in range(del_start):
+                    del copied[0]
+            return copied
+        else:
+            return list.__getitem__(self, idx)
+
     c_name = "mu_{0}".format(cls.__name__)
     new_class = type(c_name, (cls,), {})
 
@@ -48,7 +74,10 @@ def mutate_class(cls):
     properties = {key: property_decorator(func)
                   for key, func in old_property}
     for k in methods:
-        setattr(new_class, k, methods[k])
+        if k == "__getitem__":
+            setattr(new_class, k, getitem)
+        else:
+            setattr(new_class, k, methods[k])
     for k in properties:
         setattr(new_class, k, property(methods[k]))
     return new_class

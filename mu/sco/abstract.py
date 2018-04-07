@@ -102,16 +102,31 @@ class MultiSequentialEvent(ComplexEvent):
     def from_parameter(cls, *parameter):
         return cls(cls.build_objects(*parameter))
 
+    @classmethod
+    def from_sequences(cls, *sequence):
+        build = cls([])
+        for s, arg in zip(sequence, cls._sub_sequences_class_names):
+            setattr(build, arg, s)
+        return build
+
     def mk_sequence(self):
         return [type(self)._obj_class(
                 *data) for data in zip(*self.sequences)]
 
+    def __setitem__(self, idx, item):
+        subverted = self.subvert_object(item)
+        for name, sub in zip(self._sub_sequences_class_names, subverted):
+            getattr(self, name)[idx] = sub
+
     def __getitem__(self, idx):
-        seq = self.mk_sequence()[idx]
         if type(idx) == slice:
-            return type(self)(seq)
+            copied = self.copy()
+            for name in self._sub_sequences_class_names:
+                attr = getattr(copied, name)
+                setattr(copied, name, attr[idx])
+            return copied
         else:
-            return seq
+            return self.mk_sequence()[idx]
 
     def __repr__(self):
         return repr(self.mk_sequence())
@@ -145,8 +160,26 @@ class MultiSequentialEvent(ComplexEvent):
     def reverse(self):
         return type(self)(reversed(self.mk_sequence()))
 
-    def copy(self):
+    def copy(self, by="parameter"):
+        if by == "parameter":
+            return self.copy_by_parameter()
+        elif by == "element":
+            return self.copy_by_element()
+        else:
+            msg = "copy-option can only be 'parameter' or 'element'."
+            raise ValueError(msg)
+
+    def copy_by_element(self):
         return type(self)(item.copy() for item in self[:])
+
+    def copy_by_parameter(self):
+        parameters = (getattr(self, name).copy() for name
+                      in self._sub_sequences_class_names)
+        parameters = tuple(parameters)
+        print("parameters[0].multiply")
+        print(parameters[0].multiply)
+        print("parameters[0].multiply")
+        return type(self).from_sequences(*parameters)
 
     @property
     def duration(self):

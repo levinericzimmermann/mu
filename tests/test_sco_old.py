@@ -3,7 +3,7 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-04-06T14:53:00+02:00
+# @Last modified time: 2018-04-07T15:39:27+02:00
 
 
 import unittest
@@ -87,6 +87,14 @@ class MelodyTest(unittest.TestCase):
         self.assertEqual(melody0.sequences[0], self.mel1)
         self.assertEqual(melody0.sequences[1], self.rhy1)
         self.assertEqual(melody0.sequences[2], self.rhy0)
+
+    def test_set_item(self):
+        t0 = old.Tone(ji.r(1, 1), rhy.RhyUnit(2))
+        t1 = old.Tone(ji.r(2, 1), rhy.RhyUnit(2))
+        melody0 = old.Melody([t0, t1])
+        melody1 = old.Melody([t1, t0])
+        melody0[0], melody0[1] = melody1[0], melody1[1]
+        self.assertEqual(melody0, melody1)
 
     def test_freq(self):
         self.assertEqual(self.melody0.freq, self.mel0.freq)

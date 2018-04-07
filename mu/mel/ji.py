@@ -3,12 +3,11 @@
 # @Email:  levin-eric.zimmermann@folkwang-uni.de
 # @Project: mu
 # @Last modified by:   uummoo
-# @Last modified time: 2018-03-23T16:58:02+01:00
+# @Last modified time: 2018-04-07T15:57:15+02:00
 
 
 from mu.mel import abstract
 from mu.mel import mel
-from mu.abstract import muobjects
 from mu.utils import prime_factors
 import primesieve
 import functools
@@ -1603,6 +1602,11 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
     def __init__(self, iterable, multiply=260):
         JIContainer.__init__(self, iterable, multiply)
 
+    def copy(self):
+        copied = mel.Mel.copy(self)
+        copied.val_border = self.val_border
+        return copied
+
     @classmethod
     def from_str(cls, string) -> "JIMel":
         return JIContainer.from_str(cls, string)
@@ -1637,13 +1641,6 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
     def mk_line_and_inverse(cls, reference, count):
         m0 = cls.mk_line(reference, count)
         return m0 + m0.inverse()
-
-    def __getitem__(self, idx):
-        res = muobjects.MUList.__getitem__(self, idx)
-        if type(res) == type(self):
-            res.multiply = self.multiply
-            res.val_border = self.val_border
-        return res
 
     def add(self, other: "JIMel") -> "JIMel":
         return JIMel((m0 + m1 for m0, m1 in zip(self, other)))

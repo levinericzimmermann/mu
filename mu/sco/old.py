@@ -222,7 +222,12 @@ class AbstractLine(abstract.MultiSequentialEvent):
                 else:
                     new.append(it0)
             return new
-        return type(self)(sub(list(self)))
+        tied = sub(list(self))
+        copied = self.copy()
+        for i, item in enumerate(tied):
+            copied[i] = item
+        copied = copied[:len(tied)]
+        return copied
 
     def split(self):
         """

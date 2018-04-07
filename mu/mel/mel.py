@@ -1,3 +1,11 @@
+# @Author: Levin Eric Zimmermann
+# @Date:   2018-04-07T15:12:18+02:00
+# @Email:  levin-eric.zimmermann@folkwang-uni.de
+# @Project: mu
+# @Last modified by:   uummoo
+# @Last modified time: 2018-04-07T15:39:01+02:00
+
+
 from mu.abstract import muobjects
 from mu.mel import abstract
 from typing import Any
@@ -19,6 +27,10 @@ class Mel(muobjects.MUList):
     def __init__(self, iterable: Any, multiply: int = 260) -> None:
         muobjects.MUList.__init__(self, iterable)
         self.multiply = multiply
+
+    def copy(self):
+        iterable = tuple(item.copy() for item in self)
+        return type(self)(iterable, multiply=self.multiply)
 
     def __hash__(self) -> int:
         return hash(tuple(hash(t) for t in self))
