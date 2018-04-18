@@ -57,7 +57,7 @@ def mutate_class(cls):
                     del copied[0]
             return copied
         else:
-            return list.__getitem__(self, idx)
+            return cls.__getitem__(self, idx)
 
     c_name = "mu_{0}".format(cls.__name__)
     new_class = type(c_name, (cls,), {})

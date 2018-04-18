@@ -50,7 +50,7 @@ class Tone(abstract.UniformEvent):
         stream = music21.m21.stream.Stream()
         duration_mu = self.duration
         duration = duration_mu.convert2music21()
-        if self.pitch is not None:
+        if self.pitch != mel.EmptyPitch():
             pitch = self.pitch.convert2music21()
             if duration_mu > 4:
                 am_4 = int(duration_mu // 4)
@@ -132,7 +132,8 @@ class Chord(abstract.SimultanEvent):
     def convert2music21(self):
         # TODO: make a proper implementation of this
         stream = music21.m21.stream.Stream()
-        pitches = tuple(p.convert2music21() for p in self.harmony)
+        pitches = tuple(p.convert2music21() for p in self.harmony
+                        if p != mel.EmptyPitch())
         duration_mu = float(self.duration)
         duration = self.duration.convert2music21()
         difference = self.delay - self.duration
@@ -148,13 +149,15 @@ class Chord(abstract.SimultanEvent):
                     else:
                         tie = "continue"
                     chord = music21.m21.chord.Chord(
-                        tuple(p.convert2music21() for p in self.harmony),
+                        tuple(p.convert2music21() for p in self.harmony
+                              if p != mel.EmptyPitch()),
                         duration=music21.m21.duration.Duration(4))
                     chord.tie = music21.m21.tie.Tie(tie)
                     stream.append(chord)
                 if rest > 0:
                     chord = music21.m21.chord.Chord(
-                        tuple(p.convert2music21() for p in self.harmony),
+                        tuple(p.convert2music21() for p in self.harmony
+                              if p != mel.EmptyPitch()),
                         duration=music21.m21.duration.Duration(rest))
                     chord.tie = music21.m21.tie.Tie("stop")
                     stream.append(chord)
@@ -205,6 +208,14 @@ class AbstractLine(abstract.MultiSequentialEvent):
     def __hash__(self):
         return hash(tuple(hash(item) for item in self))
 
+    def tie_by(self, function):
+        tied = function(list(self))
+        copied = self.copy()
+        for i, item in enumerate(tied):
+            copied[i] = item
+        copied = copied[:len(tied)]
+        return copied
+
     def tie(self):
         def sub(melody):
             new = []
@@ -222,12 +233,7 @@ class AbstractLine(abstract.MultiSequentialEvent):
                 else:
                     new.append(it0)
             return new
-        tied = sub(list(self))
-        copied = self.copy()
-        for i, item in enumerate(tied):
-            copied[i] = item
-        copied = copied[:len(tied)]
-        return copied
+        return self.tie_by(sub)
 
     def split(self):
         """
@@ -327,6 +333,27 @@ class Melody(AbstractLine):
     def __hash__(self):
         return hash(tuple(hash(t) for t in self))
 
+    def tie_pauses(self):
+        def sub(melody):
+            new = []
+            for i, it0 in enumerate(melody):
+                try:
+                    it1 = melody[i + 1]
+                except IndexError:
+                    new.append(it0)
+                    break
+                pitch_test = (it0.pitch == mel.EmptyPitch(),
+                              it1.pitch == mel.EmptyPitch())
+                if it0.duration == it0.delay and all(pitch_test):
+                    t_new = type(it0)(it0.pitch,
+                                      it0.duration + it1.delay,
+                                      it0.duration + it1.duration)
+                    return new + sub([t_new] + melody[i + 2:])
+                else:
+                    new.append(it0)
+            return new
+        return self.tie_by(sub)
+
 
 class JIMelody(Melody):
     _sub_sequences_class = (ji.JIMel, rhy.RhyCompound, rhy.RhyCompound)
@@ -377,6 +404,27 @@ class Cadence(AbstractLine):
             for sub in m21_chord:
                 stream.append(sub)
         return stream
+
+    def tie_pauses(self):
+        def sub(melody):
+            new = []
+            for i, it0 in enumerate(melody):
+                try:
+                    it1 = melody[i + 1]
+                except IndexError:
+                    new.append(it0)
+                    break
+                pitch_test = (all(p is mel.EmptyPitch() for p in it0.pitch),
+                              all(p is mel.EmptyPitch() for p in it1.pitch))
+                if it0.duration == it0.delay and all(pitch_test):
+                    t_new = type(it0)(it0.pitch,
+                                      it0.duration + it1.delay,
+                                      it0.duration + it1.duration)
+                    return new + sub([t_new] + melody[i + 2:])
+                else:
+                    new.append(it0)
+            return new
+        return self.tie_by(sub)
 
 
 class JICadence(Cadence):
@@ -570,7 +618,7 @@ class PolyLine(abstract.SimultanEvent):
         item_start = item.delay
         item_stop = item.duration
         return self.cut_up_by_time(
-                item_start, item_stop, hard_cut, add_earlier)
+            item_start, item_stop, hard_cut, add_earlier)
 
 
 class Polyphon(PolyLine):
@@ -589,7 +637,9 @@ class Polyphon(PolyLine):
             score.append(part)
         return score
 
-    def chordify(self, cadence_class=Cadence, harmony_class=mel.Harmony):
+    def chordify(self, cadence_class=Cadence,
+                 harmony_class=mel.Harmony,
+                 add_longer=False):
         """
         Similar to music21.stream.Stream.chordify() - method:
         Create a chordal reduction of polyphonic music, where each
@@ -598,15 +648,31 @@ class Polyphon(PolyLine):
         t_set = ToneSet.from_polyphon(self)
         melody = t_set.convert2melody()
         cadence = []
-        acc = 0
+        current_set = []
         for t in melody:
-            if t.delay != 0:
-                harmony = t_set.pop_by_time(acc).convert2melody().mel
-                harmony = harmony_class(
-                    (p for p in harmony if p is not None))
-                new_chord = Chord(harmony, t.delay, t.duration)
+            if t.delay == 0:
+                current_set.append(t)
+            else:
+                current_set.append(t)
+                if len(current_set) > 1:
+                    harmony = harmony_class(t.pitch for t in current_set)
+                    durations = tuple(t.duration for t in current_set)
+                    min_dur = min(durations)
+                    new_set = []
+                    for subtone in current_set:
+                        if add_longer is True:
+                            diff = subtone.duration - min_dur
+                            if diff > 0 and subtone.pitch != mel.EmptyPitch():
+                                new_set.append(Tone(subtone.pitch, 0, diff))
+                    new_chord = Chord(harmony, t.delay, min_dur)
+                    current_set = []
+                    current_set.extend(new_set)
+                else:
+                    new_chord = Chord(harmony_class((current_set[0].pitch,)),
+                                      current_set[0].delay,
+                                      current_set[0].duration)
+                    current_set = []
                 cadence.append(new_chord)
-                acc += t.delay
         return cadence_class(cadence)
 
 

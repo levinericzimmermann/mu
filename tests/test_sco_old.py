@@ -151,6 +151,12 @@ class MelodyTest(unittest.TestCase):
         self.assertEqual(
             melody_converted.convert2relative_time(), self.melody0)
 
+    def test_copy(self):
+        melody0 = old.Melody([old.Tone(self.p0, self.d0),
+                              old.Tone(self.p0, self.d0)])
+        self.assertEqual(melody0, melody0.copy())
+        self.assertEqual(type(melody0.mel), (type(melody0.copy().mel)))
+
 
 class ToneSetTest(unittest.TestCase):
     p0 = ji.r(5, 4)

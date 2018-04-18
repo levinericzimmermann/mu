@@ -1401,7 +1401,16 @@ class JIContainer:
 
     @property
     def val_border(self) -> int:
-        return self[0].val_border
+        i = 0
+        v = None
+        while v is None:
+            try:
+                v = self[i].val_border
+            except AttributeError:
+                i += 1
+            except IndexError:
+                v = 1
+        return v
 
     @val_border.setter
     def val_border(self, arg: int) -> None:
@@ -1989,6 +1998,9 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
         self.multiply = multiply
         self._val_border = 1
 
+    def copy(self):
+        return type(self)(tuple(self), multiply=self.multiply)
+
     @classmethod
     def from_json(cls, data):
         return cls([JIHarmony.from_json(h) for h in data])
@@ -2187,12 +2199,13 @@ class JIStencil:
     To initialize a JIStencil - object tuples containing a
     Monzo or JIPitch - objects have to be passed:
     >>> mystencil = JIStencil(
-            (JIPitch((1,), 2), 0, 2), (JIPitch((0, 1), 2), 1, 3))
+            (JIPitch((1,), val_border=2), 0, 2),
+            (JIPitch((0, 1), val_border=2), 1, 3))
 
     The second and the third number in the tuples are
     specifying the exponents of the passed pitch, e.g.
     (JIPitch((1,), 2), 0, 2) would result in a harmony
-    containing (JIPitch((0,), 2), JIPitch((1,), 2)).
+    containing (JIPitch((0,), val_border=2), JIPitch((1,), val_border=2)).
 
     If the first number equals 0 it could be skipped, meaining
     that (JIPitch((1,), 2), 0, 2) == (JIPitch((1,), 2), 2).
