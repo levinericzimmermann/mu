@@ -6,8 +6,8 @@
 # @Last modified time: 2018-04-07T15:38:52+02:00
 
 
-from mu.abstract import mutate
 import orderedset
+from mu.abstract import mutate
 
 
 class MUList(mutate.mutate_class(list)):
@@ -31,10 +31,14 @@ class MUSet(mutate.mutate_class(set)):
         return type(self)([t.copy() for t in self])
 
 
-MUInt = mutate.mutate_class(int)
+class MUFloat(mutate.mutate_class(float)):
+    def __float__(self):
+        return float.__float__(self)
 
 
-MUFloat = mutate.mutate_class(float)
+class MUInt(mutate.mutate_class(int)):
+    def __int__(self):
+        return int.__int__(self)
 
 
 MUDict = mutate.mutate_class(dict)

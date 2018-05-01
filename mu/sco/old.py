@@ -7,14 +7,14 @@
 
 
 from typing import Callable, Optional, Tuple, Union
+
 from mu.abstract import muobjects
-from mu.sco import abstract
-from mu.rhy import rhy
-from mu.mel import mel
-from mu.mel import ji
+from mu.mel import ji, mel
 from mu.mel.abstract import AbstractPitch
-from mu.utils import music21
+from mu.rhy import rhy
+from mu.sco import abstract
 from mu.time import time
+from mu.utils import music21
 
 
 class Tone(abstract.UniformEvent):
@@ -95,6 +95,10 @@ class Rest(Tone):
     @property
     def pitch(self):
         return mel.EmptyPitch()
+
+    @property
+    def harmony(self):
+        return mel.Harmony((self.pitch,))
 
     def copy(self):
         return type(self)(self.delay.copy())
