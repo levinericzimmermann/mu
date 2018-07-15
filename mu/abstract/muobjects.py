@@ -31,12 +31,16 @@ class MUSet(mutate.mutate_class(set)):
         return type(self)([t.copy() for t in self])
 
 
-class MUFloat(mutate.mutate_class(float)):
+__MUFLoat = mutate.mutate_class(float)
+__MUInt = mutate.mutate_class(int)
+
+
+class MUFloat(__MUFLoat):
     def __float__(self):
         return float.__float__(self)
 
 
-class MUInt(mutate.mutate_class(int)):
+class MUInt(__MUInt):
     def __int__(self):
         return int.__int__(self)
 

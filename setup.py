@@ -10,6 +10,8 @@ setup(
     url='https://github.com/uummoo/mu',
     packages=['mu', 'mu.abstract', 'mu.time', 'mu.rhy',
               'mu.mel', 'mu.sco', 'mu.utils'],
+    package_data={'': ['mu/utils/primes.json']},
+    include_package_data=True,
     setup_requires=[''],
     tests_require=['nose'],
     install_requires=[''],

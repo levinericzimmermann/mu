@@ -8,17 +8,11 @@
 
 import functools
 from typing import Any, Dict, Tuple
+from numba import jit
 
 
 def execute_method(cls: Any, method: str, args: Tuple, kwargs: Dict) -> Any:
-    if args and kwargs:
-        return getattr(cls, method)(*args, **kwargs)
-    elif args and not kwargs:
-        return getattr(cls, method)(*args)
-    elif kwargs and not args:
-        return getattr(cls, method)(**kwargs)
-    else:
-        return getattr(cls, method)()
+    return getattr(cls, method)(*args, **kwargs)
 
 
 def mutate_class(cls):
@@ -30,22 +24,22 @@ def mutate_class(cls):
 
     def method_decorator(func):
         def wrap(*args, **kwargs):
-            res = execute_method(cls, func, args, kwargs)
-            return adapt_result(args[0], cls, res)
+            return adapt_result(
+                    args[0], cls,
+                    execute_method(cls, func, args, kwargs))
         return wrap
 
     def property_decorator(func):
         def wrap(*args, **kwargs):
             self = args[0]
-            res = func.fget(self)
-            return adapt_result(self, cls, res)
+            return adapt_result(self, cls, func.fget(self))
         return property(wrap)
 
     def getitem(self, idx):
-        if type(idx) == slice:
-            copied = self.copy()
+        try:
             length = len(self)
             indices = idx.indices(length)
+            copied = self.copy()
             start, stop = indices[0], indices[1]
             del_end = length - stop
             if del_end > 0:
@@ -56,7 +50,7 @@ def mutate_class(cls):
                 for i in range(del_start):
                     del copied[0]
             return copied
-        else:
+        except AttributeError:
             return cls.__getitem__(self, idx)
 
     c_name = "mu_{0}".format(cls.__name__)

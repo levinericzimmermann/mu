@@ -17,7 +17,7 @@ class MonzoTest(unittest.TestCase):
     def test_from_ratio(self):
         m0 = ji.Monzo([0, 1], 2)
         m0B = ji.Monzo.from_ratio(5, 4, val_border=2)
-        m1 = ji.Monzo([2, ], 2)
+        m1 = ji.Monzo([2], 2)
         m1B = ji.Monzo.from_ratio(9, 8, val_border=2)
         m2 = ji.Monzo([-1, 1, 1], 1)
         m2B = ji.Monzo.from_ratio(15, 2, val_border=1)
@@ -86,7 +86,7 @@ class MonzoTest(unittest.TestCase):
         m0 = ji.Monzo([0, 1], 2)
         m0B = ji.Monzo.from_str("5/4")
         m0B._val_shift = 1
-        m1 = ji.Monzo([2, ], 2)
+        m1 = ji.Monzo([2], 2)
         m1B = ji.Monzo.from_str("9/8")
         m1B._val_shift = 1
         m2 = ji.Monzo([-1, 1, 1], 1)
@@ -141,10 +141,10 @@ class MonzoTest(unittest.TestCase):
         m1 = ji.Monzo([0, 0, -1], 2)
         m2 = ji.Monzo([2, 0, -1], 3)
         m3 = ji.Monzo([2], 5)
-        self.assertEqual(m0._vec, m0._vector[m0._val_shift:])
-        self.assertEqual(m1._vec, m1._vector[m1._val_shift:])
-        self.assertEqual(m2._vec, m2._vector[m2._val_shift:])
-        self.assertEqual(m3._vec, m3._vector[m3._val_shift:])
+        self.assertEqual(m0._vec, m0._vector[m0._val_shift :])
+        self.assertEqual(m1._vec, m1._vector[m1._val_shift :])
+        self.assertEqual(m2._vec, m2._vector[m2._val_shift :])
+        self.assertEqual(m3._vec, m3._vector[m3._val_shift :])
 
     def test_val_border(self):
         m0 = ji.Monzo([-1, 1], 1)
@@ -219,47 +219,33 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m6.past, (m0, m4, m5))
 
     def test_adjust_ratio(self):
-        self.assertEqual(ji.Monzo.adjust_ratio(
-            Fraction(9, 1), 1), Fraction(9, 1))
-        self.assertEqual(ji.Monzo.adjust_ratio(
-            Fraction(9, 4), 2), Fraction(9, 8))
-        self.assertEqual(ji.Monzo.adjust_ratio(
-            Fraction(9, 16), 2), Fraction(9, 8))
-        self.assertEqual(ji.Monzo.adjust_ratio(
-            Fraction(15, 7), 2), Fraction(15, 14))
-        self.assertEqual(ji.Monzo.adjust_ratio(
-            Fraction(15, 7), 3), Fraction(15, 7))
+        self.assertEqual(ji.Monzo.adjust_ratio(Fraction(9, 1), 1), Fraction(9, 1))
+        self.assertEqual(ji.Monzo.adjust_ratio(Fraction(9, 4), 2), Fraction(9, 8))
+        self.assertEqual(ji.Monzo.adjust_ratio(Fraction(9, 16), 2), Fraction(9, 8))
+        self.assertEqual(ji.Monzo.adjust_ratio(Fraction(15, 7), 2), Fraction(15, 14))
+        self.assertEqual(ji.Monzo.adjust_ratio(Fraction(15, 7), 3), Fraction(15, 7))
 
     def test_adjust_monzo(self):
         vec0 = (1,)
         val0 = (3,)
         vec0res = (-1, 1)
         val0res = (2, 3)
-        self.assertEqual(
-            ji.Monzo.adjust_monzo(vec0, val0, 2),
-            (vec0res, val0res))
+        self.assertEqual(ji.Monzo.adjust_monzo(vec0, val0, 2), (vec0res, val0res))
         vec1 = (0, 1)
         val1 = (3, 5)
         vec1res = (-2, 0, 1)
         val1res = (2, 3, 5)
-        self.assertEqual(
-            ji.Monzo.adjust_monzo(vec1, val1, 2),
-            (vec1res, val1res))
+        self.assertEqual(ji.Monzo.adjust_monzo(vec1, val1, 2), (vec1res, val1res))
         vec2 = (-1, 1)
         val2 = (3, 5)
         vec2res = (0, -1, 1)
         val2res = (2, 3, 5)
-        self.assertEqual(
-            ji.Monzo.adjust_monzo(vec2, val2, 2),
-            (vec2res, val2res))
+        self.assertEqual(ji.Monzo.adjust_monzo(vec2, val2, 2), (vec2res, val2res))
 
     def test_ratio2monzo(self):
-        self.assertEqual(ji.Monzo.ratio2monzo(
-            Fraction(4, 3)), ji.Monzo((2, -1,)))
-        self.assertEqual(ji.Monzo.ratio2monzo(
-            Fraction(9, 8)), ji.Monzo((-3, 2)))
-        self.assertEqual(ji.Monzo.ratio2monzo(
-            Fraction(9, 5)), ji.Monzo((0, 2, -1)))
+        self.assertEqual(ji.Monzo.ratio2monzo(Fraction(4, 3)), ji.Monzo((2, -1)))
+        self.assertEqual(ji.Monzo.ratio2monzo(Fraction(9, 8)), ji.Monzo((-3, 2)))
+        self.assertEqual(ji.Monzo.ratio2monzo(Fraction(9, 5)), ji.Monzo((0, 2, -1)))
 
     def test_math(self):
         m0 = ji.Monzo([0, -1])
@@ -330,9 +316,13 @@ class MonzoTest(unittest.TestCase):
 
     def test_subvert(self):
         m0 = ji.Monzo([0, 0, 1, 2, -2])
-        ls = [ji.Monzo([0, 0, 1]), ji.Monzo([0, 0, 0, 1]),
-              ji.Monzo([0, 0, 0, 1]), ji.Monzo([0, 0, 0, 0, -1]),
-              ji.Monzo([0, 0, 0, 0, -1])]
+        ls = [
+            ji.Monzo([0, 0, 1]),
+            ji.Monzo([0, 0, 0, 1]),
+            ji.Monzo([0, 0, 0, 1]),
+            ji.Monzo([0, 0, 0, 0, -1]),
+            ji.Monzo([0, 0, 0, 0, -1]),
+        ]
         self.assertEqual(m0.subvert(), ls)
 
     def test_copy(self):
@@ -640,27 +630,31 @@ class JIPitchTest(unittest.TestCase):
 
 class JIScaleTest(unittest.TestCase):
     def test_add(self):
-        scale0 = ji.JIScale([ji.r(1, 1), ji.r(9, 8), ji.r(4, 3),
-                             ji.r(3, 2), ji.r(7, 4)], ji.r(2, 1))
-        scale1 = ji.JIScale([ji.r(1, 1), ji.r(16, 15), ji.r(4, 3),
-                             ji.r(3, 2), ji.r(7, 4)], ji.r(2, 1))
-        scale2 = ji.JIScale([ji.r(1, 1), ji.r(16, 15), ji.r(9, 8), ji.r(4, 3),
-                             ji.r(3, 2), ji.r(7, 4)], ji.r(2, 1))
+        scale0 = ji.JIScale(
+            [ji.r(1, 1), ji.r(9, 8), ji.r(4, 3), ji.r(3, 2), ji.r(7, 4)], ji.r(2, 1)
+        )
+        scale1 = ji.JIScale(
+            [ji.r(1, 1), ji.r(16, 15), ji.r(4, 3), ji.r(3, 2), ji.r(7, 4)], ji.r(2, 1)
+        )
+        scale2 = ji.JIScale(
+            [ji.r(1, 1), ji.r(16, 15), ji.r(9, 8), ji.r(4, 3), ji.r(3, 2), ji.r(7, 4)],
+            ji.r(2, 1),
+        )
         self.assertEqual(scale0 + scale1, scale2)
 
     def test_intervals(self):
-        scale = ji.JIScale([ji.r(1, 1), ji.r(9, 8), ji.r(4, 3),
-                            ji.r(3, 2), ji.r(7, 4)], ji.r(2, 1))
-        intervals = ji.JIMel([ji.r(9, 8), ji.r(32, 27),
-                              ji.r(9, 8), ji.r(7, 6),
-                              ji.r(8, 7)])
+        scale = ji.JIScale(
+            [ji.r(1, 1), ji.r(9, 8), ji.r(4, 3), ji.r(3, 2), ji.r(7, 4)], ji.r(2, 1)
+        )
+        intervals = ji.JIMel(
+            [ji.r(9, 8), ji.r(32, 27), ji.r(9, 8), ji.r(7, 6), ji.r(8, 7)]
+        )
         self.assertEqual(scale.intervals, intervals)
 
 
 class JIMelTest(unittest.TestCase):
     def test_from_str(self):
-        m0 = ji.JIMel([ji.r(1, 1), ji.r(4, 3),
-                       ji.r(5, 4), ji.r(9, 8)])
+        m0 = ji.JIMel([ji.r(1, 1), ji.r(4, 3), ji.r(5, 4), ji.r(9, 8)])
         m0B = ji.JIMel.from_str("1/1, 4/3, 5/4, 9/8")
         self.assertEqual(m0, m0B)
 
@@ -684,8 +678,7 @@ class JIMelTest(unittest.TestCase):
         m_fac = 200
         mel0 = ji.JIMel([n0, n1], m_fac)
         self.assertEqual(mel0.multiply, m_fac)
-        correct = (float(m_fac * 2 * Fraction(3, 2)),
-                   float(m_fac * Fraction(5, 4)))
+        correct = (float(m_fac * 2 * Fraction(3, 2)), float(m_fac * Fraction(5, 4)))
         self.assertEqual(mel0.calc(), correct)
 
     def test_inheritance(self):
@@ -698,8 +691,8 @@ class JIMelTest(unittest.TestCase):
     def test_mk_line(self):
         test_mel0 = ji.JIMel.mk_line(ji.JIPitch((0, 1, -1)), 3)
         test_mel1 = ji.JIMel(
-            (ji.JIPitch((0, 1, -1)), ji.JIPitch((0, 2, -2)),
-             ji.JIPitch((0, 3, -3))))
+            (ji.JIPitch((0, 1, -1)), ji.JIPitch((0, 2, -2)), ji.JIPitch((0, 3, -3)))
+        )
         self.assertEqual(test_mel0, test_mel1)
 
     def test_mk_line_and_inverse(self):
@@ -710,10 +703,9 @@ class JIMelTest(unittest.TestCase):
 
     def test_intervals(self):
         test_mel0 = ji.JIMel(
-            (ji.JIPitch((0, 1, -1)), ji.JIPitch((0, 2, -2)),
-             ji.JIPitch((0, 3, -3))))
-        test_mel1 = ji.JIMel(
-            (ji.JIPitch((0, 1, -1)), ji.JIPitch((0, 1, -1))))
+            (ji.JIPitch((0, 1, -1)), ji.JIPitch((0, 2, -2)), ji.JIPitch((0, 3, -3)))
+        )
+        test_mel1 = ji.JIMel((ji.JIPitch((0, 1, -1)), ji.JIPitch((0, 1, -1))))
         self.assertEqual(test_mel0.intervals, test_mel1)
 
     def test_pitch_rate(self):
@@ -726,8 +718,7 @@ class JIMelTest(unittest.TestCase):
         test_mel1 = ji.JIMel([t0, t3, t3, t3])
         test_mel2 = ji.JIMel([t3, t3, t3, t3])
         test_mel3 = ji.JIMel([t3, t4, t3, t3])
-        self.assertEqual(test_mel0.pitch_rate, ((t0, 1), (t1, 1),
-                                                (t2, 1), (t3, 1)))
+        self.assertEqual(test_mel0.pitch_rate, ((t0, 1), (t1, 1), (t2, 1), (t3, 1)))
         self.assertEqual(test_mel1.pitch_rate, ((t0, 1), (t3, 3)))
         self.assertEqual(test_mel2.pitch_rate, ((t3, 4),))
         self.assertEqual(test_mel3.pitch_rate, ((t3, 3), (t4, 1)))
@@ -742,8 +733,9 @@ class JIMelTest(unittest.TestCase):
         test_mel1 = ji.JIMel([t0, t3, t3, t3])
         test_mel2 = ji.JIMel([t3, t3, t3, t3])
         test_mel3 = ji.JIMel([t3, t4, t3, t3])
-        self.assertEqual(test_mel0.pitch_rate_sorted, ((t0, 1), (t1, 1),
-                                                       (t2, 1), (t3, 1)))
+        self.assertEqual(
+            test_mel0.pitch_rate_sorted, ((t0, 1), (t1, 1), (t2, 1), (t3, 1))
+        )
         self.assertEqual(test_mel1.pitch_rate_sorted, ((t0, 1), (t3, 3)))
         self.assertEqual(test_mel2.pitch_rate_sorted, ((t3, 4),))
         self.assertEqual(test_mel3.pitch_rate_sorted, ((t4, 1), (t3, 3)))
@@ -850,9 +842,13 @@ class JIMelTest(unittest.TestCase):
 
     def test_separate(self):
         test_mel0 = ji.JIMel.mk_line(ji.JIPitch((0, 1, -1)), 2)
-        test_mel1 = ji.JIMel((ji.JIPitch.from_ratio(3, 5),
-                              ji.JIPitch.from_ratio(9, 5),
-                              ji.JIPitch.from_ratio(9, 25)))
+        test_mel1 = ji.JIMel(
+            (
+                ji.JIPitch.from_ratio(3, 5),
+                ji.JIPitch.from_ratio(9, 5),
+                ji.JIPitch.from_ratio(9, 25),
+            )
+        )
         self.assertEqual(test_mel0.separate(), test_mel1)
 
     def test_dot_sum(self):
@@ -955,10 +951,10 @@ class JIMelTest(unittest.TestCase):
 
     def test_remove(self):
         p0 = ji.JIPitch((0, 1, -1), 2)
-        p1 = ji.JIPitch((0, 1,), 2)
+        p1 = ji.JIPitch((0, 1), 2)
         p2 = ji.JIPitch((0, 0, 1), 2)
-        p3 = ji.JIPitch((0, 2,), 2)
-        p4 = ji.JIPitch((0, -2,), 2)
+        p3 = ji.JIPitch((0, 2), 2)
+        p4 = ji.JIPitch((0, -2), 2)
         test_mel0 = ji.JIMel([p4, p0, p4, p1, p2, p3, p4])
         test_mel1 = ji.JIMel([p0, p1, p2, p3])
         test_mel2 = ji.JIMel([p4, p4, p1, p2, p3, p4])
@@ -972,6 +968,7 @@ class JIMelTest(unittest.TestCase):
     def test_find_by(self):
         def summed_minus(p0, p1):
             return (p0 - p1).summed()
+
         p0 = ji.JIPitch((1, -1), 2)
         p1 = ji.JIPitch((1,), 2)
         p2 = ji.JIPitch((0, 1), 2)
@@ -985,6 +982,7 @@ class JIMelTest(unittest.TestCase):
     def test_find_by_walk(self):
         def summed_minus(p0, p1):
             return (p0 - p1).summed()
+
         p0 = ji.JIPitch((1, -1), 2)
         p1 = ji.JIPitch((1,), 2)
         p2 = ji.JIPitch((0, 1), 2)
@@ -1024,8 +1022,8 @@ class JIHarmonyTest(unittest.TestCase):
         self.assertEqual(h2.root, (n0,))
         self.assertEqual(h3.root, (n4,))
         self.assertEqual(h4.root, (n0,))
-        self.assertEqual(h5.root, (n1, n3))
-        self.assertEqual(h6.root, (n1, n1.inverse(), n3.inverse(), n3))
+        self.assertEqual(h5.root, (n3, n1))
+        self.assertEqual(h6.root, tuple(reversed((n1, n1.inverse(), n3.inverse(), n3))))
 
     def test_converted2root(self):
         n0 = ji.JIPitch([], val_border=2)
@@ -1041,18 +1039,39 @@ class JIHarmonyTest(unittest.TestCase):
 
     def test_mk_harmonic_series(self):
         test_pitch = ji.r(11, 7)
-        harmonic_series = ji.JIHarmony([ji.r(1, 7), ji.r(2, 7), ji.r(3, 7),
-                                        ji.r(4, 7), ji.r(5, 7)])
-        self.assertEqual(ji.JIHarmony.mk_harmonic_series(test_pitch, 6),
-                         harmonic_series)
+        harmonic_series = ji.JIHarmony(
+            [ji.r(1, 7), ji.r(2, 7), ji.r(3, 7), ji.r(4, 7), ji.r(5, 7)]
+        )
+        self.assertEqual(
+            ji.JIHarmony.mk_harmonic_series(test_pitch, 6), harmonic_series
+        )
 
     def test_intervals(self):
         h0 = ji.JIHarmony([ji.r(1, 1), ji.r(7, 4), ji.r(3, 2)])
-        h0_intervals = ji.JIHarmony([ji.r(7, 4), ji.r(7, 4) - ji.r(3, 2),
-                                     ji.r(3, 2)])
+        h0_intervals = ji.JIHarmony(
+            [
+                ji.r(4, 7),
+                ji.r(7, 4),
+                ji.r(7, 4) - ji.r(3, 2),
+                ji.r(2, 3),
+                ji.r(6, 7),
+                ji.r(3, 2),
+            ]
+        )
         h1 = ji.JIHarmony([ji.r(1, 1), ji.r(5, 4), ji.r(2, 1), ji.r(8, 5)])
-        h1_intervals = ji.JIHarmony([ji.r(5, 4), ji.r(2, 1),
-                                     ji.r(8, 5), ji.r(32, 25)])
+        h1_intervals = ji.JIHarmony(
+            [
+                ji.r(1, 2),
+                ji.r(2, 1),
+                ji.r(4, 5),
+                ji.r(25, 32),
+                ji.r(5, 4),
+                ji.r(2, 1),
+                ji.r(8, 5),
+                ji.r(5, 8),
+                ji.r(32, 25),
+            ]
+        )
         self.assertEqual(h0.intervals, h0_intervals)
         self.assertEqual(h1.intervals, h1_intervals)
 
@@ -1090,10 +1109,10 @@ class JICadenceTest(unittest.TestCase):
         h6 = h5 | h5.inverse()
         cadence0 = ji.JICadence([h0, h1, h2])
         cadence1 = ji.JICadence([h3, h4, h5, h6])
-        self.assertEqual(cadence0.identity,
-                         (h0.identity, h1.identity, h2.identity))
-        self.assertEqual(cadence1.identity, (
-            h3.identity, h4.identity, h5.identity, h6.identity))
+        self.assertEqual(cadence0.identity, (h0.identity, h1.identity, h2.identity))
+        self.assertEqual(
+            cadence1.identity, (h3.identity, h4.identity, h5.identity, h6.identity)
+        )
 
     def test_empty_chords(self):
         n0 = ji.JIPitch([], val_border=2)
@@ -1143,8 +1162,7 @@ class JICadenceTest(unittest.TestCase):
         cadence0 = ji.JICadence((h1, h0, h0, h0))
         cadence1 = ji.JICadence((h0, h0, h1, h2))
         self.assertEqual(cadence0.chord_rate_sorted, ((h1, 1), (h0, 3)))
-        self.assertEqual(cadence1.chord_rate_sorted,
-                         ((h1, 1), (h2, 1), (h0, 2)))
+        self.assertEqual(cadence1.chord_rate_sorted, ((h1, 1), (h2, 1), (h0, 2)))
 
     def test_different_chords(self):
         n0 = ji.JIPitch([], val_border=2)
@@ -1201,25 +1219,21 @@ class JIStencilTest(unittest.TestCase):
     def test_convert2harmony(self):
         p0 = ji.JIPitch((1,), 2)
         p1 = ji.JIPitch((0, 1), 2)
-        teststencil = ji.JIStencil(
-                (p0, 0, 2), (p1, 1, 3))
-        testharmony = ji.JIHarmony((p0.scalar(0), p0,
-                                    p1, p1 + p1))
+        teststencil = ji.JIStencil((p0, 0, 2), (p1, 1, 3))
+        testharmony = ji.JIHarmony((p0.scalar(0), p0, p1, p1 + p1))
         self.assertEqual(teststencil.convert2harmony(), testharmony)
 
     def test_primes(self):
         p0 = ji.JIPitch((1,), 2)
         p1 = ji.JIPitch((0, 1), 2)
-        teststencil = ji.JIStencil(
-                (p0, 0, 2), (p1, 1, 3))
+        teststencil = ji.JIStencil((p0, 0, 2), (p1, 1, 3))
         self.assertEqual(teststencil.primes, (3, 5))
 
     def test_identity(self):
         p0 = ji.JIPitch((1,), 2)
         p1 = ji.JIPitch((0, 1), 2)
-        teststencil = ji.JIStencil(
-                (p0, 0, 2), (p1, 1, 3))
-        self.assertEqual(teststencil.identity, (p0, p1))
+        teststencil = ji.JIStencil((p0, 0, 2), (p1, 1, 3))
+        self.assertEqual(teststencil.identity, (p1, p0))
 
 
 class JIModule(unittest.TestCase):

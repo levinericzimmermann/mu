@@ -1,6 +1,5 @@
 import primesieve
 
-
 """
 factorise and factors - function from the pyprimes - library.
 (https://github.com/uzumaxy/pyprimes/blob/master/src/pyprimes/factors.py)
@@ -9,7 +8,20 @@ speed about a factor of 10.
 """
 
 
-class Prime_Generator:
+def __load_precalculated_factors():
+    import json
+    import os
+    dirname = os.path.dirname(__file__)
+    f_name = "primes.json"
+    with open("{0}/{1}".format(dirname, f_name), "r") as f:
+        precalculated_factors = f.read()
+    return json.loads(precalculated_factors)
+
+
+__PRECALCULATED_FACTORS = __load_precalculated_factors()
+
+
+class Prime_Generator(object):
     def __init__(self):
         self.it = primesieve.Iterator()
 
@@ -21,7 +33,8 @@ class Prime_Generator:
 
 
 def factorise(n):
-    """factorise(integer) -> [list of factors]
+    """
+    factorise(integer) -> [list of factors]
     Returns a list of the (mostly) prime factors of integer n. For negative
     integers, -1 is included as a factor. If n is 0, 1 or -1, [n] is
     returned as the only factor. Otherwise all the factors will be prime.
@@ -37,7 +50,8 @@ def factorise(n):
 
 
 def factors(n):
-    """factors(integer) -> yield factors of integer lazily
+    """
+    factors(integer) -> yield factors of integer lazily
     >>> list(factors(3*7*7*7*11))
     [(3, 1), (7, 3), (11, 1)]
     Yields tuples of (factor, count) where each factor is unique and usually
@@ -47,21 +61,27 @@ def factors(n):
     is given as the only factor. For all other integer n, all of the factors
     returned are prime.
     """
-    if n in (0, 1, -1):
-        yield (n, 1)
+    if n < 100000:
+        pre = __PRECALCULATED_FACTORS[n]
+        for fac in pre:
+            yield fac
         return
-    elif n < 0:
-        yield (-1, 1)
-        n = -n
-    assert n >= 2
-    for p in Prime_Generator():
-        if p * p > n:
-            break
-        count = 0
-        while n % p == 0:
-            count += 1
-            n //= p
-        if count:
-            yield (p, count)
-    if n != 1:
-        yield (n, 1)
+    else:
+        if n in (0, 1, -1):
+            yield (n, 1)
+            return
+        elif n < 0:
+            yield (-1, 1)
+            n = -n
+        assert n >= 2
+        for p in Prime_Generator():
+            if p * p > n:
+                break
+            count = 0
+            while n % p == 0:
+                count += 1
+                n //= p
+            if count:
+                yield (p, count)
+        if n != 1:
+            yield (n, 1)

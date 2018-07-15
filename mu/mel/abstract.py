@@ -1,5 +1,6 @@
 from mu.abstract import mutate
 from mu.utils import music21
+
 import abc
 import math
 
@@ -32,10 +33,13 @@ class AbstractPitch(abc.ABC):
 
         def method_decorator(func):
             def wrap(*args, **kwargs):
-                res = tuple(mutate.execute_method(
-                        f, func, args[1:], kwargs) for f in args[0]
-                            if f is not None)
+                res = tuple(
+                    mutate.execute_method(f, func, args[1:], kwargs)
+                    for f in args[0]
+                    if f is not None
+                )
                 return adapt_result(args[0], cls, res)
+
             return wrap
 
         def property_decorator(func):
@@ -43,19 +47,21 @@ class AbstractPitch(abc.ABC):
                 self = args[0]
                 res = tuple(func.fget(f) for f in self)
                 return adapt_result(self, cls, res)
+
             return property(wrap)
 
         c_name = "{0}_{1}".format(cls.__name__, template.__name__)
         bases = (template,)
         keys = [function for function in dir(cls) if not is_private(function)]
         functions = [getattr(cls, k) for k in keys]
-        old_method = tuple((key, func) for key, func in zip(keys, functions)
-                           if callable(func))
-        old_property = tuple((key, func) for key, func in zip(keys, functions)
-                             if type(func) == property)
+        old_method = tuple(
+            (key, func) for key, func in zip(keys, functions) if callable(func)
+        )
+        old_property = tuple(
+            (key, func) for key, func in zip(keys, functions) if type(func) == property
+        )
         methods = {key: method_decorator(key) for key, func in old_method}
-        properties = {key: property_decorator(func)
-                      for key, func in old_property}
+        properties = {key: property_decorator(func) for key, func in old_property}
         return type(c_name, bases, {**methods, **properties})
 
     def __eq__(self, other: "AbstractPitch") -> bool:
@@ -76,7 +82,7 @@ class AbstractPitch(abc.ABC):
     @music21.decorator
     def convert2music21(self):
         pitch_object = music21.m21.pitch.Pitch()
-        pitch_object.frequency = self.freq
+        pitch_object.frequency = float(self.freq)
         return pitch_object
 
     @staticmethod

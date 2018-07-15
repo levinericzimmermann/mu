@@ -18,76 +18,56 @@ from mu.utils import music21
 
 
 class Tone(abstract.UniformEvent):
-    def __init__(self, pitch: Optional[AbstractPitch], delay: rhy.RhyUnit,
-                 duration: Optional[rhy.RhyUnit] = None,
-                 volume: Optional = None) -> None:
-        if not duration:
-            duration = delay
+    def __init__(
+        self,
+        pitch: Optional[AbstractPitch],
+        delay: rhy.RhyUnit,
+        duration: Optional[rhy.RhyUnit] = None,
+        volume: Optional = None,
+    ) -> None:
         if pitch is None:
             pitch = mel.EmptyPitch()
         self.pitch = pitch
-        self._dur = rhy.RhyUnit(duration)
-        self.delay = rhy.RhyUnit(delay)
+        if isinstance(delay, rhy.RhyUnit) is False:
+            delay = rhy.RhyUnit(delay)
+        if not duration:
+            duration = delay
+        elif isinstance(duration, rhy.RhyUnit) is False:
+            duration = rhy.RhyUnit(duration)
+        self._dur = duration
+        self.delay = delay
         self.volume = volume
 
     def __hash__(self) -> int:
-        return hash((self.pitch, self.delay, self.duration))
+        return hash((self.pitch, self.delay, self.duration, self.volume))
 
     def __repr__(self):
-        return str((repr(self.pitch), repr(self.delay), repr(self.duration)))
+        return str(
+            (repr(self.pitch), repr(self.delay), repr(self.duration), repr(self.volume))
+        )
 
     def __eq__(self, other: "Tone") -> bool:
-        return all((self.pitch == other.pitch, self.duration == other.duration,
-                    self.delay == other.delay))
+        return all(
+            (
+                self.pitch == other.pitch,
+                self.duration == other.duration,
+                self.delay == other.delay,
+            )
+        )
 
     def copy(self) -> "Tone":
-        return type(self)(self.pitch.copy(),
-                          self.delay.copy(),
-                          self.duration.copy())
-
-    @music21.decorator
-    def convert2music21(self):
-        stream = music21.m21.stream.Stream()
-        duration_mu = self.duration
-        duration = duration_mu.convert2music21()
-        if self.pitch != mel.EmptyPitch():
-            pitch = self.pitch.convert2music21()
-            if duration_mu > 4:
-                am_4 = int(duration_mu // 4)
-                rest = int(duration_mu % 4)
-                for i in range(am_4):
-                    stream.append(music21.m21.note.Note(
-                        pitch,
-                        duration=music21.m21.duration.Duration(4),
-                        tie=music21.m21.tie.Tie()))
-                if rest > 0:
-                    stream.append(music21.m21.note.Note(
-                        pitch,
-                        duration=music21.m21.duration.Duration(rest),
-                        tie=music21.m21.tie.Tie("stop")))
-            else:
-                stream.append(music21.m21.note.Note(pitch, duration=duration))
-            difference = self.delay - self.duration
-            if difference > 0:
-                rhythm = rhy.RhyUnit(difference).convert2music21()
-                stream.append(music21.m21.note.Rest(duration=rhythm))
-        else:
-            if duration > 4:
-                am_4 = duration // 4
-                rest = duration % 4
-                for i in range(am_4):
-                    stream.append(music21.m21.note.Rest(duration=4))
-                stream.append(music21.m21.note.Rest(duration=rest))
-            else:
-                stream.append(music21.m21.note.Rest(duration=duration))
-        return stream
+        return type(self)(
+            self.pitch.copy(), self.delay.copy(), self.duration.copy(), self.volume
+        )
 
 
 class Rest(Tone):
-    def __init__(self, delay: rhy.RhyUnit,
-                 duration: rhy.RhyUnit=rhy.RhyUnit(0)) -> None:
+    def __init__(
+        self, delay: rhy.RhyUnit, duration: rhy.RhyUnit = rhy.RhyUnit(0)
+    ) -> None:
         self._dur = duration
         self.delay = delay
+        self.volume = 0
 
     def __repr__(self):
         return repr(self.duration)
@@ -105,17 +85,21 @@ class Rest(Tone):
 
 
 class Chord(abstract.SimultanEvent):
-    """
-    A Chord contains simultanly played Tones.
-    """
+    """A Chord contains simultanly played Tones."""
 
-    def __init__(self, harmony, delay: rhy.RhyUnit,
-                 duration: Optional[rhy.RhyUnit] = None) -> None:
+    def __init__(
+        self,
+        harmony,
+        delay: rhy.RhyUnit,
+        duration: Optional[rhy.RhyUnit] = None,
+        volume=None,
+    ) -> None:
         if not duration:
             duration = delay
         self.harmony = harmony
         self._dur = duration
         self.delay = delay
+        self.volume = volume
 
     @property
     def pitch(self):
@@ -132,62 +116,14 @@ class Chord(abstract.SimultanEvent):
     def __repr__(self):
         return str((repr(self.harmony), repr(self.delay), repr(self.duration)))
 
-    @music21.decorator
-    def convert2music21(self):
-        # TODO: make a proper implementation of this
-        stream = music21.m21.stream.Stream()
-        pitches = tuple(p.convert2music21() for p in self.harmony
-                        if p != mel.EmptyPitch())
-        duration_mu = float(self.duration)
-        duration = self.duration.convert2music21()
-        difference = self.delay - self.duration
-        if pitches:
-            if duration_mu > 4:
-                am_4 = int(duration_mu // 4)
-                rest = duration_mu % 4
-                for i in range(am_4):
-                    if i == 0:
-                        tie = "start"
-                    elif i == am_4 - 1 and rest < 1:
-                        tie = "stop"
-                    else:
-                        tie = "continue"
-                    chord = music21.m21.chord.Chord(
-                        tuple(p.convert2music21() for p in self.harmony
-                              if p != mel.EmptyPitch()),
-                        duration=music21.m21.duration.Duration(4))
-                    chord.tie = music21.m21.tie.Tie(tie)
-                    stream.append(chord)
-                if rest > 0:
-                    chord = music21.m21.chord.Chord(
-                        tuple(p.convert2music21() for p in self.harmony
-                              if p != mel.EmptyPitch()),
-                        duration=music21.m21.duration.Duration(rest))
-                    chord.tie = music21.m21.tie.Tie("stop")
-                    stream.append(chord)
-
-            else:
-                chord = music21.m21.chord.Chord(
-                    pitches, duration=duration)
-                stream.append(chord)
-
-        else:
-            chord = music21.m21.note.Rest(duration=duration)
-            stream.append(chord)
-        if difference > 0:
-            rhythm = rhy.RhyUnit(difference).convert2music21()
-            stream.append(music21.m21.note.Rest(duration=rhythm))
-        return stream
-
 
 class AbstractLine(abstract.MultiSequentialEvent):
-    _sub_sequences_class_names = ("pitch", "delay", "dur")
+    _sub_sequences_class_names = ("pitch", "delay", "dur", "volume")
 
     def __init__(self, iterable, time_measure="relative"):
         abstract.MultiSequentialEvent.__init__(self, iterable)
         try:
-            assert(any((time_measure == "relative",
-                        time_measure == "absolute")))
+            assert any((time_measure == "relative", time_measure == "absolute"))
         except AssertionError:
             raise ValueError("Time can only be 'relative' or 'absolute'.")
         self._time_measure = time_measure
@@ -217,7 +153,7 @@ class AbstractLine(abstract.MultiSequentialEvent):
         copied = self.copy()
         for i, item in enumerate(tied):
             copied[i] = item
-        copied = copied[:len(tied)]
+        copied = copied[: len(tied)]
         return copied
 
     def tie(self):
@@ -230,13 +166,14 @@ class AbstractLine(abstract.MultiSequentialEvent):
                     new.append(it0)
                     break
                 if it0.duration == it0.delay and it0.pitch == it1.pitch:
-                    t_new = type(it0)(it0.pitch,
-                                      it0.duration + it1.delay,
-                                      it0.duration + it1.duration)
-                    return new + sub([t_new] + melody[i + 2:])
+                    t_new = type(it0)(
+                        it0.pitch, it0.duration + it1.delay, it0.duration + it1.duration
+                    )
+                    return new + sub([t_new] + melody[i + 2 :])
                 else:
                     new.append(it0)
             return new
+
         return self.tie_by(sub)
 
     def split(self):
@@ -248,7 +185,7 @@ class AbstractLine(abstract.MultiSequentialEvent):
         for item in self:
             diff = item.delay - item.duration
             if diff > 0:
-                new.append(type(item)(item.pitch, item.duration))
+                new.append(type(item)(item.pitch, item.duration, volume=item.volume))
                 new.append(Rest(diff))
             else:
                 new.append(item)
@@ -276,24 +213,27 @@ class AbstractLine(abstract.MultiSequentialEvent):
         if self.time_measure == "absolute":
             copy.delay = copy.delay.convert2relative()
             copy.dur = type(copy.dur)(
-                dur - delay for dur, delay in zip(self.dur, self.delay))
+                dur - delay for dur, delay in zip(self.dur, self.delay)
+            )
             copy.delay.append(copy.dur[-1])
             copy._time_measure = "relative"
         return copy
 
 
 class Melody(AbstractLine):
-    """
-    A Melody contains sequentially played Pitches.
-    """
+    """A Melody contains sequentially played Pitches."""
+
     _obj_class = Tone
-    _sub_sequences_class = (mel.Mel, rhy.RhyCompound, rhy.RhyCompound)
+    _sub_sequences_class = (mel.Mel, rhy.RhyCompound, rhy.RhyCompound, list)
 
     @classmethod
-    def subvert_object(cls, tone: Tone) -> Union[
-            Tuple[AbstractPitch, rhy.RhyUnit, rhy.RhyUnit],
-            Tuple[None, rhy.RhyUnit, rhy.RhyUnit]]:
-        return tone.pitch, tone.delay, tone.duration
+    def subvert_object(
+        cls, tone: Tone
+    ) -> Union[
+        Tuple[AbstractPitch, rhy.RhyUnit, rhy.RhyUnit],
+        Tuple[None, rhy.RhyUnit, rhy.RhyUnit],
+    ]:
+        return tone.pitch, tone.delay, tone.duration, tone.volume
 
     @property
     def freq(self) -> Tuple[float]:
@@ -301,7 +241,7 @@ class Melody(AbstractLine):
 
     @property
     def duration(self):
-        return time.Time(sum(element.delay for element in self))
+        return float(sum(element.delay for element in self))
 
     @property
     def mel(self):
@@ -325,15 +265,6 @@ class Melody(AbstractLine):
     def rhy(self, arg):
         self.delay = arg
 
-    @music21.decorator
-    def convert2music21(self):
-        stream = music21.m21.stream.Stream()
-        for t in self:
-            m21_tone = t.convert2music21()
-            for sub in m21_tone:
-                stream.append(sub)
-        return stream
-
     def __hash__(self):
         return hash(tuple(hash(t) for t in self))
 
@@ -346,35 +277,36 @@ class Melody(AbstractLine):
                 except IndexError:
                     new.append(it0)
                     break
-                pitch_test = (it0.pitch == mel.EmptyPitch(),
-                              it1.pitch == mel.EmptyPitch())
-                if it0.duration == it0.delay and all(pitch_test):
-                    t_new = type(it0)(it0.pitch,
-                                      it0.duration + it1.delay,
-                                      it0.duration + it1.duration)
-                    return new + sub([t_new] + melody[i + 2:])
+                pitch_test = (
+                    it0.pitch == mel.EmptyPitch(),
+                    it1.pitch == mel.EmptyPitch(),
+                )
+                # if it0.duration == it0.delay and all(pitch_test):
+                if all(pitch_test):
+                    t_new = type(it0)(
+                        it0.pitch, it0.duration + it1.delay, it0.duration + it1.duration
+                    )
+                    return new + sub([t_new] + melody[i + 2 :])
                 else:
                     new.append(it0)
             return new
+
         return self.tie_by(sub)
 
 
 class JIMelody(Melody):
-    _sub_sequences_class = (ji.JIMel, rhy.RhyCompound, rhy.RhyCompound)
+    _sub_sequences_class = (ji.JIMel, rhy.RhyCompound, rhy.RhyCompound, list)
 
 
 class Cadence(AbstractLine):
-    """
-    A Cadence contains sequentially played Harmonies.
-    """
+    """A Cadence contains sequentially played Harmonies."""
+
     _obj_class = Chord
-    _sub_sequences_class = (mel.Cadence, rhy.RhyCompound, rhy.RhyCompound)
+    _sub_sequences_class = (mel.Cadence, rhy.RhyCompound, rhy.RhyCompound, list)
 
     @property
     def harmony(self):
-        """
-        Alias for backwards compatbility,
-        """
+        """Alias for backwards compatbility."""
         return self.pitch
 
     @harmony.setter
@@ -383,9 +315,7 @@ class Cadence(AbstractLine):
 
     @property
     def rhy(self):
-        """
-        Alias for backwards compatbility,
-        """
+        """Alias for backwards compatbility."""
         return self.delay
 
     @rhy.setter
@@ -394,20 +324,11 @@ class Cadence(AbstractLine):
 
     @classmethod
     def subvert_object(cls, chord):
-        return chord.harmony, chord.delay, chord.duration
+        return chord.harmony, chord.delay, chord.duration, chord.volume
 
     @property
     def freq(self):
         return self.harmony.freq
-
-    @music21.decorator
-    def convert2music21(self):
-        stream = music21.m21.stream.Stream()
-        for c in self:
-            m21_chord = c.convert2music21()
-            for sub in m21_chord:
-                stream.append(sub)
-        return stream
 
     def tie_pauses(self):
         def sub(melody):
@@ -418,27 +339,28 @@ class Cadence(AbstractLine):
                 except IndexError:
                     new.append(it0)
                     break
-                pitch_test = (all(p is mel.EmptyPitch() for p in it0.pitch),
-                              all(p is mel.EmptyPitch() for p in it1.pitch))
-                if it0.duration == it0.delay and all(pitch_test):
-                    t_new = type(it0)(it0.pitch,
-                                      it0.duration + it1.delay,
-                                      it0.duration + it1.duration)
-                    return new + sub([t_new] + melody[i + 2:])
+                pitch_test = (
+                    all(p == mel.EmptyPitch() for p in it0.pitch),
+                    all(p == mel.EmptyPitch() for p in it1.pitch),
+                )
+                if all(pitch_test):
+                    t_new = type(it0)(
+                        it0.pitch, it0.duration + it1.delay, it0.duration + it1.duration
+                    )
+                    return new + sub([t_new] + melody[i + 2 :])
                 else:
                     new.append(it0)
             return new
+
         return self.tie_by(sub)
 
 
 class JICadence(Cadence):
-    _sub_sequences_class = (ji.JICadence, rhy.RhyCompound, rhy.RhyCompound)
+    _sub_sequences_class = (ji.JICadence, rhy.RhyCompound, rhy.RhyCompound, list)
 
 
 class PolyLine(abstract.SimultanEvent):
-    """
-    A Container for Melody and Cadence - Objects.
-    """
+    """A Container for Melody and Cadence - Objects."""
 
     @staticmethod
     def find_simultan_events_in_absolute_polyline(polyline, polyidx, itemidx):
@@ -541,15 +463,18 @@ class PolyLine(abstract.SimultanEvent):
         """
         converted_poly = self.convert2absolute_time()
         return self.find_simultan_events_in_absolute_polyline(
-            converted_poly, polyidx, itemidx)
+            converted_poly, polyidx, itemidx
+        )
 
-    def find_exact_simultan_events(self, polyidx, itemidx,
-                                   convert2relative=True) -> tuple:
+    def find_exact_simultan_events(
+        self, polyidx, itemidx, convert2relative=True
+    ) -> tuple:
         """
         """
         converted_poly = self.convert2absolute_time()
         simultan = self.find_simultan_events_in_absolute_polyline(
-            converted_poly, polyidx, itemidx)
+            converted_poly, polyidx, itemidx
+        )
         item = converted_poly[polyidx][itemidx]
         item_start = item.delay
         item_stop = item.duration
@@ -564,8 +489,9 @@ class PolyLine(abstract.SimultanEvent):
                 event.delay = event.duration
         return simultan
 
-    def cut_up_by_time(self, start: rhy.RhyUnit, stop: rhy.RhyUnit,
-                       hard_cut=True, add_earlier=True) -> "PolyLine":
+    def cut_up_by_time(
+        self, start: rhy.RhyUnit, stop: rhy.RhyUnit, hard_cut=True, add_earlier=True
+    ) -> "PolyLine":
         """
         """
         polyline = self.convert2absolute_time()
@@ -609,41 +535,29 @@ class PolyLine(abstract.SimultanEvent):
         if self.time_measure is "relative":
             for sub in polyline:
                 sub.dur = type(sub.dur)(d - sub.delay[0] for d in sub.dur)
-                sub.delay = type(sub.delay)(
-                    d - sub.delay[0] for d in sub.delay)
+                sub.delay = type(sub.delay)(d - sub.delay[0] for d in sub.delay)
             polyline = polyline.convert2relative_time()
         return polyline
 
-    def cut_up_by_idx(self, polyidx, itemidx,
-                      hard_cut=True, add_earlier=True) -> "PolyLine":
+    def cut_up_by_idx(
+        self, polyidx, itemidx, hard_cut=True, add_earlier=True
+    ) -> "PolyLine":
         """
         """
         item = self[polyidx].convert2absolute_time()[itemidx]
         item_start = item.delay
         item_stop = item.duration
-        return self.cut_up_by_time(
-            item_start, item_stop, hard_cut, add_earlier)
+        return self.cut_up_by_time(item_start, item_stop, hard_cut, add_earlier)
 
 
 class Polyphon(PolyLine):
     """
     Container for Melody - Objects.
     """
-    @music21.decorator
-    def convert2music21(self):
-        score = music21.m21.stream.Score(id='mainScore')
-        measures = (music21.m21.stream.Measure(
-            m.convert2music21(), number=1)
-            for m in self)
-        parts = (music21.m21.stream.Part([measure], id='part{0}'.format(i))
-                 for i, measure in enumerate(measures))
-        for part in parts:
-            score.append(part)
-        return score
 
-    def chordify(self, cadence_class=Cadence,
-                 harmony_class=mel.Harmony,
-                 add_longer=False):
+    def chordify(
+        self, cadence_class=Cadence, harmony_class=mel.Harmony, add_longer=False
+    ):
         """
         Similar to music21.stream.Stream.chordify() - method:
         Create a chordal reduction of polyphonic music, where each
@@ -662,19 +576,27 @@ class Polyphon(PolyLine):
                     harmony = harmony_class(t.pitch for t in current_set)
                     durations = tuple(t.duration for t in current_set)
                     min_dur = min(durations)
+                    volume = tuple(t.volume for t in current_set if t.volume != None)
+                    if volume:
+                        volume = max(volume)
+                    else:
+                        volume = None
                     new_set = []
                     for subtone in current_set:
                         if add_longer is True:
                             diff = subtone.duration - min_dur
                             if diff > 0 and subtone.pitch != mel.EmptyPitch():
                                 new_set.append(Tone(subtone.pitch, 0, diff))
-                    new_chord = Chord(harmony, t.delay, min_dur)
+                    new_chord = Chord(harmony, t.delay, min_dur, volume)
                     current_set = []
                     current_set.extend(new_set)
                 else:
-                    new_chord = Chord(harmony_class((current_set[0].pitch,)),
-                                      current_set[0].delay,
-                                      current_set[0].duration)
+                    new_chord = Chord(
+                        harmony_class((current_set[0].pitch,)),
+                        current_set[0].delay,
+                        current_set[0].duration,
+                        current_set[0].volume,
+                    )
                     current_set = []
                 cadence.append(new_chord)
         return cadence_class(cadence)
@@ -730,8 +652,8 @@ class ToneSet(muobjects.MUSet):
         d = 0
         for chord in cadence:
             delay = float(chord.delay)
-            for p in chord.harmony:
-                t = Tone(p, rhy.RhyUnit(d), chord.duration)
+            for p in chord.pitch:
+                t = Tone(p, rhy.RhyUnit(d), chord.duration, chord.volume)
                 new_set.add(t)
             d += delay
         return new_set
@@ -758,6 +680,7 @@ class ToneSet(muobjects.MUSet):
             start = tone.delay
             duration = tone.duration
             return time >= start and time < start + duration
+
         return self.pop_by(test, time)
 
     def convert2melody(self) -> Melody:
@@ -785,8 +708,9 @@ class ToneSet(muobjects.MUSet):
                 diff = t.duration
             harmony.add(t.pitch)
             if diff != 0:
-                cadence.append(Chord(
-                    harmony, rhy.RhyUnit(diff), rhy.RhyUnit(t.duration)))
+                cadence.append(
+                    Chord(harmony, rhy.RhyUnit(diff), rhy.RhyUnit(t.duration))
+                )
                 harmony = mel.Harmony([])
         cadence[-1].delay = rhy.RhyUnit(sorted_by_delay[-1].duration)
         return Cadence(cadence)

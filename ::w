@@ -42,11 +42,11 @@ def comparable_monzo_decorator(func: Callable) -> Callable:
     return wrap
 
 
-class Monzo(object):
-    r"""A Monzo - Object is a representation or notation of a musical
+class Monzo:
+    r"""
+    A Monzo - Object is a representation or notation of a musical
     interval in just intonation, named after the American
     composer Joe Monzo (http://xenharmonic.wikispaces.com/Monzos).
-
     A Monzo could be understood as a vector, which contains
     exponents for prime numbers. The corresponding prime numbers
     are saved in a similar vector called "val". Hence, every Monzo
@@ -83,7 +83,6 @@ class Monzo(object):
     >>> m0.ratio
     Fraction(5, 4)
     """
-
     _val_shift = 0
 
     def __init__(self, iterable, val_border=1):
@@ -168,11 +167,9 @@ class Monzo(object):
 
     @staticmethod
     def adjusted_monzos(m0, m1):
-
-        r"""Adjust two Monzos, e.g. makes their length equal.
-
-        The length of the longer Monzo is the reference.
-
+        r"""
+        Adjust two Monzos, e.g. makes their length equal. The length of the
+        longer Monzo is the reference.
         Arguments:
             * m0: first monzo to adjust
             * m1: second monzo to adjust
@@ -184,7 +181,6 @@ class Monzo(object):
         >>> m1_adjusted
         (1, 0, 0)
         """
-
         m0 = m0._vec
         m1 = m1._vec
         l0 = len(m0)
@@ -196,8 +192,9 @@ class Monzo(object):
 
     @staticmethod
     def is_comparable(m0: "Monzo", m1: "Monzo") -> bool:
-        r"""Check whether two Monzo - Objects are comparable.
-
+        r"""
+        Check whether two Monzo - Objects are comparable,
+        e.g. have the same val_border.
         Arguments:
             * m0: first monzo to compare
             * m1: second monzo to compare
@@ -209,7 +206,6 @@ class Monzo(object):
         >>> Monzo.is_comparable(m1, m2)
         True
         """
-
         try:
             return m0._val_shift == m1._val_shift
         except AttributeError:
@@ -218,11 +214,10 @@ class Monzo(object):
     @staticmethod
     def calc_iterables(iterable0: iter, iterable1: iter,
                        operation: callable) -> iter:
-
-        r"""Return a new generator - object, whose elements are
+        r"""
+        Return a new generator - object, whose elements are
         the results of a input function ('operation'), applied on
         every pair of zip(iterable0, iterable1).
-
         Arguments:
             * iterable0: first iterable to calculate
             * iterable1: second iterable to calculate
@@ -230,7 +225,6 @@ class Monzo(object):
               to call on the first element of iterable0 and the first element
               of iterable1, on the seconds element of iterable0
               and the second element on iterable1, ...
-
         >>> tuple0 = (1, 0, 2, 3)
         >>> tuple1 = (2, 1, -3, 3)
         >>> tuple2 = (4,)
@@ -245,14 +239,13 @@ class Monzo(object):
         >>> tuple(Monzo.calc_iterables(tuple0, tuple2, plus))
         (5,)
         """
-
         return (operation(x, y) for x, y in zip(iterable0, iterable1))
 
     @staticmethod
     def adjust_ratio(r: Fraction, val_border: int) -> Fraction:
-        r"""Multiply / divide a Fraction - Object with the val_border - argument,
+        r"""
+        Multiply / divide a Fraction - Object with the val_border - argument,
         until it is equal or bigger than 1 and smaller than val_border.
-
         Arguments:
             * r: The Ratio, which shall be adjusted
             * val_border
@@ -263,11 +256,9 @@ class Monzo(object):
         Fraction(4, 3)
         >>> Monzo.adjust_ratio(ratio1, val_border)
         Fraction(4, 3)
-
         """
-
         if val_border > 1:
-            while r >= val_border:
+            while r > val_border:
                 r /= val_border
             while r < 1:
                 r *= val_border
@@ -275,9 +266,9 @@ class Monzo(object):
 
     @staticmethod
     def adjust_float(f: float, val_border: int) -> float:
-        r"""Multiply / divide a float - Object with the val_border - argument,
+        r"""
+        Multiply / divide a float - Object with the val_border - argument,
         until it is equal or bigger than 1 and smaller than val_border.
-
         Arguments:
             * r: The Ratio, which shall be adjusted
             * val_border
@@ -288,9 +279,7 @@ class Monzo(object):
         1
         >>> Monzo.adjust_ratio(float1, val_border)
         1
-
         """
-
         if val_border > 1:
             while f > val_border:
                 try:
@@ -303,8 +292,8 @@ class Monzo(object):
 
     @staticmethod
     def adjust_monzo(vector: tuple, val: tuple, val_border: int) -> tuple:
-        r"""Adjust a vector and its val depending on the val_border.
-
+        r"""
+        Adjust a vector and its val depening on the val_border.
         Arguments:
             * vector: The monzo, which shall be adjusted
             * val: Its corresponding val
@@ -314,9 +303,7 @@ class Monzo(object):
         >>> val_border = 2
         >>> Monzo.adjust_monzo(vector0, val0, val_border)
         ((-1, 1), (2, 3))
-
         """  # TODO Make proper description what actually happens
-
         if vector:
             if val_border > 1:
                 multiplied = functools.reduce(
@@ -332,9 +319,9 @@ class Monzo(object):
 
     @staticmethod
     def discard_nulls(iterable):
-        r"""Discard all zeros after the last not 0 - element of an arbitary iterable.
-
-        Return a tuple.
+        r"""
+        Discard all zeros after the last not 0 - element
+        of an arbitary iterable. Return a tuple.
         Arguments:
             * iterable: the iterable, whose 0 - elements shall
               be discarded
@@ -345,7 +332,6 @@ class Monzo(object):
         >>> Monzo.discard_nulls(ls)
         (1, 3, 5, 0, 0, 0, 2)
         """
-
         iterable = tuple(iterable)
         c = 0
         for i in reversed(iterable):
@@ -358,8 +344,9 @@ class Monzo(object):
 
     @staticmethod
     def monzo2pair(monzo: tuple, val: tuple) -> tuple:
-        r"""Transform a Monzo to a (numerator, denominator) - pair (two element tuple).
-
+        r"""
+        Transform a Monzo to a (numerator, denominator) - pair
+        (two element tuple).
         Arguments are:
             * Monzo -> The exponents of prime numbers
             * Val -> the referring prime numbers
@@ -374,7 +361,6 @@ class Monzo(object):
         >>> Monzo.monzo2pair(myMonzo1, myVal1)
         (25, 1)
         """
-
         numerator = 1
         denominator = 1
         for number, exponent in zip(val, monzo):
@@ -386,11 +372,10 @@ class Monzo(object):
 
     @staticmethod
     def monzo2ratio(monzo: tuple, _val: tuple, _val_shift: int) -> Fraction:
-        r"""Transform a Monzo to a Fraction - Object
-
+        r"""
+        Transform a Monzo to a Fraction - Object
         (if installed to a quicktions.Fraction - Object,
         otherwise to a fractions.Fraction - Object).
-
         Arguments are:
             * Monzo -> The exponents of prime numbers
             * _val -> the referring prime numbers for the underlying
@@ -410,7 +395,6 @@ class Monzo(object):
         >>> Monzo.monzo2ratio(myMonzo1, myVal1, myValShift1)
         25/16
         """
-
         if _val_shift > 0:
             val_border = _val_shift - 1
             try:
@@ -424,8 +408,8 @@ class Monzo(object):
 
     @staticmethod
     def monzo2float(monzo: tuple, _val: tuple, _val_shift: int) -> float:
-        r"""Transform a Monzo to a float.
-
+        r"""
+        Transform a Monzo to a float.
         Arguments are:
             * Monzo -> The exponents of prime numbers
             * _val -> the referring prime numbers for the underlying
@@ -445,7 +429,6 @@ class Monzo(object):
         >>> Monzo.monzo2ratio(myMonzo1, myVal1, myValShift1)
         1.5625
         """
-
         if _val_shift > 0:
             val_border = _val_shift - 1
             try:
@@ -463,8 +446,8 @@ class Monzo(object):
 
     @staticmethod
     def ratio2monzo(ratio: Fraction, val_shift=0) -> Type["Monzo"]:
-        r"""Transform a Fraction - Object to a Monzo.
-
+        r"""
+        Transform a Fraction - Object to a Monzo.
         Arguments are:
             * ratio -> The Fraction, which shall be transformed
             * val_shift -> how many prime numbers shall be skipped
@@ -484,7 +467,6 @@ class Monzo(object):
         >>> Monzo.monzo2ratio(myRatio1, myValShift1)
         (-1, 0, 1)
         """
-
         gen_pos = prime_factors.factors(ratio.numerator)
         gen_neg = prime_factors.factors(ratio.denominator)
 
@@ -504,8 +486,8 @@ class Monzo(object):
 
     @staticmethod
     def _shift_vector(vec, shiftval) -> tuple:
-        r"""Add Zeros to the beginning of a tuple / discard elements from a tuple.
-
+        r"""
+        Add Zeros to the beginning of a tuple / discard elements from a tuple.
         Arguments are:
             * vec -> The tuple, which shall be modified
             * shiftval -> how many elements shall be shifted
@@ -520,7 +502,6 @@ class Monzo(object):
         >>> Monzo._shift_vector(myVec1, -2)
         (1,)
         """
-
         if shiftval > 0:
             m = (0,) * shiftval + tuple(vec)
         else:
@@ -529,12 +510,11 @@ class Monzo(object):
 
     @staticmethod
     def gcd(*args) -> int:
-        r"""Calculate the greatest common denominator of many numbers.
-
+        r"""
+        Calculate the greatest common denominator of many numbers
         Arguments:
             * arg -> numbers, whose greatest common denominator shall
                      be found
-
         >>> Monzo.gcd(4, 8)
         4
         >>> Monzo.gcd(4, 8, 3)
@@ -542,25 +522,20 @@ class Monzo(object):
         >>> Monzo.gcd(64, 100, 400)
         4
         """
-
         return functools.reduce(math.gcd, args)
 
     @staticmethod
     def nth_prime(arg):
-        r"""Find the nth - prime.
-
-        More efficient version than primesieve.nth_primes,
-        since it uses saved Primes for n < 50.
-
+        r"""
+        Find the nth - prime. More efficient version than
+        primesieve.nth_primes, since it uses saved Primes for n < 50.
         Arguments:
             * n -> number, which Prime shall be found
-
         >>> Monzo.nth_prime(3)
         5
         >>> Monzo.nth_prime(10)
         29
         """
-
         try:
             primes = (2, 3, 5, 7, 11, 13,
                       17, 19, 23, 29, 31, 37,
@@ -576,20 +551,16 @@ class Monzo(object):
 
     @staticmethod
     def n_primes(arg):
-        r"""List the first n - primes.
-
-        More efficient version than primesieve.n_primes,
-        since it uses saved Primes for n < 50.
-
+        r"""
+        List the first n - primes. More efficient version than
+        primesieve.n_primes, since it uses saved Primes for n < 50.
         Arguments:
             * n -> number, which Prime shall be found
-
         >>> Monzo.nth_prime(3)
         (2, 3, 5)
         >>> Monzo.nth_prime(10)
         (2, 3, 5, 7, 11, 13, 17, 19, 23, 29)
         """
-
         if arg <= 50:
             return Monzo.nth_prime(slice(0, arg))
         else:
@@ -597,20 +568,16 @@ class Monzo(object):
 
     @staticmethod
     def count_primes(arg):
-        r"""Count prime numbers.
-
-        More efficient version than primesieve.count_primes,
-        since it uses saved Primes for n < 70.
-
+        r"""
+        Count prime numbers. More efficient version than
+        primesieve.count_primes, since it uses saved Primes for n < 70.
         Arguments:
             * n -> number, which Prime shall be found
-
         >>> Monzo.nth_prime(3)
         (2, 3, 5)
         >>> Monzo.nth_prime(10)
         (2, 3, 5, 7, 11, 13, 17, 19, 23, 29)
         """
-
         if arg <= 70:
             data = (0, 0, 1, 2, 2, 3, 3, 4, 4, 4,
                     4, 5, 5, 6, 6, 6, 6, 7, 7, 8,
@@ -626,13 +593,11 @@ class Monzo(object):
 
     @staticmethod
     def indigestibility(num: int) -> float:
-        """Calculate indigestibility of a number
-
-        The implementation follows Clarence Barlows definition
-        given in 'The Ratio Book' (1992).
+        """
+        Calculate indigestibility of a number, following
+        Clarence Barlows definition given in 'The Ratio Book' (1992).
         Arguments:
             * num -> integer, whose indigestibility value shall be calculated
-
         >>> Monzo.indigestibility(1)
         0
         >>> Monzo.indigestibility(2)
@@ -640,7 +605,6 @@ class Monzo(object):
         >>> Monzo.indigestibility(3)
         2.6666666666666665
         """
-
         decomposed = prime_factors.factorise(num)
         decomposed = collections.Counter(decomposed)
         decomposed = zip(decomposed.values(), decomposed.keys())
@@ -658,9 +622,9 @@ class Monzo(object):
 
     @property
     def _val(self) -> tuple:
-        r"""Return complete list of primes (e.g. 'val'), until the
+        r"""
+        Return complete list of primes (e.g. 'val'), until the
         highest Prime, which the Monzo / JIPitch contains.
-
         This Method ignores the val_border / _val_shift
         property of an Object.
         >>> m0 = Monzo((0, 1, 2), 1)
@@ -673,16 +637,15 @@ class Monzo(object):
         >>> m1._val
         (2, 3, 5, 7, 11)
         """
-
         return Monzo.n_primes(
             len(self) + self._val_shift)
 
     @property
     def val(self) -> tuple:
-        r"""Return complete list of primes (e.g. 'val'), until the
+        r"""
+        Return complete list of primes (e.g. 'val'), until the
         highest Prime, which the Monzo / JIPitch contains in respect
         to the current val_border or _val_shift - property of the object.
-
         >>> m0 = Monzo((0, 1, 2), 1)
         >>> m0.val
         (2, 3, 5)
@@ -696,7 +659,6 @@ class Monzo(object):
         >>> m1._val
         (2, 3, 5, 7, 11)
         """
-
         return self._val[self._val_shift:]
 
     @property
@@ -717,7 +679,6 @@ class Monzo(object):
         the famous Bohlen-Pierce-Scale) the proper value for the
         val_border would be 3 (third Harmonic Tone is an octave plus
         a fifth).
-
         >>> m0 = Monzo((0, 1), 1)
         >>> m0.ratio
         Fraction(3, 1)
@@ -728,7 +689,6 @@ class Monzo(object):
         >>> m0.ratio
         Fraction(1, 1)
         """
-
         if self._val_shift == 0:
             return 1
         else:
@@ -739,12 +699,11 @@ class Monzo(object):
         self._val_shift = Monzo.count_primes(v)
 
     def set_val_border(self, val_border: int) -> Type["Monzo"]:
-        """Return a copied version of the Monzo / JIPitch -Object
+        """
+        Return a copied version of the Monzo / JIPitch -Object
         with a new val_border. The Object itself stay unchanged.
-
         Arguments:
             * val_border: The val_border for the new Monzo
-
         >>> m0 = Monzo((0, 1,), val_border=2)
         >>> m1 = m0.set_val_border(3)
         >>> m1.val_border
@@ -752,15 +711,14 @@ class Monzo(object):
         >>> m0.val_border
         2
         """
-
         copied = self.copy()
         copied.val_border = val_border
         return copied
 
     @property
     def factorised(self) -> tuple:
-        """Return factorised / decomposed version of itsef.
-
+        """
+        Return factorised / decomposed version of itsef.
         >>> m0 = Monzo((0, 1,), val_border=2)
         >>> m0.factorised
         (2, 2, 5)
@@ -768,7 +726,6 @@ class Monzo(object):
         >>> m1.factorised
         (2, 3, 7)
         """
-
         vec = self._vec
         val = self.val
         border = self.val_border
@@ -778,9 +735,9 @@ class Monzo(object):
 
     @property
     def ratio(self) -> Fraction:
-        """Return the Monzo transformed to a Ratio (Fraction-Object)
+        """
+        Return the Monzo transformed to a Ratio (Fraction-Object)
         of a Monzo or JIPitch - Object.
-
         >>> m0 = Monzo((0, 1,), val_border=2)
         >>> m0.ratio
         Fraction(5, 4)
@@ -788,16 +745,14 @@ class Monzo(object):
         >>> m0.ratio
         Fraction(3, 2)
         """
-
         return Monzo.monzo2ratio(self, self._val, self._val_shift)
 
     @property
     def numerator(self) -> int:
-        """Return the numerator of a Monzo or JIPitch - object.
-
+        """
+        Return the numerator of a Monzo or JIPitch - object.
         This metod ignores the val_border - property of the object,
         meaning that myMonzo.ratio.numerator != myMonzo.numerator.
-
         >>> m0 = Monzo((0, -1,), val_border=2)
         >>> m0.numerator
         1
@@ -806,7 +761,6 @@ class Monzo(object):
         >>> m0.ratio.numerator
         8
         """
-
         numerator = 1
         for number, exponent in zip(self.val, self):
             if exponent > 0:
@@ -815,11 +769,10 @@ class Monzo(object):
 
     @property
     def denominator(self) -> int:
-        """Return the denominator of a Monzo or JIPitch - object.
-
+        """
+        Return the denominator of a Monzo or JIPitch - object.
         This metod ignores the val_border - property of the object,
         meaning that myMonzo.ratio.denominator != myMonzo.denominator.
-
         >>> m0 = Monzo((0, 1,), val_border=2)
         >>> m0.denominator
         1
@@ -828,7 +781,6 @@ class Monzo(object):
         >>> m0.ratio.denominator
         4
         """
-
         denominator = 1
         for number, exponent in zip(self.val, self):
             if exponent < 0:
@@ -837,25 +789,24 @@ class Monzo(object):
 
     @property
     def float(self) -> float:
-        """Return the ratio of a Monzo or JIPitch - object,
+        """
+        Return the ratio of a Monzo or JIPitch - object,
         transformed to a float number, meaning that
         float(myMonzo.ratio) == myMonzo.float. Note the
         difference that the second version might be slightly
         more performant.
-
         >>> m0 = Monzo((1,), val_border=2)
         >>> m0.float
         1.5
         >>> float(m0.ratio)
         1.5
         """
-
         return Monzo.monzo2float(self, self._val, self._val_shift)
 
     def simplify(self):
-        """Change all elements in self._vector to 0,
+        """
+        Change all elements in self._vector to 0,
         whose index is bigger than self._val_shift.
-
         >>> monzo0 = Monzo((1, -1), val_border=1)
         >>> monzo0.val_border = 2
         >>> monzo0._vector
@@ -863,9 +814,7 @@ class Monzo(object):
         >>> monzo0_simplified = monzo0.simplify()
         >>> monzo0._vector
         (0, -1)
-
         """
-
         v_shift = self._val_shift
         new = self.copy()
         if v_shift > 0:
@@ -875,16 +824,14 @@ class Monzo(object):
     def adjust_register(self, limitup: float = 2**6,
                         startperiod: int = 3,
                         concert_pitch_period: int = 3):
-        """Adjust register of the Interval. Change the val_border to 1.
-
+        """
+        Adjust register of the Interval. Change the val_border to 1.
         Arguments:
             * startperiod
             * limitup
             * concert_pitch_period
-
         >>> monzo0 = Monzo((1, -1), val_border=2)
         """  # TODO: add proper description with example
-
         def period_generator(val_border):
             result = val_border ** startperiod
             while True:
@@ -940,15 +887,14 @@ class Monzo(object):
 
     @property
     def gender(self) -> bool:
-        """Return the gender (bool) of a Monzo or JIPitch - object.
-
+        """
+        Return the gender (bool) of a Monzo or JIPitch - object.
         The gender of a Monzo or JIPitch - may be True if
         the exponent of the highest occurring prime number is a
         positive number and False if the exponent is a
         negative number.
         special case: The gender of a Monzo or JIPitch - object
         containing an empty val is True.
-
         >>> m0 = Monzo((-2. 1), val_border=2)
         >>> m0.gender
         True
@@ -959,7 +905,6 @@ class Monzo(object):
         >>> m2.gender
         True
         """
-
         if self:
             maxima = max(self)
             minima = min(self)
@@ -973,16 +918,15 @@ class Monzo(object):
 
     @property
     def harmonic(self) -> int:
-        """Return the nth - harmonic / subharmonic, which
+        """
+        Return the nth - harmonic / subharmonic, which
         the Monzo or JIPitch - object might be.
-
         May be positive for harmonic and negative for
         subharmonic pitches. If the return - value is 0,
         the interval may occur neither between the first harmonic
         and any other pitch of the harmonic scale nor
         between the first subharmonic in the and any other
         pitch of the subharmonic scale.
-
         >>> m0 = Monzo((1,), val_border=2)
         >>> m0.ratio
         Fraction(3, 2)
@@ -992,7 +936,6 @@ class Monzo(object):
         >>> m1.harmonic
         -3
         """
-
         if self.ratio.denominator % 2 == 0:
             return self.ratio.numerator
         elif self.ratio.numerator % 2 == 0:
@@ -1004,26 +947,27 @@ class Monzo(object):
 
     @property
     def primes(self) -> tuple:
-        """Return all occurring prime numbers of a Monzo or JIPitch - object.
-
+        """
+        Return all occurring prime numbers of
+        a Monzo or JIPitch - object.
         >>> m0 = Monzo((1,), val_border=2)
         >>> m0.ratio
         Fraction(3, 2)
         >>> m0.harmonic # a fifth may be the 3th pitch of the harmonic scale
         3
         >>> m1 = Monzo((-1,), 2)
-        >>> m1.harmonic # a fourth may be the 3th pitch of the subharmonic scale
+        >>> m1.harmonic #a fourth may be the 3th pitch of the subharmonic scale
         -3
         """
-
         p = prime_factors.factorise(
             self.numerator * self.denominator)
         return tuple(sorted(tuple(set(p))))
 
     @property
     def quantity(self) -> int:
-        """Count how many different prime numbers are occurring in the Monzo or JIPitch - object.
-
+        """
+        Count how many different prime numbers are occurring in
+        the Monzo or JIPitch - object.
         >>> m0 = Monzo((1,), val_border=2)
         >>> m0.quantity
         1
@@ -1037,13 +981,12 @@ class Monzo(object):
         >>> m3.quantity # one exponent is zero now
         2
         """
-
         return len(self.primes)
 
     @property
     def components(self) -> tuple:
-        r"""Seperate a monzo object to its different primes.
-
+        r"""
+        Seperate a monzo object in its different primes.
         >>> m0 = (1, 0, -1)
         >>> m1 = (1,)
         >>> m0_adjusted, m1_adjusted = Monzo.adjusted_monzos(m0, m1)
@@ -1052,7 +995,6 @@ class Monzo(object):
         >>> m1
         (1, 0, 0)
         """
-
         vectors = [[0] * c + [x] for c, x in enumerate(self) if x != 0]
         return tuple(type(self)(
             vec, val_border=self.val_border) for vec in vectors)
@@ -1071,8 +1013,8 @@ class Monzo(object):
 
     @property
     def harmonicity_euler(self) -> int:
-        """Return the 'gradus suavitatis' of euler.
-
+        """
+        Return the 'gradus suavitatis' of euler.
         A higher number means a less consonant interval /
         a more complicated harmony.
         euler(1/1) is definied as 1.
@@ -1089,19 +1031,18 @@ class Monzo(object):
         >>> m3.harmonicity_euler
         8
         """
-
         decomposed = self.factorised
         return 1 + sum(x - 1 for x in decomposed)
 
     @property
     def harmonicity_barlow(self) -> float:
-        r"""Calculate the harmonicity of an interval
+        r"""
+        Calculate the harmonicity of an interval
         following Clarence Barlows definition, given
         in 'The Ratio Book' (1992). A higher number
         means a more consonant interval / a less
         complicated harmony.
         barlow(1/1) is definied as infinite.
-
         >>> m0 = Monzo((1,), val_border=2)
         >>> m1 = Monzo([], val_border=2)
         >>> m2 = Monzo((0, 1,), val_border=2)
@@ -1115,7 +1056,6 @@ class Monzo(object):
         >>> m3.harmonicity_barlow
         -0.10638297872340426
         """
-
         def sign(x): return (1, -1)[x < 0]
         ratio = self.ratio
         if ratio == Fraction(1, 1):
@@ -1128,12 +1068,12 @@ class Monzo(object):
 
     @property
     def harmonicity_tenney(self) -> float:
-        r"""Calculate the harmonic distance of an interval
+        r"""
+        Calculate the harmonic distance of an interval
         following James Tenneys definition. A higher number
         means a more consonant interval / a less
         complicated harmony.
         tenney(1/1) is definied as 0.
-
         >>> m0 = Monzo((1,), val_border=2)
         >>> m1 = Monzo([], val_border=2)
         >>> m2 = Monzo((0, 1,), val_border=2)
@@ -1147,7 +1087,6 @@ class Monzo(object):
         >>> m3.harmonicity_tenney
         -0.10638297872340426
         """
-
         ratio = self.ratio
         num = ratio.numerator
         de = ratio.denominator
@@ -1213,12 +1152,11 @@ class Monzo(object):
 
     @comparable_bool_decorator
     def is_related(self: "Monzo", other: "Monzo") -> bool:
-        """Two Monzo or JIPitch - Objects are considered as related if
+        """
+        Two Monzo or JIPitch - Objects are considered as related if
         they share at least one common prime.
-
         Arguments:
             * Monzo or JIPitch to compare with
-
         >>> monzo0 = Monzo((1, -1), val_border=2)
         >>> monzo1 = Monzo((-1, 1), val_border=2)
         >>> monzo2 = Monzo((2, -2), val_border=2)
@@ -1236,7 +1174,6 @@ class Monzo(object):
         >>> monzo0.is_related(monzo5)
         False
         """
-
         for p in self.primes:
             if p in other.primes:
                 return True
@@ -1244,12 +1181,11 @@ class Monzo(object):
 
     @comparable_bool_decorator
     def is_congeneric(self: "Monzo", other: "Monzo") -> bool:
-        """Two Monzo or JIPitch - Objects are considered as congeneric if
+        """
+        Two Monzo or JIPitch - Objects are considered as congeneric if
         their primes are equal.
-
         Arguments:
             * Monzo or JIPitch to compare with
-
         >>> monzo0 = Monzo((1, -1), val_border=2)
         >>> monzo1 = Monzo((-1, 1), val_border=2)
         >>> monzo2 = Monzo((2, -2), val_border=2)
@@ -1264,7 +1200,6 @@ class Monzo(object):
         >>> monzo0.is_congeneric(monzo4)
         True
         """
-
         if self.primes == other.primes:
             return True
         else:
@@ -1272,12 +1207,11 @@ class Monzo(object):
 
     @comparable_bool_decorator
     def is_sibling(self: "Monzo", other: "Monzo") -> bool:
-        """Two Monzo or JIPitch - Objects are considered as siblings if
+        """
+        Two Monzo or JIPitch - Objects are considered as siblings if
         their primes and their gender are equal.
-
         Arguments:
             * Monzo or JIPitch to compare with
-
         >>> monzo0 = Monzo((1, -1), val_border=2)
         >>> monzo1 = Monzo((-1, 1), val_border=2)
         >>> monzo2 = Monzo((2, -2), val_border=2)
@@ -1295,7 +1229,6 @@ class Monzo(object):
         >>> monzo0.is_sibling(monzo5)
         True
         """
-
         if self.primes == other.primes and self.gender == other.gender:
             return True
         else:
@@ -1429,9 +1362,7 @@ class JIPitch(Monzo, abstract.AbstractPitch):
         return JIPitch(Monzo.__pow__(self, val), self.val_border)
 
     def __hash__(self):
-        return hash(self._vec)
-        # return abstract.AbstractPitch.__hash__(self)
-        # TODO(HASH_PROBLEM): find valid solution for this problem
+        return abstract.AbstractPitch.__hash__(self)
 
     def calc(self, factor=1) -> float:
         return float(self.float * self.multiply * factor)
@@ -1461,7 +1392,7 @@ class JIPitch(Monzo, abstract.AbstractPitch):
             diff_ratio.numerator, diff_ratio.denominator)
 
 
-class JIContainer(object):
+class JIContainer:
     def __init__(self, iterable, multiply=260):
         super(type(self), self).__init__(iterable)
         self.multiply = multiply
@@ -1625,8 +1556,7 @@ class JIContainer(object):
         return type(self)((function(x) for x in self))
 
     def add_map(self, pitch):
-        return self.map(
-                lambda x: x + pitch if x != mel.EmptyPitch() else mel.EmptyPitch())
+        return self.map(lambda x: x + pitch)
 
     def sub_map(self, pitch):
         return self.map(lambda x: x - pitch)
@@ -2045,7 +1975,9 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         return harmony
 
     def adjust_register_by_fitness(self, function, range_harmonies=None):
+        """
         # TODO: add documentation, make implementation better understandable
+        """
         identities = self.identity
         length_identities = len(identities)
         if range_harmonies is None:
@@ -2185,7 +2117,8 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
         return repeats
 
     def count_pitch(self, pitch) -> int:
-        """Count how often the asked pitch occurs in the Cadence.
+        """
+        Count how often the asked pitch occurs in the Cadence.
         """
         c = 0
         for harmony in self:
@@ -2196,7 +2129,8 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
         return c
 
     def count_different_pitches(self) -> int:
-        """Count how many different pitches occur in the Cadence.
+        """
+        Count how many different pitches occur in the Cadence.
         """
         c = 0
         already = []
@@ -2246,7 +2180,6 @@ class JIScale(JIPitch.mk_iterable(mel.Scale), JIContainer):
         for i, p in enumerate(period):
             while p > periodsize:
                 p -= periodsize
-            period[i] = p
         mel.Scale.__init__(self, period, periodsize)
 
     @property
@@ -2267,12 +2200,11 @@ class JIScale(JIPitch.mk_iterable(mel.Scale), JIContainer):
 
 class GeneratorScale(JIScale):
     def __init__(self, *generator, n=5, period=JIPitch([])):
-        generator = itertools.cycle(generator)
-        s = (next(generator) for i in range(n - 1))
+        s = (next(itertools.cycle(generator)) for i in range(n - 1))
         s = JIMel(s)
         s.insert(0, r(1, 1))
         s = s.accumulate()
-        JIScale.__init__(self, s, period)
+        JIScale.__init__(self, s.accumulate(), period)
 
 
 class JIStencil:
@@ -2324,14 +2256,13 @@ class JIStencil:
         return tuple(set(p.identity for p in self._pitches))
 
     def convert2harmony(self):
-        """Return a converted version of itself (JIHarmony - object).
-
+        """
+        Return a converted version of itself (JIHarmony - object).
         >>> mystencil = JIStencil(
                 (JIPitch((1,), 2), 0, 2), (JIPitch((0, 1), 2), 1, 3))
         >>> myharmony = mystencil.convert2harmony()
         JIHarmony({1, 25/16, 3/2, 5/4})
         """
-
         return JIHarmony(functools.reduce(
             operator.add,
             (self.convertvec2harmony(v) for v in self._vector)))

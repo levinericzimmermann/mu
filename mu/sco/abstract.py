@@ -88,11 +88,12 @@ class MultiSequentialEvent(ComplexEvent):
 
     @classmethod
     def subvert_iterable(cls, iterable):
-        sequences = list(c([]) for c in cls._sub_sequences_class)
-        for obj in iterable:
-            for i, unit in enumerate(cls.subvert_object(obj)):
-                sequences[i].append(unit)
-        return sequences
+        if iterable:
+            subverted = zip(*(cls.subvert_object(obj) for obj in iterable))
+        else:
+            subverted = ([] for i in range(len(cls._sub_sequences_class)))
+        return list(c(zipped) for c, zipped in
+                    zip(cls._sub_sequences_class, subverted))
 
     @classmethod
     def build_objects(cls, *parameter):

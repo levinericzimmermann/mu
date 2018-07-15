@@ -60,10 +60,10 @@ class RhyCompound(AbstractRhythm, muobjects.MUList):
     def __init__(self, iterable):
         iterable = list(iterable)
         for i, n in enumerate(iterable):
-            if not isinstance(n, RhyCompound) or not isinstance(n, RhyUnit):
-                if isinstance(n, int) or isinstance(n, float):
+            if not isinstance(n, AbstractRhythm):
+                try:
                     iterable[i] = RhyUnit(n)
-                else:
+                except TypeError:
                     raise ValueError("Unknown element {0}.".format(n))
         muobjects.MUList.__init__(self, iterable)
 
