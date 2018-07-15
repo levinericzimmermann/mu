@@ -5,6 +5,7 @@ install:
   - pip3 install .
   - pip3 install -r requirements.txt
   - pip3 install python-coveralls 
+  - pip3 install python3-nose
 script:
   - nosetests3  --with-coverage --cover-package=mu
 after_success:
