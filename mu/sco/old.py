@@ -94,8 +94,13 @@ class Chord(abstract.SimultanEvent):
         duration: Optional[rhy.RhyUnit] = None,
         volume=None,
     ) -> None:
+        if isinstance(delay, rhy.RhyUnit) is False:
+            delay = rhy.RhyUnit(delay)
         if not duration:
             duration = delay
+        elif isinstance(duration, rhy.RhyUnit) is False:
+            duration = rhy.RhyUnit(duration)
+
         self.harmony = harmony
         self._dur = duration
         self.delay = delay
@@ -115,6 +120,11 @@ class Chord(abstract.SimultanEvent):
 
     def __repr__(self):
         return str((repr(self.harmony), repr(self.delay), repr(self.duration)))
+
+    def copy(self) -> "Chord":
+        return type(self)(
+            self.pitch.copy(), self.delay.copy(), self.duration.copy(), self.volume
+        )
 
 
 class AbstractLine(abstract.MultiSequentialEvent):
