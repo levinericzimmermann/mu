@@ -14,12 +14,9 @@ Current status:
     * time
 
 A good place to start to get an overview of *mu*s current functionality are the different [Jupyter Notebooks](https://github.com/uummoo/mu/blob/master/tutorials):
-
-    * [Instruction to *mu*s Just Intonation support](https://github.com/uummoo/mu/blob/master/tutorials/ji.ipynb)
-
-    * [Instruction to *mu*s Rhythm abstraction](https://github.com/uummoo/mu/blob/master/tutorials/rhy.ipynb)
-
-    * [Instruction to *mu*s different event classes](https://github.com/uummoo/mu/blob/master/tutorials/old.ipynb)
+   * [Instruction to *mu*s Just Intonation support](https://github.com/uummoo/mu/blob/master/tutorials/ji.ipynb)
+   * [Instruction to *mu*s Rhythm abstraction](https://github.com/uummoo/mu/blob/master/tutorials/rhy.ipynb)
+   * [Instruction to *mu*s different event classes](https://github.com/uummoo/mu/blob/master/tutorials/old.ipynb)
 
 
 installation:
