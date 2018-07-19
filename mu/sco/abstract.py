@@ -4,8 +4,7 @@ from mu.time import time
 
 
 class Event(abc.ABC):
-    """
-    An Event might be any Object, which contains discrete Information
+    """An Event may be any Object that contains discrete Information
     about Time and at least one other mu - Object, e.g.
     a Melody might be an Event, since a Melody contains Information
     about Pitch and Duration, while a Harmony isn't an Event, since it could

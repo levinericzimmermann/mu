@@ -54,7 +54,7 @@ class Monzo(object):
     If the val of a Monzo - Object would be (2, 3, 5) and
     the Monzo of the Object would be (-2, 0, 1) the resulting
     interval in p/q - notation would be 5/4, since
-    2^-2 * 3^0 * 5^-1 = 1/4 * 1 * 5 = 5/4.
+    2^-2 * 3^0 * 5^1 = 1/4 * 1 * 5 = 5/4.
     If you write the monzo-vector straight over the val-vector
     the relationship between both becomes clear:
     (-2, 0, 1)
@@ -837,9 +837,9 @@ class Monzo(object):
 
     @property
     def float(self) -> float:
-        """Return the ratio of a Monzo or JIPitch - object,
-        transformed to a float number, meaning that
-        float(myMonzo.ratio) == myMonzo.float. Note the
+        """Return the float of a Monzo or JIPitch - object.
+
+        These are the same: float(myMonzo.ratio) == myMonzo.float. Note the
         difference that the second version might be slightly
         more performant.
 
@@ -851,6 +851,9 @@ class Monzo(object):
         """
 
         return Monzo.monzo2float(self, self._val, self._val_shift)
+
+    def __float__(self) -> float:
+        return float(self.float)
 
     def simplify(self):
         """Change all elements in self._vector to 0,
@@ -1213,8 +1216,7 @@ class Monzo(object):
 
     @comparable_bool_decorator
     def is_related(self: "Monzo", other: "Monzo") -> bool:
-        """Two Monzo or JIPitch - Objects are considered as related if
-        they share at least one common prime.
+        """Two JIPitch - Objects are related if they share at least one common prime.
 
         Arguments:
             * Monzo or JIPitch to compare with
@@ -1244,8 +1246,7 @@ class Monzo(object):
 
     @comparable_bool_decorator
     def is_congeneric(self: "Monzo", other: "Monzo") -> bool:
-        """Two Monzo or JIPitch - Objects are considered as congeneric if
-        their primes are equal.
+        """Two JIPitch - Objects are congeneric if their primes are equal.
 
         Arguments:
             * Monzo or JIPitch to compare with
@@ -1272,8 +1273,7 @@ class Monzo(object):
 
     @comparable_bool_decorator
     def is_sibling(self: "Monzo", other: "Monzo") -> bool:
-        """Two Monzo or JIPitch - Objects are considered as siblings if
-        their primes and their gender are equal.
+        """Two JIPitch - Objects are siblings if their primes and their gender are equal.
 
         Arguments:
             * Monzo or JIPitch to compare with
@@ -1390,6 +1390,9 @@ class Monzo(object):
             iterable1 += (0,)
         iterable = Monzo.calc_iterables(iterable0, iterable1, operator.mul)
         return type(self)(iterable, self.val_border)
+
+    def halve(self, allowed_primes: list, allowed_depth: list):
+        possible_intervals = []
 
 
 class JIPitch(Monzo, abstract.AbstractPitch):
@@ -1534,21 +1537,13 @@ class JIContainer(object):
             f.write(self.convert2json())
 
     def set_multiply(self, arg: float):
-        """
-        set the multiply - argument of
-        every containing pitch - element to
-        the input argument.
-        """
+        """Set the multiply - argument of every containing pitch - element."""
         for p in self:
             if p is not None:
                 p.multiply = arg
 
     def set_muliplied_multiply(self, arg: float):
-        """
-        set the multiply - argument of
-        every containing pitch - element to itself
-        multiplied with the input argument.
-        """
+        """Multiply the multiply-property of every containing pitch with the input."""
         for p in self:
             if p is not None:
                 p.multiply *= arg
@@ -1559,10 +1554,7 @@ class JIContainer(object):
         return tuple(sorted(r, key=lambda t: t[2]))
 
     def dot_sum(self):
-        """
-        Return the sum of the dot-product of each Monzo
-        with each other Monzo in the Container
-        """
+        """Return the sum of every dot-product between two Monzos in the Container"""
         d = 0
         for m_out in self:
             for m_in in self:
@@ -1609,8 +1601,7 @@ class JIContainer(object):
         return copied
 
     def find_by(self, pitch, compare_function) -> Type["JIPitch"]:
-        """
-        This method compares every pitch of a Container-Object
+        """This method compares every pitch of a Container-Object
         with the arguments pitch through the compare_function.
         The compare_function shall return a float or integer number.
         This float or integer number represents the fitness of the specific
@@ -1679,6 +1670,25 @@ class JIContainer(object):
                     startperiod=not_listed_startperiod)
             new_container.append(p_new)
         return type(self)(new_container)
+
+    def diff(self: "JIContainer", other: "JIContainer") -> float:
+        """Calculate the difference between two Container - Objects.
+
+        Return a float - value.
+        """
+        h0 = self.copy()
+        h0._val_shift = 1
+        h1 = other.copy()
+        h1._val_shift = 1
+        diff = JIPitch([])
+        length = len(h0) + len(h1)
+        if length != 0:
+            for p0 in h0:
+                for p1 in h1:
+                    diff += p0 - p1
+            return diff.summed() / length
+        else:
+            return 0.0
 
 
 class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
@@ -1900,9 +1910,7 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
 
     @property
     def intervals(self):
-        """
-        Return all present intervals between single notes.
-        """
+        """Return all present intervals between single notes."""
         data = tuple(self)
         intervals = JIHarmony([])
         for i, p0 in enumerate(data):
@@ -1927,25 +1935,6 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
             for p1 in h1:
                 acc += p0.dot(p1)
         return acc
-
-    def diff(self: "JIHarmony", other: "JIHarmony") -> float:
-        """
-        Calculates difference between two Harmony - Objects.
-        Return a float - value.
-        """
-        h0 = self.copy()
-        h0._val_shift = 1
-        h1 = other.copy()
-        h1._val_shift = 1
-        diff = r(1, 1)
-        length = len(h0) + len(h1)
-        if length != 0:
-            for p0 in h0:
-                for p1 in h1:
-                    diff += p0 - p1
-            return diff.summed() / length
-        else:
-            return 0.0
 
     def calc(self, factor=1) -> tuple:
         return tuple(t.calc(self.multiply * factor) for t in self)
@@ -2185,8 +2174,8 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
         return repeats
 
     def count_pitch(self, pitch) -> int:
-        """Count how often the asked pitch occurs in the Cadence.
-        """
+        """Count how often the asked pitch occurs in the Cadence."""
+
         c = 0
         for harmony in self:
             for p in harmony:
@@ -2196,8 +2185,8 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
         return c
 
     def count_different_pitches(self) -> int:
-        """Count how many different pitches occur in the Cadence.
-        """
+        """Count how many different pitches occur in the Cadence."""
+
         c = 0
         already = []
         for harmony in self:
@@ -2241,8 +2230,8 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
 class JIScale(JIPitch.mk_iterable(mel.Scale), JIContainer):
     _period_cls = JIMel
 
-    def __init__(self, period, periodsize):
-        period = JIMel(period)
+    def __init__(self, period, periodsize=JIPitch([1])):
+        period = JIMel(sorted(period))
         for i, p in enumerate(period):
             while p > periodsize:
                 p -= periodsize
@@ -2251,8 +2240,7 @@ class JIScale(JIPitch.mk_iterable(mel.Scale), JIContainer):
 
     @property
     def intervals(self):
-        plus_period = JIMel(self)
-        return JIMel.sub(plus_period[1:], plus_period[:-1])
+        return JIHarmony(self.period).intervals
 
     def map(self, function):
         return type(self)((function(x) for x in self.period),
@@ -2263,6 +2251,14 @@ class JIScale(JIPitch.mk_iterable(mel.Scale), JIContainer):
             if x == item:
                 return c
         raise ValueError("x not in tuple")
+
+    @property
+    def val_border(self) -> int:
+        return JIContainer.val_border.__get__(self)
+
+    @val_border.setter
+    def val_border(self, arg) -> None:
+        JIContainer.val_border.__set__(self, arg)
 
 
 class GeneratorScale(JIScale):
@@ -2275,11 +2271,9 @@ class GeneratorScale(JIScale):
         JIScale.__init__(self, s, period)
 
 
-class JIStencil:
-    """
-    This class implements a non-general
-    specific way to handle just intontation harmony
-    in a logic classified and easily extendable system.
+class JIStencil(object):
+    r"""This class implements a non-general way to handle complex JI harmony.
+
     To initialize a JIStencil - object tuples containing a
     Monzo or JIPitch - objects have to be passed:
     >>> mystencil = JIStencil(

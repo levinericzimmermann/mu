@@ -6,21 +6,20 @@
 # @Last modified time: 2018-03-22T13:38:07+01:00
 
 
-from mu.time import time
 from mu.abstract import muobjects
-from mu.utils import music21
+from mu.time import time
 from mu.utils import prime_factors
+
 import abc
 import functools
-import operator
 import itertools
+import operator
 from typing import Union
 
 
 class AbstractRhythm(abc.ABC):
-    """
-    A Rhythm may be a structure to organise time.
-    """
+    """A Rhythm may be a structure to organise time."""
+
     @abc.abstractmethod
     def flat(self):
         raise NotImplementedError
@@ -47,10 +46,6 @@ class RhyUnit(AbstractRhythm, time.Time):
 
     def stretch(self, arg):
         return RhyUnit(self * arg)
-
-    @music21.decorator
-    def convert2music21(self):
-        return music21.m21.duration.Duration(self)
 
     def copy(self):
         return type(self)(self)
@@ -144,8 +139,6 @@ class PulseChroma(int):
             return 0,
 
     def specify(self):
-        """
-        """
         try:
             subpath = tuple(sub.specify() for sub in self.subpulse)
             subpath = tuple(functools.reduce(operator.add, subpath))
