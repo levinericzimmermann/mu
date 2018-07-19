@@ -642,6 +642,7 @@ class JIScaleTest(unittest.TestCase):
         )
         self.assertEqual(scale0 + scale1, scale2)
 
+    """
     def test_intervals(self):
         scale = ji.JIScale(
             [ji.r(1, 1), ji.r(9, 8), ji.r(4, 3), ji.r(3, 2), ji.r(7, 4)], ji.r(2, 1)
@@ -650,6 +651,7 @@ class JIScaleTest(unittest.TestCase):
             [ji.r(9, 8), ji.r(32, 27), ji.r(9, 8), ji.r(7, 6), ji.r(8, 7)]
         )
         self.assertEqual(scale.intervals, intervals)
+    """
 
 
 class JIMelTest(unittest.TestCase):
