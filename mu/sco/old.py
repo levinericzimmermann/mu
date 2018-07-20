@@ -14,7 +14,6 @@ from mu.mel.abstract import AbstractPitch
 from mu.rhy import rhy
 from mu.sco import abstract
 from mu.time import time
-from mu.utils import music21
 
 
 class Tone(abstract.UniformEvent):
