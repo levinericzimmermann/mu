@@ -5,19 +5,18 @@
 # mu/abstract/__init__.py: 1,2
 # mu/abstract/muobjects.py: 10
 # mu/mel/__init__.py: 1,2,3,4
-# mu/mel/abstract.py: 1,2
+# mu/mel/abstract.py: 1
 # mu/mel/edo.py: 9,10
 # mu/mel/ji.py: 18,19
 # mu/mel/mel.py: 9,10
 # mu/rhy/__init__.py: 1
-# mu/rhy/rhy.py: 9,10,11,12
+# mu/rhy/rhy.py: 9,10,11
 # mu/sco/__init__.py: 1,2
 # mu/sco/abstract.py: 2,3
-# mu/sco/old.py: 12,13,14,15,16,17
+# mu/sco/old.py: 12,13,14,15,16
 # mu/time/__init__.py: 1
 # mu/time/time.py: 1
-# mu/utils/__init__.py: 1,2,3
-# mu/utils/lilyconverter.py: 3,4
+# mu/utils/__init__.py: 1
 # tests/test_abstract_muobjects.py: 2
 # tests/test_mel_abstract.py: 2
 # tests/test_mel_edo.py: 10
@@ -27,12 +26,8 @@
 # tests/test_sco_abstract.py: 2
 # tests/test_sco_old.py: 10,11,12,13
 # tests/test_time_time.py: 10
-# tests/test_utils_lilyconverter.py: 2
 # tests/test_utils_prime_factors.py: 2
-# mu == 0.0.2
-
-# mu/utils/music21.py: 2
-music21 == 5.1.0
+mu == 0.0.2
 
 # mu/abstract/mutate.py: 11
 numba == 0.38.0

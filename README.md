@@ -23,6 +23,7 @@ installation:
 -------------
 ```sh
   $ git clone "https://github.com/uummoo/mu"
+  $ cd mu/
   $ pip3 install -r requirements.txt
   $ pip3 install .
 ```

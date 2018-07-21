@@ -15,6 +15,6 @@ setup(
     setup_requires=[''],
     tests_require=['nose'],
     install_requires=[''],
-    extras_require={'Lilypond':  ["Music21>=4.1.0"]},
+    extras_require={},
     python_requires='>=3.6'
 )
