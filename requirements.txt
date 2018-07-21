@@ -27,7 +27,7 @@
 # tests/test_sco_old.py: 10,11,12,13
 # tests/test_time_time.py: 10
 # tests/test_utils_prime_factors.py: 2
-mu == 0.0.2
+# mu == 0.0.2
 
 # mu/abstract/mutate.py: 11
 numba == 0.38.0
