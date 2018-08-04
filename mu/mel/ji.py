@@ -13,9 +13,10 @@ import json
 import math
 import operator
 from typing import Callable, List, Type
-
 import primesieve
-from mu.mel import abstract, mel
+
+from mu.mel import abstract
+from mu.mel import mel
 from mu.utils import prime_factors
 
 try:
@@ -30,6 +31,7 @@ def comparable_bool_decorator(func: Callable) -> Callable:
             return func(*args, **kwargs)
         else:
             return False
+
     return wrap
 
 
@@ -39,6 +41,7 @@ def comparable_monzo_decorator(func: Callable) -> Callable:
             return func(*args, **kwargs)
         else:
             return Monzo([])
+
     return wrap
 
 
@@ -85,6 +88,7 @@ class Monzo(object):
     """
 
     _val_shift = 0
+    __cent_calculation_constant = 1200 / (math.log10(2))
 
     def __init__(self, iterable, val_border=1):
         self._vector = Monzo._init_vector(iterable, val_border)
@@ -94,8 +98,7 @@ class Monzo(object):
         return hash((self._val_shift, self._vec))
 
     @classmethod
-    def from_ratio(cls, num: int, den: int, val_border=1, multiply=1
-                   ) -> Type["Monzo"]:
+    def from_ratio(cls, num: int, den: int, val_border=1, multiply=1) -> Type["Monzo"]:
         obj = cls(cls.ratio2monzo(Fraction(num, den), cls._val_shift))
         obj.val_border = val_border
         obj.multiply = multiply
@@ -147,7 +150,7 @@ class Monzo(object):
 
     @property
     def _vec(self):
-        return self._vector[self._val_shift:]
+        return self._vector[self._val_shift :]
 
     def __repr__(self):
         return repr(self._vec)
@@ -163,8 +166,9 @@ class Monzo(object):
 
     @staticmethod
     def _init_vector(iterable, val_border):
-        return Monzo.discard_nulls(Monzo._shift_vector(
-            tuple(iterable), Monzo.count_primes(val_border)))
+        return Monzo.discard_nulls(
+            Monzo._shift_vector(tuple(iterable), Monzo.count_primes(val_border))
+        )
 
     @staticmethod
     def adjusted_monzos(m0, m1):
@@ -216,8 +220,7 @@ class Monzo(object):
             return False
 
     @staticmethod
-    def calc_iterables(iterable0: iter, iterable1: iter,
-                       operation: callable) -> iter:
+    def calc_iterables(iterable0: iter, iterable1: iter, operation: callable) -> iter:
 
         r"""Return a new generator - object, whose elements are
         the results of a input function ('operation'), applied on
@@ -320,7 +323,8 @@ class Monzo(object):
         if vector:
             if val_border > 1:
                 multiplied = functools.reduce(
-                    operator.mul, (p ** e for p, e in zip(val, vector)))
+                    operator.mul, (p ** e for p, e in zip(val, vector))
+                )
                 res = math.log(val_border / multiplied, val_border)
                 if res < 0:
                     res -= 1
@@ -488,8 +492,10 @@ class Monzo(object):
         gen_pos = prime_factors.factors(ratio.numerator)
         gen_neg = prime_factors.factors(ratio.denominator)
 
-        biggest_prime = max(prime_factors.factorise(
-            ratio.numerator) + prime_factors.factorise(ratio.denominator))
+        biggest_prime = max(
+            prime_factors.factorise(ratio.numerator)
+            + prime_factors.factorise(ratio.denominator)
+        )
         monzo = [0] * Monzo.count_primes(biggest_prime)
 
         for num, fac in gen_pos:
@@ -524,7 +530,7 @@ class Monzo(object):
         if shiftval > 0:
             m = (0,) * shiftval + tuple(vec)
         else:
-            m = tuple(vec[abs(shiftval):])
+            m = tuple(vec[abs(shiftval) :])
         return m
 
     @staticmethod
@@ -562,14 +568,58 @@ class Monzo(object):
         """
 
         try:
-            primes = (2, 3, 5, 7, 11, 13,
-                      17, 19, 23, 29, 31, 37,
-                      41, 43, 47, 53, 59, 61, 67,
-                      71, 73, 79, 83, 89, 97, 101,
-                      103, 107, 109, 113, 127, 131,
-                      137, 139, 149, 151, 157, 163,
-                      167, 173, 179, 181, 191, 193,
-                      197, 199, 211, 223, 227, 229)
+            primes = (
+                2,
+                3,
+                5,
+                7,
+                11,
+                13,
+                17,
+                19,
+                23,
+                29,
+                31,
+                37,
+                41,
+                43,
+                47,
+                53,
+                59,
+                61,
+                67,
+                71,
+                73,
+                79,
+                83,
+                89,
+                97,
+                101,
+                103,
+                107,
+                109,
+                113,
+                127,
+                131,
+                137,
+                139,
+                149,
+                151,
+                157,
+                163,
+                167,
+                173,
+                179,
+                181,
+                191,
+                193,
+                197,
+                199,
+                211,
+                223,
+                227,
+                229,
+            )
             return primes[arg]
         except IndexError:
             return primesieve.nth_prime(arg)
@@ -612,14 +662,78 @@ class Monzo(object):
         """
 
         if arg <= 70:
-            data = (0, 0, 1, 2, 2, 3, 3, 4, 4, 4,
-                    4, 5, 5, 6, 6, 6, 6, 7, 7, 8,
-                    8, 8, 8, 9, 9, 9, 9, 9, 9, 10,
-                    10, 11, 11, 11, 11, 11, 11, 12,
-                    12, 12, 12, 13, 13, 14, 14, 14,
-                    14, 15, 15, 15, 15, 15, 15, 16,
-                    16, 16, 16, 16, 16, 17, 17, 18,
-                    18, 18, 18, 18, 18, 19, 19, 19)
+            data = (
+                0,
+                0,
+                1,
+                2,
+                2,
+                3,
+                3,
+                4,
+                4,
+                4,
+                4,
+                5,
+                5,
+                6,
+                6,
+                6,
+                6,
+                7,
+                7,
+                8,
+                8,
+                8,
+                8,
+                9,
+                9,
+                9,
+                9,
+                9,
+                9,
+                10,
+                10,
+                11,
+                11,
+                11,
+                11,
+                11,
+                11,
+                12,
+                12,
+                12,
+                12,
+                13,
+                13,
+                14,
+                14,
+                14,
+                14,
+                15,
+                15,
+                15,
+                15,
+                15,
+                15,
+                16,
+                16,
+                16,
+                16,
+                16,
+                16,
+                17,
+                17,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                19,
+                19,
+                19,
+            )
             return data[arg]
         else:
             return primesieve.count_primes(arg)
@@ -642,10 +756,13 @@ class Monzo(object):
         """
 
         decomposed = prime_factors.factorise(num)
+        return Monzo.indigestibility_of_factorised(decomposed)
+
+    @staticmethod
+    def indigestibility_of_factorised(decomposed):
         decomposed = collections.Counter(decomposed)
         decomposed = zip(decomposed.values(), decomposed.keys())
-        summed = ((power * pow(prime - 1, 2)) / prime
-                  for power, prime in decomposed)
+        summed = ((power * pow(prime - 1, 2)) / prime for power, prime in decomposed)
         return 2 * sum(summed)
 
     @staticmethod
@@ -674,8 +791,7 @@ class Monzo(object):
         (2, 3, 5, 7, 11)
         """
 
-        return Monzo.n_primes(
-            len(self) + self._val_shift)
+        return Monzo.n_primes(len(self) + self._val_shift)
 
     @property
     def val(self) -> tuple:
@@ -697,7 +813,7 @@ class Monzo(object):
         (2, 3, 5, 7, 11)
         """
 
-        return self._val[self._val_shift:]
+        return self._val[self._val_shift :]
 
     @property
     def val_border(self) -> int:
@@ -777,6 +893,23 @@ class Monzo(object):
         return tuple(functools.reduce(operator.add, decomposed))
 
     @property
+    def factorised_numerator_and_denominator(self) -> tuple:
+        vec = self._vec
+        val = self.val
+        border = self.val_border
+        vec_adjusted, val_adjusted = type(self).adjust_monzo(vec, val, border)
+        num_den = [[[]], [[]]]
+        for p, e in zip(val_adjusted, vec_adjusted):
+            if e > 0:
+                idx = 0
+            else:
+                idx = 1
+            num_den[idx].append([p] * abs(e))
+        return tuple(
+            functools.reduce(operator.add, decomposed) for decomposed in num_den
+        )
+
+    @property
     def ratio(self) -> Fraction:
         """Return the Monzo transformed to a Ratio (Fraction-Object)
         of a Monzo or JIPitch - Object.
@@ -852,6 +985,10 @@ class Monzo(object):
 
         return Monzo.monzo2float(self, self._val, self._val_shift)
 
+    @property
+    def cents(self) -> float:
+        return self.__cent_calculation_constant * math.log10(self.ratio)
+
     def __float__(self) -> float:
         return float(self.float)
 
@@ -875,9 +1012,12 @@ class Monzo(object):
             new._vector = (0,) * v_shift + self._vec
         return new
 
-    def adjust_register(self, limitup: float = 2**6,
-                        startperiod: int = 3,
-                        concert_pitch_period: int = 3):
+    def adjust_register(
+        self,
+        limitup: float = 2 ** 6,
+        startperiod: int = 3,
+        concert_pitch_period: int = 3,
+    ):
         """Adjust register of the Interval. Change the val_border to 1.
 
         Arguments:
@@ -893,6 +1033,7 @@ class Monzo(object):
             while True:
                 yield result
                 result *= val_border
+
         v_shift = self._val_shift
         v_border = self.val_border
         if v_border == 1:
@@ -934,11 +1075,14 @@ class Monzo(object):
         resulting_pitch = id_pitch_scaled - sub_pitch
         concert_pitch_adjustment_diff = concert_pitch_period - startperiod
         concert_pitch_adjustment_monzo = ((0,) * (v_shift - 1)) + (
-            concert_pitch_adjustment_diff,)
+            concert_pitch_adjustment_diff,
+        )
         concert_pitch_adjustment = type(self).from_monzo(
-            *concert_pitch_adjustment_monzo)
-        res_pitch_for_concert_pitch_adjusted = resulting_pitch - \
-            concert_pitch_adjustment
+            *concert_pitch_adjustment_monzo
+        )
+        res_pitch_for_concert_pitch_adjusted = (
+            resulting_pitch - concert_pitch_adjustment
+        )
         return res_pitch_for_concert_pitch_adjusted
 
     @property
@@ -967,10 +1111,14 @@ class Monzo(object):
             maxima = max(self)
             minima = min(self)
             if (maxima > 0 and minima >= 0) or (
-                    maxima > 0 and self.index(maxima) > self.index(minima)):
+                maxima > 0 and self.index(maxima) > self.index(minima)
+            ):
                 return True
-            elif maxima <= 0 and minima < 0 or (
-                    minima < 0 and self.index(minima) > self.index(maxima)):
+            elif (
+                maxima <= 0
+                and minima < 0
+                or (minima < 0 and self.index(minima) > self.index(maxima))
+            ):
                 return False
         return True
 
@@ -999,7 +1147,7 @@ class Monzo(object):
         if self.ratio.denominator % 2 == 0:
             return self.ratio.numerator
         elif self.ratio.numerator % 2 == 0:
-            return - self.ratio.denominator
+            return -self.ratio.denominator
         elif self.ratio == Fraction(1, 1):
             return 1
         else:
@@ -1019,8 +1167,7 @@ class Monzo(object):
         -3
         """
 
-        p = prime_factors.factorise(
-            self.numerator * self.denominator)
+        p = prime_factors.factorise(self.numerator * self.denominator)
         return tuple(sorted(tuple(set(p))))
 
     @property
@@ -1057,8 +1204,7 @@ class Monzo(object):
         """
 
         vectors = [[0] * c + [x] for c, x in enumerate(self) if x != 0]
-        return tuple(type(self)(
-            vec, val_border=self.val_border) for vec in vectors)
+        return tuple(type(self)(vec, val_border=self.val_border) for vec in vectors)
 
     @property
     def harmonicity_wilson(self) -> int:
@@ -1119,14 +1265,14 @@ class Monzo(object):
         -0.10638297872340426
         """
 
-        def sign(x): return (1, -1)[x < 0]
-        ratio = self.ratio
-        if ratio == Fraction(1, 1):
-            return float('inf')
-        num = ratio.numerator
-        de = ratio.denominator
-        ind_num = Monzo.indigestibility(num)
-        ind_de = Monzo.indigestibility(de)
+        def sign(x):
+            return (1, -1)[x < 0]
+
+        num_den_decomposed = self.factorised_numerator_and_denominator
+        ind_num = Monzo.indigestibility_of_factorised(num_den_decomposed[0])
+        ind_de = Monzo.indigestibility_of_factorised(num_den_decomposed[1])
+        if ind_num == 0 and ind_de == 0:
+            return float("inf")
         return sign(ind_num - ind_de) / (ind_num + ind_de)
 
     @property
@@ -1177,8 +1323,7 @@ class Monzo(object):
     def past(self) -> tuple:
         identity = self.identity
         lv = self.lv
-        return tuple(type(self)(
-            identity.scalar(i), self.val_border) for i in range(lv))
+        return tuple(type(self)(identity.scalar(i), self.val_border) for i in range(lv))
 
     @property
     def is_root(self) -> bool:
@@ -1315,9 +1460,15 @@ class Monzo(object):
                 return 1
             else:
                 return -1
-        sep = [tuple(type(self)([0] * counter + [ispos(vec)], self.val_border)
-                     for i in range(abs(vec)))
-               for counter, vec in enumerate(self) if vec != 0]
+
+        sep = [
+            tuple(
+                type(self)([0] * counter + [ispos(vec)], self.val_border)
+                for i in range(abs(vec))
+            )
+            for counter, vec in enumerate(self)
+            if vec != 0
+        ]
         res = [a for sub in sep for a in sub]
         if len(res) == 0:
             res.append(type(self)([0]))
@@ -1368,21 +1519,24 @@ class Monzo(object):
 
     def matrix(self, other):
         """Return the matrix-product of two Monzos."""
-        m0 = tuple(type(self)(tuple(arg * arg2 for arg2 in other),
-                              self.val_border) for arg in self)
-        m1 = tuple(type(self)(tuple(arg * arg2 for arg2 in self),
-                              self.val_border) for arg in other)
+        m0 = tuple(
+            type(self)(tuple(arg * arg2 for arg2 in other), self.val_border)
+            for arg in self
+        )
+        m1 = tuple(
+            type(self)(tuple(arg * arg2 for arg2 in self), self.val_border)
+            for arg in other
+        )
         return m0 + m1
 
     def inverse(self) -> "Monzo":
         return type(self)(list(map(lambda x: -x, self)), self.val_border)
 
     def shift(self, shiftval: int) -> "Monzo":
-        return type(self)(Monzo._shift_vector(
-            self, shiftval), self.val_border)
+        return type(self)(Monzo._shift_vector(self, shiftval), self.val_border)
 
     def filter(self, *prime):
-        iterable0 = Monzo.mk_filter_vec(*prime)[self._val_shift:]
+        iterable0 = Monzo.mk_filter_vec(*prime)[self._val_shift :]
         iterable1 = tuple(self._vec)
         while len(iterable0) < len(iterable1):
             iterable0 += (1,)
@@ -1404,8 +1558,12 @@ class JIPitch(Monzo, abstract.AbstractPitch):
 
     def __eq__(self, other) -> bool:
         try:
-            return all((self.multiply == other.multiply,
-                        self._vec == other._vector[self._val_shift:]))
+            return all(
+                (
+                    self.multiply == other.multiply,
+                    self._vec == other._vector[self._val_shift :],
+                )
+            )
         except AttributeError:
             return abstract.AbstractPitch.__eq__(self, other)
 
@@ -1460,8 +1618,7 @@ class JIPitch(Monzo, abstract.AbstractPitch):
     def differential(self, other):
         """calculates differential tone between pitch and other pitch"""
         diff_ratio = abs(self.ratio - other.ratio)
-        return type(self).from_ratio(
-            diff_ratio.numerator, diff_ratio.denominator)
+        return type(self).from_ratio(diff_ratio.numerator, diff_ratio.denominator)
 
 
 class JIContainer(object):
@@ -1502,8 +1659,7 @@ class JIContainer(object):
     @property
     def avg_gender(self):
         if self:
-            return sum(map(lambda b: 1 if b is True else -1,
-                           self.gender)) / len(self)
+            return sum(map(lambda b: 1 if b is True else -1, self.gender)) / len(self)
         else:
             return 0
 
@@ -1523,8 +1679,9 @@ class JIContainer(object):
         return obj
 
     def convert2json(self):
-        return json.dumps((tuple((p._vec, p.val_border, p.multiply)
-                                 for p in self), self.multiply))
+        return json.dumps(
+            (tuple((p._vec, p.val_border, p.multiply) for p in self), self.multiply)
+        )
 
     @staticmethod
     def load_json(cls, name: str):
@@ -1549,8 +1706,7 @@ class JIContainer(object):
                 p.multiply *= arg
 
     def show(self) -> tuple:
-        r = tuple((r, p, round(f, 2))
-                  for r, p, f in zip(self, self.primes, self.freq))
+        r = tuple((r, p, round(f, 2)) for r, p, f in zip(self, self.primes, self.freq))
         return tuple(sorted(r, key=lambda t: t[2]))
 
     def dot_sum(self):
@@ -1595,6 +1751,7 @@ class JIContainer(object):
                 if p1 == p:
                     return False
             return True
+
         data = [p for p in self if test_allowed(p, pitch)]
         copied = type(self)(data, self.multiply)
         copied.val_border = self.val_border
@@ -1617,15 +1774,19 @@ class JIContainer(object):
 
     def add_map(self, pitch):
         return self.map(
-                lambda x: x + pitch if x != mel.EmptyPitch() else mel.EmptyPitch())
+            lambda x: x + pitch if x != mel.EmptyPitch() else mel.EmptyPitch()
+        )
 
     def sub_map(self, pitch):
         return self.map(lambda x: x - pitch)
 
-    def adjust_register_of_identities(self, *identity,
-                                      limitup: float = 2**6,
-                                      concert_pitch_period: int = 3,
-                                      not_listed_startperiod: int = 3):
+    def adjust_register_of_identities(
+        self,
+        *identity,
+        limitup: float = 2 ** 6,
+        concert_pitch_period: int = 3,
+        not_listed_startperiod: int = 3
+    ):
         """
         Adjust register of different pitches in the Container
         differently (with individual startperiod  values)
@@ -1660,14 +1821,16 @@ class JIContainer(object):
                     p_new = p.adjust_register(
                         limitup=limitup,
                         concert_pitch_period=concert_pitch_period,
-                        startperiod=startperiod_id)
+                        startperiod=startperiod_id,
+                    )
                     found = True
                     break
             if found is False:
                 p_new = p.adjust_register(
                     limitup=limitup,
                     concert_pitch_period=concert_pitch_period,
-                    startperiod=not_listed_startperiod)
+                    startperiod=not_listed_startperiod,
+                )
             new_container.append(p_new)
         return type(self)(new_container)
 
@@ -1780,8 +1943,7 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
 
     @property
     def lv_difference(self):
-        return tuple(abs(t0.lv - t1.lv)
-                     for t0, t1 in zip(self, self[1:]))
+        return tuple(abs(t0.lv - t1.lv) for t0, t1 in zip(self, self[1:]))
 
     @property
     def most_common_pitch(self):
@@ -1823,13 +1985,13 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
         return len(self.different_pitches)
 
     def subvert(self):
-        return type(self)(functools.reduce(
-            lambda x, y: x + y, tuple(t.subvert() for t in self)),
-            self.multiply)
+        return type(self)(
+            functools.reduce(lambda x, y: x + y, tuple(t.subvert() for t in self)),
+            self.multiply,
+        )
 
     def accumulate(self):
-        return type(self)(tuple(itertools.accumulate(self)),
-                          self.multiply)
+        return type(self)(tuple(itertools.accumulate(self)), self.multiply)
 
     def separate(self):
         subverted = JIMel((self[0],)) + self.intervals.subvert()
@@ -1849,8 +2011,7 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
             result.append(pitch)
         return type(self)(result)
 
-    def find_by_walk_best(
-            self, pitch, compare_function) -> tuple:
+    def find_by_walk_best(self, pitch, compare_function) -> tuple:
         """
         Iterative usage of the find_by - method. The input pitch
         is the first argument, the resulting pitch is next input Argument etc.
@@ -1858,10 +2019,11 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
         the find_by_walk_best - method will always return the best result
         (e. g. with the lowest summed fitness)
         """
+
         def calc_fitness(ind):
-            fitness = tuple(compare_function(p0, p1)
-                            for p0, p1 in zip(ind, ind[1:]))
+            fitness = tuple(compare_function(p0, p1) for p0, p1 in zip(ind, ind[1:]))
             return sum(fitness)
+
         permutations = itertools.permutations(self)
         result = []
         current_min = None
@@ -1881,8 +2043,9 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
                 result.append((ind, fitness))
 
         minima = min(result, key=lambda x: x[1])
-        all_minima = (type(self)(f[0])
-                      for i, f in enumerate(result) if f[1] == minima[1])
+        all_minima = (
+            type(self)(f[0]) for i, f in enumerate(result) if f[1] == minima[1]
+        )
         return tuple(all_minima)
 
 
@@ -1914,7 +2077,7 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         data = tuple(self)
         intervals = JIHarmony([])
         for i, p0 in enumerate(data):
-            for p1 in data[i + 1:]:
+            for p1 in data[i + 1 :]:
                 interval = p1 - p0
                 intervals.add(interval)
                 interval = p0 - p1
@@ -2008,20 +2171,26 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         return self.operator_harmony(lambda x, y: x * y)
 
     def components_harmony(self):
-        return JIHarmony(functools.reduce(
-            lambda x, y: x + y, tuple(
-                tone.components + (tone,) for tone in self)))
+        return JIHarmony(
+            functools.reduce(
+                lambda x, y: x + y, tuple(tone.components + (tone,) for tone in self)
+            )
+        )
 
     def inverse_harmony(self):
         return self.inverse() | self
 
     def symmetric_harmony(self, *shift):
-        return JIHarmony(functools.reduce(
-            lambda x, y: x | y, tuple(self.shift(s) for s in shift)))
+        return JIHarmony(
+            functools.reduce(lambda x, y: x | y, tuple(self.shift(s) for s in shift))
+        )
 
     def past_harmony(self):
-        return JIHarmony(functools.reduce(
-            lambda x, y: x + y, tuple(tone.past + (tone,) for tone in self)))
+        return JIHarmony(
+            functools.reduce(
+                lambda x, y: x + y, tuple(tone.past + (tone,) for tone in self)
+            )
+        )
 
     @property
     def differential(self):
@@ -2040,7 +2209,8 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         if range_harmonies is None:
             range_harmonies = tuple(range(8))
         possible_solutions = itertools.combinations(
-            range_harmonies * length_identities, length_identities)
+            range_harmonies * length_identities, length_identities
+        )
         data = []
         for solution in possible_solutions:
             solution = tuple(zip(identities, solution))
@@ -2048,8 +2218,9 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
             data.append((solution, fit))
         minima = min(data, key=lambda i: i[1])
         minimas = (sol for sol in data if sol[1] == minima[1])
-        return tuple(self.adjust_register_of_identities(*minima[0])
-                     for minima in minimas)
+        return tuple(
+            self.adjust_register_of_identities(*minima[0]) for minima in minimas
+        )
 
 
 class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
@@ -2066,9 +2237,15 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
         return cls([JIHarmony.from_json(h) for h in data])
 
     def convert2json(self):
-        return json.dumps(tuple((tuple(
-            (p._vec, p.val_border, p.multiply)
-            for p in chord), chord.multiply) for chord in self))
+        return json.dumps(
+            tuple(
+                (
+                    tuple((p._vec, p.val_border, p.multiply) for p in chord),
+                    chord.multiply,
+                )
+                for chord in self
+            )
+        )
 
     @classmethod
     def load_json(cls, name: str):
@@ -2217,14 +2394,22 @@ class JICadence(JIPitch.mk_iterable(mel.Cadence), JIContainer):
     def different_chords(self):
         return tuple(zip(*self.chord_rate))[0]
 
-    def adjust_register_of_identities(self, *identity,
-                                      limitup: float = 2**6,
-                                      concert_pitch_period: int = 3,
-                                      not_listed_startperiod: int = 3):
-        return type(self)(h.adjust_register_of_identities(
-            *identity, limitup=limitup,
-            concert_pitch_period=concert_pitch_period,
-            not_listed_startperiod=not_listed_startperiod) for h in self)
+    def adjust_register_of_identities(
+        self,
+        *identity,
+        limitup: float = 2 ** 6,
+        concert_pitch_period: int = 3,
+        not_listed_startperiod: int = 3
+    ):
+        return type(self)(
+            h.adjust_register_of_identities(
+                *identity,
+                limitup=limitup,
+                concert_pitch_period=concert_pitch_period,
+                not_listed_startperiod=not_listed_startperiod
+            )
+            for h in self
+        )
 
 
 class JIScale(JIPitch.mk_iterable(mel.Scale), JIContainer):
@@ -2243,8 +2428,7 @@ class JIScale(JIPitch.mk_iterable(mel.Scale), JIContainer):
         return JIHarmony(self.period).intervals
 
     def map(self, function):
-        return type(self)((function(x) for x in self.period),
-                          function(self.periodsize))
+        return type(self)((function(x) for x in self.period), function(self.periodsize))
 
     def index(self, item):
         for c, x in enumerate(self):
@@ -2295,6 +2479,7 @@ class JIStencil(object):
                 return (sub[0], 0, sub[1])
             else:
                 return sub
+
         self._vector = tuple(add_zero(arg) for arg in args)
         self._pitches = tuple(arg[0] for arg in args)
 
@@ -2310,8 +2495,9 @@ class JIStencil(object):
 
     @property
     def primes(self):
-        return tuple(set(functools.reduce(
-            operator.add, (p.primes for p in self._pitches))))
+        return tuple(
+            set(functools.reduce(operator.add, (p.primes for p in self._pitches)))
+        )
 
     @property
     def identity(self):
@@ -2326,9 +2512,11 @@ class JIStencil(object):
         JIHarmony({1, 25/16, 3/2, 5/4})
         """
 
-        return JIHarmony(functools.reduce(
-            operator.add,
-            (self.convertvec2harmony(v) for v in self._vector)))
+        return JIHarmony(
+            functools.reduce(
+                operator.add, (self.convertvec2harmony(v) for v in self._vector)
+            )
+        )
 
 
 """

@@ -61,7 +61,7 @@ def factors(n):
     is given as the only factor. For all other integer n, all of the factors
     returned are prime.
     """
-    if n < 100000:
+    if n < 900000 - 1:
         pre = __PRECALCULATED_FACTORS[n]
         for fac in pre:
             yield fac
