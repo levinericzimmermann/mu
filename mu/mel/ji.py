@@ -1246,9 +1246,12 @@ class Monzo(object):
     def harmonicity_barlow(self) -> float:
         r"""Calculate the harmonicity of an interval
         following Clarence Barlows definition, given
-        in 'The Ratio Book' (1992). A higher number
+        in 'The Ratio Book' (1992).
+
+        A higher number
         means a more consonant interval / a less
         complicated harmony.
+
         barlow(1/1) is definied as infinite.
 
         >>> m0 = Monzo((1,), val_border=2)
@@ -1277,10 +1280,12 @@ class Monzo(object):
 
     @property
     def harmonicity_tenney(self) -> float:
-        r"""Calculate the harmonic distance of an interval
-        following James Tenneys definition. A higher number
+        r"""Calculate Tenneys harmonic distance of an interval
+
+        A higher number
         means a more consonant interval / a less
         complicated harmony.
+
         tenney(1/1) is definied as 0.
 
         >>> m0 = Monzo((1,), val_border=2)
