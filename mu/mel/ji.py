@@ -1,11 +1,3 @@
-# @Author: Levin Eric Zimmermann
-# @Date:   2018-02-02T15:56:18+01:00
-# @Email:  levin-eric.zimmermann@folkwang-uni.de
-# @Project: mu
-# @Last modified by:   uummoo
-# @Last modified time: 2018-04-07T15:57:15+02:00
-
-
 import collections
 import functools
 import itertools
@@ -46,9 +38,10 @@ def comparable_monzo_decorator(func: Callable) -> Callable:
 
 
 class Monzo(object):
-    r"""A Monzo - Object is a representation or notation of a musical
-    interval in just intonation, named after the American
-    composer Joe Monzo (http://xenharmonic.wikispaces.com/Monzos).
+    r"""A Monzo is a representation or notation of a musical interval in just intonation.
+
+    It may benamed after the American composer Joe Monzo
+    (http://xenharmonic.wikispaces.com/Monzos).
 
     A Monzo could be understood as a vector, which contains
     exponents for prime numbers. The corresponding prime numbers
@@ -221,9 +214,9 @@ class Monzo(object):
 
     @staticmethod
     def calc_iterables(iterable0: iter, iterable1: iter, operation: callable) -> iter:
+        r"""Return a new generator - object
 
-        r"""Return a new generator - object, whose elements are
-        the results of a input function ('operation'), applied on
+        Its elements are the results of a input function ('operation'), applied on
         every pair of zip(iterable0, iterable1).
 
         Arguments:
@@ -278,8 +271,7 @@ class Monzo(object):
 
     @staticmethod
     def adjust_float(f: float, val_border: int) -> float:
-        r"""Multiply / divide a float - Object with the val_border - argument,
-        until it is equal or bigger than 1 and smaller than val_border.
+        r"""Multiply float with the val_border, until it is == or < than 1 and > than val_border.
 
         Arguments:
             * r: The Ratio, which shall be adjusted
@@ -291,7 +283,6 @@ class Monzo(object):
         1
         >>> Monzo.adjust_ratio(float1, val_border)
         1
-
         """
 
         if val_border > 1:
@@ -318,7 +309,7 @@ class Monzo(object):
         >>> Monzo.adjust_monzo(vector0, val0, val_border)
         ((-1, 1), (2, 3))
 
-        """  # TODO Make proper description what actually happens
+        """  # TODO(DOCSTRING) Make proper description what actually happens
 
         if vector:
             if val_border > 1:
@@ -775,8 +766,7 @@ class Monzo(object):
 
     @property
     def _val(self) -> tuple:
-        r"""Return complete list of primes (e.g. 'val'), until the
-        highest Prime, which the Monzo / JIPitch contains.
+        r"""Return ascending list of primes, until the highest Prime, which the Object contains.
 
         This Method ignores the val_border / _val_shift
         property of an Object.
@@ -817,10 +807,9 @@ class Monzo(object):
 
     @property
     def val_border(self) -> int:
-        r"""
-        The val - border property of an Monzo / JIPitch - Object
-        denotes the first Prime, which shall be ignored by the Monzo / JIPitch
-        Object. Speaking in terms of scales, it actually descripes the period
+        r"""The val - border property denotes the first Prime, which shall be ignored.
+
+        Speaking in terms of scales, it actually descripes the period
         of a scale; in most known scales the period may be an octave,
         e.g. after an octave the same pitch classes are repeating.
         For example D3 and a D4 are seen as the same pitch class,
@@ -855,8 +844,9 @@ class Monzo(object):
         self._val_shift = Monzo.count_primes(v)
 
     def set_val_border(self, val_border: int) -> Type["Monzo"]:
-        """Return a copied version of the Monzo / JIPitch -Object
-        with a new val_border. The Object itself stay unchanged.
+        """Return a copied version of the Monzo / JIPitch -Object with a new val_border.
+
+        The Object itself stay unchanged.
 
         Arguments:
             * val_border: The val_border for the new Monzo
@@ -911,8 +901,7 @@ class Monzo(object):
 
     @property
     def ratio(self) -> Fraction:
-        """Return the Monzo transformed to a Ratio (Fraction-Object)
-        of a Monzo or JIPitch - Object.
+        """Return the Monzo transformed to a Ratio (Fraction-Object).
 
         >>> m0 = Monzo((0, 1,), val_border=2)
         >>> m0.ratio
@@ -993,8 +982,7 @@ class Monzo(object):
         return float(self.float)
 
     def simplify(self):
-        """Change all elements in self._vector to 0,
-        whose index is bigger than self._val_shift.
+        """Change all elements in self._vector to 0, whose index is bigger than self._val_shift.
 
         >>> monzo0 = Monzo((1, -1), val_border=1)
         >>> monzo0.val_border = 2
@@ -1026,7 +1014,7 @@ class Monzo(object):
             * concert_pitch_period
 
         >>> monzo0 = Monzo((1, -1), val_border=2)
-        """  # TODO: add proper description with example
+        """  # TODO(adjustR): add proper description with example
 
         def period_generator(val_border):
             result = val_border ** startperiod
@@ -1124,8 +1112,7 @@ class Monzo(object):
 
     @property
     def harmonic(self) -> int:
-        """Return the nth - harmonic / subharmonic, which
-        the Monzo or JIPitch - object might be.
+        """Return the nth - harmonic / subharmonic the pitch may represent.
 
         May be positive for harmonic and negative for
         subharmonic pitches. If the return - value is 0,
@@ -1172,7 +1159,7 @@ class Monzo(object):
 
     @property
     def quantity(self) -> int:
-        """Count how many different prime numbers are occurring in the Monzo or JIPitch - object.
+        """Count how many different prime numbers are occurring in the Object.
 
         >>> m0 = Monzo((1,), val_border=2)
         >>> m0.quantity
@@ -1244,12 +1231,12 @@ class Monzo(object):
 
     @property
     def harmonicity_barlow(self) -> float:
-        r"""Calculate the harmonicity of an interval
-        following Clarence Barlows definition, given
+        r"""Calculate the barlow-harmonicity of an interval.
+
+        This implementation follows Clarence Barlows definition, given
         in 'The Ratio Book' (1992).
 
-        A higher number
-        means a more consonant interval / a less
+        A higher number means a more consonant interval / a less
         complicated harmony.
 
         barlow(1/1) is definied as infinite.
@@ -1550,9 +1537,6 @@ class Monzo(object):
         iterable = Monzo.calc_iterables(iterable0, iterable1, operator.mul)
         return type(self)(iterable, self.val_border)
 
-    def halve(self, allowed_primes: list, allowed_depth: list):
-        possible_intervals = []
-
 
 class JIPitch(Monzo, abstract.AbstractPitch):
     multiply = 1
@@ -1763,8 +1747,8 @@ class JIContainer(object):
         return copied
 
     def find_by(self, pitch, compare_function) -> Type["JIPitch"]:
-        """This method compares every pitch of a Container-Object
-        with the arguments pitch through the compare_function.
+        """Compares every pitch of a Container with the input pitch using the compare_function.
+
         The compare_function shall return a float or integer number.
         This float or integer number represents the fitness of the specific
         pitch. The return-value is the pitch with the lowest fitness (Minima).
@@ -1792,10 +1776,9 @@ class JIContainer(object):
         concert_pitch_period: int = 3,
         not_listed_startperiod: int = 3
     ):
-        """
-        Adjust register of different pitches in the Container
-        differently (with individual startperiod  values)
-        in respect to their identity. For
+        """Adjust register of different pitches in the Container differently.
+
+        This happens in respect to their identity. For
         every Identity there has to be an extra argument.
         By default not listed identities will
         be adjusted by startperiod: int=3.
@@ -2003,8 +1986,9 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
         return type(self)(subverted, self.multiply).accumulate()
 
     def find_by_walk(self, pitch, compare_function) -> Type["JIMel"]:
-        """
-        Iterative usage of the find_by - method. The input pitch
+        """Iterative usage of the find_by - method.
+
+        The input pitch
         is the first argument, the resulting pitch is next input Argument etc.
         until the Container might be empty.
         """
@@ -2017,8 +2001,9 @@ class JIMel(JIPitch.mk_iterable(mel.Mel), JIContainer):
         return type(self)(result)
 
     def find_by_walk_best(self, pitch, compare_function) -> tuple:
-        """
-        Iterative usage of the find_by - method. The input pitch
+        """Iterative usage of the find_by - method.
+
+        The input pitch
         is the first argument, the resulting pitch is next input Argument etc.
         until the Container might be empty. Unlike the find_by_walk - method
         the find_by_walk_best - method will always return the best result
@@ -2090,10 +2075,11 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         return intervals
 
     def dot(self: "JIHarmony", other: "JIHarmony") -> int:
+        """Calculates dot product between every Pitch of itself with every Pitch of the other JIHarmony.
+
+        It accumulates the results.
         """
-        Calculates dot _ product between every Pitch of itself with every
-        Pitch of the other JIHarmony - Objects and accumulates the results.
-        """
+
         h0 = self.copy()
         h0._val_shift = 1
         h1 = other.copy()
@@ -2157,7 +2143,7 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
             return JIHarmony([])
 
     def operator_harmony(self, func):
-        # TODO: replace ugly implementation by a better one
+        # TODO(replace ugly implementation by a better one)
         new_har = type(self)([], self.multiply)
         for c, p in enumerate(self):
             for c2, p2 in enumerate(self):
@@ -2208,7 +2194,7 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         return harmony
 
     def adjust_register_by_fitness(self, function, range_harmonies=None):
-        # TODO: add documentation, make implementation better understandable
+        # TODO(add documentation), make implementation better understandable
         identities = self.identity
         length_identities = len(identities)
         if range_harmonies is None:
