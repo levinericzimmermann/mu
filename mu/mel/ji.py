@@ -1727,10 +1727,11 @@ class JIContainer(object):
         return am
 
     @property
-    def dominant_prime(self):
+    def dominant_prime(self) -> tuple:
         summed = abs(functools.reduce(lambda x, y: x + y, self))
         if summed:
-            return summed.val[summed.index(max(summed))]
+            maxima = max(summed)
+            return tuple(summed.val[i] for i, exp in enumerate(summed) if exp == maxima)
         else:
             return 1
 

@@ -7,7 +7,9 @@
 
 
 import unittest
+
 from mu.mel import ji
+
 from fractions import Fraction
 import json
 import os
@@ -949,7 +951,7 @@ class JIMelTest(unittest.TestCase):
         p3 = ji.JIPitch((2,), 2)
         p4 = ji.JIPitch((-2,), 2)
         test_mel0 = ji.JIMel([p0, p1, p2, p3, p4])
-        self.assertEqual(test_mel0.dominant_prime, 3)
+        self.assertEqual(test_mel0.dominant_prime, (3,))
 
     def test_remove(self):
         p0 = ji.JIPitch((0, 1, -1), 2)
