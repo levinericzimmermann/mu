@@ -254,9 +254,7 @@ class Melody(AbstractLine):
 
     @property
     def mel(self):
-        """
-        Alias for backwards compatbility,
-        """
+        """Alias for backwards compatbility,"""
         return self.pitch
 
     @mel.setter
@@ -265,9 +263,7 @@ class Melody(AbstractLine):
 
     @property
     def rhy(self):
-        """
-        Alias for backwards compatbility,
-        """
+        """Alias for backwards compatbility,"""
         return self.delay
 
     @rhy.setter
@@ -585,7 +581,9 @@ class Polyphon(PolyLine):
                     harmony = harmony_class(t.pitch for t in current_set)
                     durations = tuple(t.duration for t in current_set)
                     min_dur = min(durations)
-                    volume = tuple(t.volume for t in current_set if t.volume != None)
+                    volume = tuple(
+                        t.volume for t in current_set if t.volume is not None
+                    )
                     if volume:
                         volume = max(volume)
                     else:

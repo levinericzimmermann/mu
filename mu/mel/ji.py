@@ -271,7 +271,7 @@ class Monzo(object):
 
     @staticmethod
     def adjust_float(f: float, val_border: int) -> float:
-        r"""Multiply float with the val_border, until it is == or < than 1 and > than val_border.
+        r"""Multiply float with val_border, until it is <= 1 and > than val_border.
 
         Arguments:
             * r: The Ratio, which shall be adjusted
@@ -483,10 +483,10 @@ class Monzo(object):
         gen_pos = prime_factors.factors(ratio.numerator)
         gen_neg = prime_factors.factors(ratio.denominator)
 
-        biggest_prime = max(
-            prime_factors.factorise(ratio.numerator)
-            + prime_factors.factorise(ratio.denominator)
-        )
+        factorised_num = prime_factors.factorise(ratio.numerator)
+        factorised_den = prime_factors.factorise(ratio.denominator)
+
+        biggest_prime = max(factorised_num + factorised_den)
         monzo = [0] * Monzo.count_primes(biggest_prime)
 
         for num, fac in gen_pos:
@@ -1606,8 +1606,17 @@ class JIPitch(Monzo, abstract.AbstractPitch):
 
     def differential(self, other):
         """calculates differential tone between pitch and other pitch"""
-        diff_ratio = abs(self.ratio - other.ratio)
-        return type(self).from_ratio(diff_ratio.numerator, diff_ratio.denominator)
+        tests = (self != mel.EmptyPitch(), other != mel.EmptyPitch())
+        if all(tests) is True:
+            diff_ratio = abs(self.ratio - other.ratio)
+            return type(self).from_ratio(diff_ratio.numerator, diff_ratio.denominator)
+        else:
+            if tests[0] is True:
+                return self
+            elif tests[1] is True:
+                return other
+            else:
+                return mel.EmptyPitch()
 
 
 class JIContainer(object):

@@ -4,8 +4,7 @@ from mu.mel import abstract
 
 class AbstractTest(unittest.TestCase):
     def test_abstract_error(self):
-        self.assertRaises(TypeError, type(
-            "test_cls", (abstract.AbstractPitch,), {}))
+        self.assertRaises(TypeError, type("test_cls", (abstract.AbstractPitch,), {}))
 
     def test_private_test(self):
         self.assertEqual(abstract.is_private("__repr"), True)
@@ -80,6 +79,18 @@ class InheritanceTest(unittest.TestCase):
         test_obj0 = test_class([n0, n1])
         compare_obj = test_class([n0.multiplied(fac), n1.multiplied(2)])
         self.assertEqual(test_obj0.multiplied(fac), compare_obj)
+
+    def test_midi_conversion(self):
+        """test whether the midi conversion function works properly"""
+        f0 = 300
+        n0 = self.PitchTest(f0)
+        hex_number = n0.convert2midi_hex()
+        closest_pitch = 293.6647679174075
+        cent_difference = abstract.AbstractPitch.hz2ct(closest_pitch, f0)
+        steps0 = int(cent_difference // 0.78125)
+        steps1 = int((cent_difference - (steps0 * 0.78125)) // 0.0061)
+        expected_hex = hex(50), hex(steps0), hex(steps1)
+        self.assertEqual(hex_number, expected_hex)
 
 
 if __name__ == "__main__":

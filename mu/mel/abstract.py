@@ -1,7 +1,14 @@
 from mu.abstract import mutate
 
 import abc
+import bisect
+import os
 import math
+
+
+__directory = os.path.dirname(os.path.abspath(__file__))
+with open(os.path.join(__directory, "", "12edo"), "r") as f:
+    _12edo_freq = tuple(float(line[:-1]) for line in f.readlines())
 
 
 def is_private(string: str) -> bool:
@@ -79,5 +86,20 @@ class AbstractPitch(abc.ABC):
         return hash(self.freq)
 
     @staticmethod
-    def hz2ct(freq0, freq1):
+    def hz2ct(freq0, freq1) -> float:
         return 1200 * math.log(freq1 / freq0, 2)
+
+    def convert2midi_hex(self) -> tuple:
+        """calculates the MIDI Tuning Standard of the pitch
+        (http://www.microtonal-synthesis.com/MIDItuning.html)
+        """
+        freq = self.freq
+        closest = bisect.bisect_right(_12edo_freq, freq) - 1
+        diff = self.hz2ct(_12edo_freq[closest], freq)
+        size0 = 0.78125
+        size1 = 0.0061
+        steps0 = int(diff // size0)
+        steps1 = int((diff - (steps0 * size0)) // size1)
+        assert steps0 < 128
+        assert steps1 < 128
+        return hex(closest), hex(steps0), hex(steps1)
