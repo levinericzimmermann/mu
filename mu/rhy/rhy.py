@@ -1,11 +1,3 @@
-# @Author: Levin Eric Zimmermann
-# @Date:   2018-02-07T20:14:39+01:00
-# @Email:  levin-eric.zimmermann@folkwang-uni.de
-# @Project: mu
-# @Last modified by:   uummoo
-# @Last modified time: 2018-03-22T13:38:07+01:00
-
-
 from mu.abstract import muobjects
 from mu.time import time
 from mu.utils import prime_factors

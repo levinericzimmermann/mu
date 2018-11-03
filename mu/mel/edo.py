@@ -1,11 +1,3 @@
-# @Author: Levin Eric Zimmermann <Levin_Eric_Zimmermann>
-# @Date:   2018-01-05T23:56:21+01:00
-# @Email:  levin-eric.zimmermann@folkwang-uni.de
-# @Project: mu
-# @Last modified by:   Levin_Eric_Zimmermann
-# @Last modified time: 2018-02-04T00:52:10+01:00
-
-
 from mu.mel import abstract
 from mu.mel import mel
 import math

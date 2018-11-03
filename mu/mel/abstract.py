@@ -89,7 +89,7 @@ class AbstractPitch(abc.ABC):
     def hz2ct(freq0, freq1) -> float:
         return 1200 * math.log(freq1 / freq0, 2)
 
-    def convert2midi_hex(self) -> tuple:
+    def convert2midi_tuning(self) -> tuple:
         """calculates the MIDI Tuning Standard of the pitch
         (http://www.microtonal-synthesis.com/MIDItuning.html)
         """
@@ -102,4 +102,4 @@ class AbstractPitch(abc.ABC):
         steps1 = int((diff - (steps0 * size0)) // size1)
         assert steps0 < 128
         assert steps1 < 128
-        return hex(closest), hex(steps0), hex(steps1)
+        return closest, steps0, steps1

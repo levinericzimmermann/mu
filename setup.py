@@ -4,7 +4,7 @@ setup(
     name='mu',
     version='0.0.02',
     license='GPL',
-    description='Python-representation of classical musical content.',
+    description='Representation of musical elements.',
     author='Levin Eric Zimmermann',
     author_email='levin-eric.zimmermann@folkwang-uni.de',
     url='https://github.com/uummoo/mu',

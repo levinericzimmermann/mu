@@ -1,11 +1,3 @@
-# @Author: Levin Eric Zimmermann
-# @Date:   2018-02-07T18:18:59+01:00
-# @Email:  levin-eric.zimmermann@folkwang-uni.de
-# @Project: mu
-# @Last modified by:   uummoo
-# @Last modified time: 2018-04-06T14:53:22+02:00
-
-
 from typing import Callable, Optional, Tuple, Union
 
 from mu.abstract import muobjects
@@ -23,6 +15,8 @@ class Tone(abstract.UniformEvent):
         delay: rhy.RhyUnit,
         duration: Optional[rhy.RhyUnit] = None,
         volume: Optional = None,
+        glissando: list = None,
+        vibrato: list = None,
     ) -> None:
         if pitch is None:
             pitch = mel.EmptyPitch()
@@ -36,6 +30,8 @@ class Tone(abstract.UniformEvent):
         self._dur = duration
         self.delay = delay
         self.volume = volume
+        self.glissando = glissando
+        self.vibrato = vibrato
 
     def __hash__(self) -> int:
         return hash((self.pitch, self.delay, self.duration, self.volume))
@@ -56,8 +52,26 @@ class Tone(abstract.UniformEvent):
 
     def copy(self) -> "Tone":
         return type(self)(
-            self.pitch.copy(), self.delay.copy(), self.duration.copy(), self.volume
+            self.pitch.copy(),
+            self.delay.copy(),
+            self.duration.copy(),
+            self.volume,
+            self.glissando,
+            self.vibrato,
         )
+
+
+class Glissando(object):
+    def __init__(self, position: rhy.RhyUnit, pitch: AbstractPitch):
+        self.pitch = pitch
+        self.position = position
+
+
+class Vibrato(object):
+    def __init__(
+        self, position: rhy.RhyUnit, vibratosize: AbstractPitch, speed: rhy.RhyUnit
+    ):
+        pass
 
 
 class Rest(Tone):
@@ -126,8 +140,8 @@ class Chord(abstract.SimultanEvent):
         )
 
 
-class AbstractLine(abstract.MultiSequentialEvent):
-    _sub_sequences_class_names = ("pitch", "delay", "dur", "volume")
+class AbstractTimeLine(abstract.MultiSequentialEvent):
+    _sub_sequences_class_names = ("delay",)
 
     def __init__(self, iterable, time_measure="relative"):
         abstract.MultiSequentialEvent.__init__(self, iterable)
@@ -145,6 +159,45 @@ class AbstractLine(abstract.MultiSequentialEvent):
     @property
     def time_measure(self):
         return self._time_measure
+
+    @property
+    def duration(self):
+        return time.Time(sum(self.delay))
+
+    def __hash__(self):
+        return hash(tuple(hash(item) for item in self))
+
+    def convert2absolute_time(self):
+        """
+        Delay becomes the starting time of the specific event,
+        duration becomes the stoptime of the specific event.
+        """
+        copy = self.copy()
+        if self.time_measure == "relative":
+            copy.delay = copy.delay.convert2absolute()
+            stop = ((d + s) for d, s in zip(copy.delay, copy.dur))
+            copy.dur = type(copy.dur)(stop)
+            copy._time_measure = "absolute"
+        return copy
+
+    def convert2relative_time(self):
+        """
+        Starting time of specific event becomes its Delay ,
+        stoptime of specific event becomes its duration.
+        """
+        copy = self.copy()
+        if self.time_measure == "absolute":
+            copy.delay = copy.delay.convert2relative()
+            copy.dur = type(copy.dur)(
+                dur - delay for dur, delay in zip(self.dur, self.delay)
+            )
+            copy.delay.append(copy.dur[-1])
+            copy._time_measure = "relative"
+        return copy
+
+
+class AbstractLine(AbstractTimeLine):
+    _sub_sequences_class_names = ("pitch", "delay", "dur", "volume")
 
     @property
     def freq(self) -> Tuple[float]:
@@ -199,34 +252,6 @@ class AbstractLine(abstract.MultiSequentialEvent):
             else:
                 new.append(item)
         return type(self)(new)
-
-    def convert2absolute_time(self):
-        """
-        Delay becomes the starting time of the specific event,
-        duration becomes the stoptime of the specific event.
-        """
-        copy = self.copy()
-        if self.time_measure == "relative":
-            copy.delay = copy.delay.convert2absolute()
-            stop = ((d + s) for d, s in zip(copy.delay, copy.dur))
-            copy.dur = type(copy.dur)(stop)
-            copy._time_measure = "absolute"
-        return copy
-
-    def convert2relative_time(self):
-        """
-        Starting time of specific event becomes its Delay ,
-        stoptime of specific event becomes its duration.
-        """
-        copy = self.copy()
-        if self.time_measure == "absolute":
-            copy.delay = copy.delay.convert2relative()
-            copy.dur = type(copy.dur)(
-                dur - delay for dur, delay in zip(self.dur, self.delay)
-            )
-            copy.delay.append(copy.dur[-1])
-            copy._time_measure = "relative"
-        return copy
 
 
 class Melody(AbstractLine):
@@ -609,7 +634,7 @@ class Polyphon(PolyLine):
         return cadence_class(cadence)
 
 
-class Instrument:
+class Instrument(object):
     def __init__(self, name, pitches):
         self.name = name
         self.pitches = pitches

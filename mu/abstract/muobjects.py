@@ -1,11 +1,3 @@
-# @Author: Levin Eric Zimmermann
-# @Date:   2018-02-02T15:56:56+01:00
-# @Email:  levin-eric.zimmermann@folkwang-uni.de
-# @Project: mu
-# @Last modified by:   uummoo
-# @Last modified time: 2018-04-07T15:38:52+02:00
-
-
 import orderedset
 from mu.abstract import mutate
 

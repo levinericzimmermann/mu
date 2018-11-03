@@ -1,11 +1,3 @@
-# @Author: Levin Eric Zimmermann
-# @Date:   2018-04-07T15:48:42+02:00
-# @Email:  levin-eric.zimmermann@folkwang-uni.de
-# @Project: mu
-# @Last modified by:   uummoo
-# @Last modified time: 2018-04-07T15:53:19+02:00
-
-
 import functools
 from typing import Any, Dict, Tuple
 from numba import jit

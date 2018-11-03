@@ -84,12 +84,12 @@ class InheritanceTest(unittest.TestCase):
         """test whether the midi conversion function works properly"""
         f0 = 300
         n0 = self.PitchTest(f0)
-        hex_number = n0.convert2midi_hex()
+        hex_number = n0.convert2midi_tuning()
         closest_pitch = 293.6647679174075
         cent_difference = abstract.AbstractPitch.hz2ct(closest_pitch, f0)
         steps0 = int(cent_difference // 0.78125)
         steps1 = int((cent_difference - (steps0 * 0.78125)) // 0.0061)
-        expected_hex = hex(50), hex(steps0), hex(steps1)
+        expected_hex = 50, steps0, steps1
         self.assertEqual(hex_number, expected_hex)
 
 
