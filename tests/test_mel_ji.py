@@ -1,11 +1,3 @@
-# @Author: Levin Eric Zimmermann <levin>
-# @Date:   2018-02-03T12:40:48+01:00
-# @Email:  levin-eric.zimmermann@folkwang-uni.de
-# @Project: mu
-# @Last modified by:   uummoo
-# @Last modified time: 2018-03-23T16:57:50+01:00
-
-
 import unittest
 
 from mu.mel import ji

@@ -1,11 +1,3 @@
-# @Author: Levin Eric Zimmermann
-# @Date:   2018-02-07T18:28:10+01:00
-# @Email:  levin-eric.zimmermann@folkwang-uni.de
-# @Project: mu
-# @Last modified by:   uummoo
-# @Last modified time: 2018-04-07T15:39:27+02:00
-
-
 import unittest
 from mu.sco import old
 from mu.mel import mel
@@ -13,9 +5,73 @@ from mu.mel import ji
 from mu.rhy import rhy
 
 
-class ToneTest(unittest.TestCase):
-    def test_abstract_error(self):
-        pass
+class InterpolationEventTest(unittest.TestCase):
+    def test_construction(self):
+        self.assertRaises(TypeError, old.InterpolationEvent)
+
+    def test_pitch_interpolation(self):
+        p0 = old.PitchInterpolation(3, mel.SimplePitch(0, 200))
+        p1 = old.PitchInterpolation(0, mel.SimplePitch(0, 0))
+        p2 = old.PitchInterpolation(0, mel.SimplePitch(0, 0))
+        self.assertNotEqual(hash(p0), hash(p1))
+        self.assertEqual(hash(p1), hash(p2))
+        interp0 = (200, 100, 0)
+        self.assertEqual(p0.interpolate(p1, 3), interp0)
+
+    def test_rhythmic_interpolation(self):
+        p0 = old.RhythmicInterpolation(3, rhy.RhyUnit(3))
+        p1 = old.RhythmicInterpolation(0, rhy.RhyUnit(2))
+        p2 = old.RhythmicInterpolation(0, rhy.RhyUnit(2))
+        self.assertNotEqual(hash(p0), hash(p1))
+        self.assertEqual(hash(p1), hash(p2))
+        interp0 = (3, 2.5, 2)
+        self.assertEqual(p0.interpolate(p1, 3), interp0)
+
+
+class InterpolationLineTest(unittest.TestCase):
+    def test_interpolation(self):
+        p0 = old.PitchInterpolation(3, mel.SimplePitch(0, 300))
+        p1 = old.PitchInterpolation(4, mel.SimplePitch(0, 0))
+        p2 = old.PitchInterpolation(0, mel.SimplePitch(0, -400))
+        line = old.InterpolationLine((p0, p1, p2))
+        interpol = line(1)
+        self.assertEqual(interpol, (300, 200, 100, 0, -100, -200, -300))
+        self.assertRaises(ValueError, lambda: old.InterpolationLine((p0, p0, p1)))
+
+    def test_glissando_line(self):
+        p0 = old.PitchInterpolation(3, mel.SimplePitch(0, 300))
+        p1 = old.PitchInterpolation(4, mel.SimplePitch(0, 0))
+        p2 = old.PitchInterpolation(0, mel.SimplePitch(0, -400))
+        line = old.InterpolationLine((p0, p1, p2))
+        gliss = old.GlissandoLine(line)
+        interpol0 = gliss.interpolate(1)
+        self.assertEqual(interpol0, (300, 200, 100, 0, -100, -200, -300))
+
+    def test_vibrato_line(self):
+        p0 = old.PitchInterpolation(2, mel.SimplePitch(0, 300))
+        p1 = old.PitchInterpolation(4, mel.SimplePitch(0, 200))
+        p2 = old.PitchInterpolation(0, mel.SimplePitch(0, 600))
+        p3 = old.PitchInterpolation(4, mel.SimplePitch(0, -200))
+        p4 = old.PitchInterpolation(2, mel.SimplePitch(0, -600))
+        p5 = old.PitchInterpolation(0, mel.SimplePitch(0, -900))
+        r0 = old.RhythmicInterpolation(6, rhy.RhyUnit(2))
+        r1 = old.RhythmicInterpolation(0, rhy.RhyUnit(2))
+        line0 = old.InterpolationLine((p0, p1, p2))
+        line1 = old.InterpolationLine((p3, p4, p5))
+        line2 = old.InterpolationLine((r0, r1))
+        vib0 = old.VibratoLine(line0, line1, line2, "up")
+        vib1 = old.VibratoLine(line0, line1, line2, "down")
+        interpol0 = vib0.interpolate(0.5)
+        interpol1 = vib1.interpolate(0.5)
+        self.assertNotEqual(interpol0, interpol1)
+        self.assertEqual(
+            tuple(round(n, 2) for n in interpol0),
+            (0, 275, 0, -371.43, 0, 250, 0, -600, 0, 450, 0, -840),
+        )
+        self.assertEqual(
+            tuple(round(n, 2) for n in interpol1),
+            (0, -257.14, 0, 225, 0, -485.71, 0, 350, 0, -720, 0, 550),
+        )
 
 
 class MelodyTest(unittest.TestCase):
@@ -108,8 +164,7 @@ class MelodyTest(unittest.TestCase):
     def test_tie(self):
         melodyTest0 = old.Melody([old.Tone(self.t0.pitch, self.t0.delay * 3)])
         self.assertEqual(self.melody0.tie(), melodyTest0)
-        melodyTest1 = old.Melody([old.Tone(self.t0.pitch, self.t0.delay * 2),
-                                  self.t1])
+        melodyTest1 = old.Melody([old.Tone(self.t0.pitch, self.t0.delay * 2), self.t1])
         melody1 = old.Melody([self.t0, self.t0, self.t1])
         self.assertEqual(melody1.tie(), melodyTest1)
         melody2 = old.Melody([self.t0, self.t1, self.t0])
@@ -128,32 +183,37 @@ class MelodyTest(unittest.TestCase):
 
     def test_convert2absolute_time(self):
         melody_converted = old.Melody(
-            (old.Tone(self.p0, self.d0 * 0, self.d0 * 1),
-             old.Tone(self.p0, self.d0 * 1, self.d0 * 2),
-             old.Tone(self.p0, self.d0 * 2, self.d0 * 3)))
-        self.assertEqual(
-            self.melody0.convert2absolute_time(), melody_converted)
+            (
+                old.Tone(self.p0, self.d0 * 0, self.d0 * 1),
+                old.Tone(self.p0, self.d0 * 1, self.d0 * 2),
+                old.Tone(self.p0, self.d0 * 2, self.d0 * 3),
+            )
+        )
+        self.assertEqual(self.melody0.convert2absolute_time(), melody_converted)
 
         melody_converted = old.Melody(
-            (old.Tone(self.p0, self.d0 * 0, self.d0 * 1),
-             old.Tone(self.p0, self.d0 * 1, self.d0 * 2),
-             old.Tone(self.p0, self.d0 * 2, self.d0 * 3)),
-            time_measure="relative")
-        self.assertEqual(
-            self.melody0.convert2absolute_time(), melody_converted)
+            (
+                old.Tone(self.p0, self.d0 * 0, self.d0 * 1),
+                old.Tone(self.p0, self.d0 * 1, self.d0 * 2),
+                old.Tone(self.p0, self.d0 * 2, self.d0 * 3),
+            ),
+            time_measure="relative",
+        )
+        self.assertEqual(self.melody0.convert2absolute_time(), melody_converted)
 
     def test_convert2relative_time(self):
         melody_converted = old.Melody(
-            (old.Tone(self.p0, self.d0 * 0, self.d0 * 1),
-             old.Tone(self.p0, self.d0 * 1, self.d0 * 2),
-             old.Tone(self.p0, self.d0 * 2, self.d0 * 3)),
-            time_measure="absolute")
-        self.assertEqual(
-            melody_converted.convert2relative_time(), self.melody0)
+            (
+                old.Tone(self.p0, self.d0 * 0, self.d0 * 1),
+                old.Tone(self.p0, self.d0 * 1, self.d0 * 2),
+                old.Tone(self.p0, self.d0 * 2, self.d0 * 3),
+            ),
+            time_measure="absolute",
+        )
+        self.assertEqual(melody_converted.convert2relative_time(), self.melody0)
 
     def test_copy(self):
-        melody0 = old.Melody([old.Tone(self.p0, self.d0),
-                              old.Tone(self.p0, self.d0)])
+        melody0 = old.Melody([old.Tone(self.p0, self.d0), old.Tone(self.p0, self.d0)])
         self.assertEqual(melody0, melody0.copy())
         self.assertEqual(type(melody0.mel), (type(melody0.copy().mel)))
 
@@ -187,21 +247,16 @@ class ToneSetTest(unittest.TestCase):
     set2 = old.ToneSet([t1_set, t6_set, t2_set])
 
     def test_constructor(self):
-        self.assertEqual(old.ToneSet.from_melody(ToneSetTest.mel0),
-                         ToneSetTest.set0)
+        self.assertEqual(old.ToneSet.from_melody(ToneSetTest.mel0), ToneSetTest.set0)
 
     def test_converter(self):
-        self.assertEqual(ToneSetTest.mel0,
-                         ToneSetTest.set0.convert2melody())
-        self.assertEqual(ToneSetTest.mel1,
-                         ToneSetTest.set1.convert2melody())
+        self.assertEqual(ToneSetTest.mel0, ToneSetTest.set0.convert2melody())
+        self.assertEqual(ToneSetTest.mel1, ToneSetTest.set1.convert2melody())
 
     def test_pop_by(self):
-        popped = ToneSetTest.set0.copy().pop_by_pitch(
-            ToneSetTest.p0, ToneSetTest.p1)
+        popped = ToneSetTest.set0.copy().pop_by_pitch(ToneSetTest.p0, ToneSetTest.p1)
         self.assertEqual(ToneSetTest.mel2, popped.convert2melody())
-        popped = ToneSetTest.set0.copy().pop_by_start(
-            rhy.RhyUnit(0), rhy.RhyUnit(1))
+        popped = ToneSetTest.set0.copy().pop_by_start(rhy.RhyUnit(0), rhy.RhyUnit(1))
         self.assertEqual(ToneSetTest.mel2, popped.convert2melody())
 
     def test_pop_by_time(self):
@@ -210,11 +265,9 @@ class ToneSetTest(unittest.TestCase):
         for t in self.set0.pop_by_time(1.5):
             self.assertEqual(t, self.t1_set)
         test_set0 = self.set2.pop_by_time(1.5)
-        test_set_compare0 = old.ToneSet([self.t1_set,
-                                         self.t6_set])
+        test_set_compare0 = old.ToneSet([self.t1_set, self.t6_set])
         test_set1 = self.set2.pop_by_time(2.7)
-        test_set_compare1 = old.ToneSet([self.t2_set,
-                                         self.t6_set])
+        test_set_compare1 = old.ToneSet([self.t2_set, self.t6_set])
         self.assertEqual(test_set0, test_set_compare0)
         self.assertEqual(test_set1, test_set_compare1)
 
@@ -258,101 +311,109 @@ class PolyTest(unittest.TestCase):
 
     def test_find_simultan_events(self):
         simultan_events0 = self.poly0.find_simultan_events(0, 0)
-        self.assertEqual(
-            simultan_events0, (self.poly0[1].convert2absolute_time()[0],))
+        self.assertEqual(simultan_events0, (self.poly0[1].convert2absolute_time()[0],))
         simultan_events1 = self.poly0.find_simultan_events(1, 1)
-        self.assertEqual(
-            simultan_events1, (self.poly0[0].convert2absolute_time()[1],))
+        self.assertEqual(simultan_events1, (self.poly0[0].convert2absolute_time()[1],))
         simultan_events2 = self.poly1.find_simultan_events(0, 1)
-        simultan_events2_comp = (self.poly1[1].convert2absolute_time()[1],
-                                 self.poly1[1].convert2absolute_time()[2],
-                                 self.poly1[1].convert2absolute_time()[3],
-                                 self.poly1[2].convert2absolute_time()[-2],
-                                 self.poly1[2].convert2absolute_time()[-1])
+        simultan_events2_comp = (
+            self.poly1[1].convert2absolute_time()[1],
+            self.poly1[1].convert2absolute_time()[2],
+            self.poly1[1].convert2absolute_time()[3],
+            self.poly1[2].convert2absolute_time()[-2],
+            self.poly1[2].convert2absolute_time()[-1],
+        )
         self.assertEqual(simultan_events2, simultan_events2_comp)
         simultan_events3 = self.poly1.find_simultan_events(1, 1)
-        simultan_events3_comp = (self.poly1[0].convert2absolute_time()[0],
-                                 self.poly1[0].convert2absolute_time()[1],
-                                 self.poly1[2].convert2absolute_time()[1],
-                                 self.poly1[2].convert2absolute_time()[2],
-                                 self.poly1[2].convert2absolute_time()[3])
+        simultan_events3_comp = (
+            self.poly1[0].convert2absolute_time()[0],
+            self.poly1[0].convert2absolute_time()[1],
+            self.poly1[2].convert2absolute_time()[1],
+            self.poly1[2].convert2absolute_time()[2],
+            self.poly1[2].convert2absolute_time()[3],
+        )
         self.assertEqual(simultan_events3, simultan_events3_comp)
 
     def test_find_exact_simultan_events(self):
         poly2 = old.Polyphon(
-            (old.Melody([old.Tone(ji.r(1, 1), 2),
-                         old.Tone(ji.r(1, 1), 3)]),
-             old.Melody([old.Tone(ji.r(3, 2), 3),
-                         old.Tone(ji.r(3, 2), 2)]),
-             old.Melody([old.Tone(ji.r(4, 3), 1),
-                         old.Tone(ji.r(4, 3), 2)])))
+            (
+                old.Melody([old.Tone(ji.r(1, 1), 2), old.Tone(ji.r(1, 1), 3)]),
+                old.Melody([old.Tone(ji.r(3, 2), 3), old.Tone(ji.r(3, 2), 2)]),
+                old.Melody([old.Tone(ji.r(4, 3), 1), old.Tone(ji.r(4, 3), 2)]),
+            )
+        )
         simultan_events4 = poly2.find_exact_simultan_events(0, 1)
-        simultan_events4_expected = (old.Tone(ji.r(3, 2), 1, 1),
-                                     old.Tone(ji.r(3, 2), 2, 2),
-                                     old.Tone(ji.r(4, 3), 1, 1))
+        simultan_events4_expected = (
+            old.Tone(ji.r(3, 2), 1, 1),
+            old.Tone(ji.r(3, 2), 2, 2),
+            old.Tone(ji.r(4, 3), 1, 1),
+        )
         self.assertEqual(simultan_events4, simultan_events4_expected)
 
         simultan_events0 = self.poly0.find_exact_simultan_events(0, 0)
         self.assertEqual(simultan_events0, (self.poly0[1][0],))
         simultan_events1 = self.poly0.find_exact_simultan_events(0, 0, False)
-        self.assertEqual(simultan_events1,
-                         (self.poly0[1].convert2absolute_time()[0],))
+        self.assertEqual(simultan_events1, (self.poly0[1].convert2absolute_time()[0],))
         simultan_events2 = self.poly1.find_exact_simultan_events(1, 0)
         simultan_events2_expected = (self.poly1[2][0], self.poly1[2][0])
         self.assertEqual(simultan_events2, simultan_events2_expected)
         simultan_events3 = self.poly1.find_exact_simultan_events(1, 1)
-        simultan_events3_expected = (self.t8, self.t7,
-                                     self.t7, self.t7,
-                                     self.t2)
+        simultan_events3_expected = (self.t8, self.t7, self.t7, self.t7, self.t2)
         self.assertEqual(simultan_events3, simultan_events3_expected)
 
     def test_cut_up_by_time(self):
         poly0 = old.Polyphon(
-            (old.Melody([old.Tone(ji.r(1, 1), 2),
-                         old.Tone(ji.r(1, 1), 3)]),
-             old.Melody([old.Tone(ji.r(3, 2), 3),
-                         old.Tone(ji.r(3, 2), 2)]),
-             old.Melody([old.Tone(ji.r(4, 3), 1),
-                         old.Tone(ji.r(4, 3), 2)])))
+            (
+                old.Melody([old.Tone(ji.r(1, 1), 2), old.Tone(ji.r(1, 1), 3)]),
+                old.Melody([old.Tone(ji.r(3, 2), 3), old.Tone(ji.r(3, 2), 2)]),
+                old.Melody([old.Tone(ji.r(4, 3), 1), old.Tone(ji.r(4, 3), 2)]),
+            )
+        )
         poly0_cut = poly0.cut_up_by_time(1, 3)
         poly0_cut_expected = old.Polyphon(
-            (old.Melody([old.Tone(ji.r(1, 1), 1),
-                         old.Tone(ji.r(1, 1), 1)]),
-             old.Melody([old.Tone(ji.r(3, 2), 2)]),
-             old.Melody([old.Tone(ji.r(4, 3), 2)])))
+            (
+                old.Melody([old.Tone(ji.r(1, 1), 1), old.Tone(ji.r(1, 1), 1)]),
+                old.Melody([old.Tone(ji.r(3, 2), 2)]),
+                old.Melody([old.Tone(ji.r(4, 3), 2)]),
+            )
+        )
         self.assertEqual(poly0_cut, poly0_cut_expected)
 
         poly1_cut = poly0.cut_up_by_time(1, 3, add_earlier=False)
         poly1_cut_expected = old.Polyphon(
-            (old.Melody([old.Rest(1),
-                         old.Tone(ji.r(1, 1), 1)]),
-             old.Melody([old.Rest(2)]),
-             old.Melody([old.Tone(ji.r(4, 3), 2)])))
+            (
+                old.Melody([old.Rest(1), old.Tone(ji.r(1, 1), 1)]),
+                old.Melody([old.Rest(2)]),
+                old.Melody([old.Tone(ji.r(4, 3), 2)]),
+            )
+        )
         self.assertEqual(poly1_cut, poly1_cut_expected)
 
         poly2_cut = poly0.cut_up_by_time(1, 3, hard_cut=False)
         poly2_cut_expected = old.Polyphon(
-            (old.Melody([old.Tone(ji.r(1, 1), 2),
-                         old.Tone(ji.r(1, 1), 3)]),
-             old.Melody([old.Tone(ji.r(3, 2), 3)]),
-             old.Melody([old.Rest(1),
-                         old.Tone(ji.r(4, 3), 2)])))
+            (
+                old.Melody([old.Tone(ji.r(1, 1), 2), old.Tone(ji.r(1, 1), 3)]),
+                old.Melody([old.Tone(ji.r(3, 2), 3)]),
+                old.Melody([old.Rest(1), old.Tone(ji.r(4, 3), 2)]),
+            )
+        )
         self.assertEqual(poly2_cut, poly2_cut_expected)
 
     def test_cut_up_by_idx(self):
         poly0 = old.Polyphon(
-            (old.Melody([old.Tone(ji.r(1, 1), 2),
-                         old.Tone(ji.r(1, 1), 3)]),
-             old.Melody([old.Tone(ji.r(3, 2), 3),
-                         old.Tone(ji.r(3, 2), 2)]),
-             old.Melody([old.Tone(ji.r(4, 3), 1),
-                         old.Tone(ji.r(4, 3), 2)])))
+            (
+                old.Melody([old.Tone(ji.r(1, 1), 2), old.Tone(ji.r(1, 1), 3)]),
+                old.Melody([old.Tone(ji.r(3, 2), 3), old.Tone(ji.r(3, 2), 2)]),
+                old.Melody([old.Tone(ji.r(4, 3), 1), old.Tone(ji.r(4, 3), 2)]),
+            )
+        )
         poly0_cut = poly0.cut_up_by_idx(2, 1)
         poly0_cut_expected = old.Polyphon(
-            (old.Melody([old.Tone(ji.r(1, 1), 1),
-                         old.Tone(ji.r(1, 1), 1)]),
-             old.Melody([old.Tone(ji.r(3, 2), 2)]),
-             old.Melody([old.Tone(ji.r(4, 3), 2)])))
+            (
+                old.Melody([old.Tone(ji.r(1, 1), 1), old.Tone(ji.r(1, 1), 1)]),
+                old.Melody([old.Tone(ji.r(3, 2), 2)]),
+                old.Melody([old.Tone(ji.r(4, 3), 2)]),
+            )
+        )
         self.assertEqual(poly0_cut, poly0_cut_expected)
 
 

@@ -5,6 +5,7 @@ import numpy as np
 
 class Interpolation(abc.ABC):
     """Abstract superclass for all interpolation subclasses."""
+
     @abc.abstractmethod
     def __call__(self, x0, x1, n, dtype=float) -> tuple:
         raise NotImplementedError
@@ -17,10 +18,20 @@ class Linear(Interpolation):
     def __call__(self, x0, x1, n, dtype=float) -> tuple:
         return tuple(np.linspace(x0, x1, n, dtype=dtype))
 
+    def __hash__(self) -> int:
+        return hash("LinearInterpolation")
+
 
 class Logarithmic(Interpolation):
     def __call__(self, x0, x1, n, dtype=float) -> tuple:
-        return tuple(np.geomspace(x0, x1, n, dtype=dtype))
+        if x0 == 0:
+            x0_pre = 0.00001
+            return (0,) + tuple(np.geomspace(x0_pre, x1, n, dtype=dtype))[1:]
+        else:
+            return tuple(np.geomspace(x0, x1, n, dtype=dtype))
+
+    def __hash__(self) -> int:
+        return hash("LogarithmicInterpolation")
 
 
 class Proportional(Interpolation):
@@ -33,6 +44,7 @@ class Proportional(Interpolation):
 
     def __init__(self, proportion: float):
         self.__interpolate = self.mk_interpolation_function(proportion)
+        self.__proportion = proportion
 
     @staticmethod
     def mk_interpolation_function(proportion):
@@ -65,3 +77,6 @@ class Proportional(Interpolation):
         if dtype != float:
             res = tuple(dtype(n) for n in res)
         return res
+
+    def __hash__(self) -> int:
+        return hash((hash("ProportionalInterpolation"), hash(self.__proportion)))

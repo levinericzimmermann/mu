@@ -40,7 +40,7 @@ class PitchInterpolation(InterpolationEvent):
         pitch: AbstractPitch,
         interpolation_type: interpolation.Interpolation = interpolation.Linear(),
     ):
-        InterpolationEvent.__init__(delay, interpolation_type)
+        InterpolationEvent.__init__(self, delay, interpolation_type)
         self.__pitch = pitch
 
     @property
@@ -57,7 +57,7 @@ class PitchInterpolation(InterpolationEvent):
 
     def interpolate(self, other, steps) -> tuple:
         cents0 = self.pitch.cents
-        cents1 = self.pitch.cents
+        cents1 = other.pitch.cents
         return self.interpolation_type(cents0, cents1, steps)
 
 
@@ -68,7 +68,7 @@ class RhythmicInterpolation(InterpolationEvent):
         rhythm: rhy.RhyUnit,
         interpolation_type: interpolation.Interpolation = interpolation.Linear(),
     ):
-        InterpolationEvent.__init__(delay, interpolation_type)
+        InterpolationEvent.__init__(self, delay, interpolation_type)
         self.__rhythm = rhythm
 
     @property
@@ -89,7 +89,7 @@ class RhythmicInterpolation(InterpolationEvent):
         return self.interpolation_type(self.rhythm, other.rhythm, steps)
 
 
-class InterpolationLine(muobjects.MUTuple):
+class InterpolationLine(muobjects.MUList):
     """Container class to describe interpolations between states.
     They are expected to contain InterpolationEvent - objects.
     InterpolationLine - objects can be called to generate the interpolation.
@@ -101,11 +101,12 @@ class InterpolationLine(muobjects.MUTuple):
     """
 
     def __init__(self, iterable):
+        iterable = tuple(iterable)
         try:
             assert iterable[-1].delay == 0
         except AssertionError:
             raise ValueError("The last element has to have delay = 0")
-        muobjects.MUTuple.__init__(self, iterable)
+        muobjects.MUList.__init__(self, iterable)
 
     def __call__(self, gridsize: float):
         def find_closest_point(points, time):
@@ -116,20 +117,20 @@ class InterpolationLine(muobjects.MUTuple):
                         (abs(time - points[pos]), pos),
                         (abs(time - points[pos - 1]), pos - 1),
                     ),
-                    key=operator.itemgetter(1),
-                )[0]
+                    key=operator.itemgetter(0),
+                )[1]
             except IndexError:
                 # if pos is len(points) + 1
-                return pos - 1
+                return pos
 
-        points = tuple(range(0, self.duration, gridsize))
-        absolute_delays = self.delay.convert2absolute_time()
+        points = interpolation.Linear()(0, self.duration, int(self.duration / gridsize))
+        absolute_delays = self.delay.convert2absolute()
         positions = tuple(
             find_closest_point(points, delay) for delay in absolute_delays
         )
         interpolation_size = tuple(b - a for a, b in zip(positions, positions[1:]))
         interpolations = (
-            item0.interpolate(item1, steps)
+            item0.interpolate(item1, steps + 1)[:-1]
             for item0, item1, steps in zip(self, self[1:], interpolation_size)
         )
         return tuple(functools.reduce(operator.add, interpolations))
@@ -154,11 +155,15 @@ class GlissandoLine(object):
     """
 
     def __init__(self, pitch_line: InterpolationLine):
-        self.pitch_line = pitch_line
+        self.__pitch_line = pitch_line
+
+    @property
+    def pitch_line(self):
+        return self.__pitch_line
 
     def interpolate(self, gridsize: float) -> tuple:
         """Return tuple filled with cent values."""
-        pass
+        return self.pitch_line(gridsize)
 
 
 class VibratoLine(object):
@@ -209,11 +214,11 @@ class VibratoLine(object):
 
     def calculate_pitch_size(self, period_position, max_up, max_down) -> float:
         if self.direction is "up":
-            max_cent = max_up.cents
-            min_cent = max_down.cents
+            max_cent = max_up
+            min_cent = max_down
         else:
-            min_cent = max_up.cents
-            max_cent = max_down.cents
+            min_cent = max_up
+            max_cent = max_down
         percent = round(math.sin(period_position * 2 * math.pi), 5)
         if percent > 0:
             return max_cent * percent
@@ -222,9 +227,9 @@ class VibratoLine(object):
 
     def interpolate(self, gridsize: float) -> tuple:
         """Return a tuple filled with cent values."""
-        up_pitch_line = self.__up_pitch_line.interpolate(gridsize)
-        down_pitch_line = self.__down_pitch_line.interpolate(gridsize)
-        period_size_line = self.__period_size_line.interpolate(gridsize)
+        up_pitch_line = self.__up_pitch_line(gridsize)
+        down_pitch_line = self.__down_pitch_line(gridsize)
+        period_size_line = self.__period_size_line(gridsize)
         generator = zip(up_pitch_line, down_pitch_line, period_size_line)
         acc = 0
         cents = []
@@ -232,6 +237,7 @@ class VibratoLine(object):
             current = acc * gridsize
             if current >= period_size:
                 acc = 0
+                current = 0
             cent = self.calculate_pitch_size(
                 current / period_size, up_pitch, down_pitch
             )

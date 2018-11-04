@@ -1,6 +1,5 @@
 import functools
 from typing import Any, Dict, Tuple
-from numba import jit
 
 
 def execute_method(cls: Any, method: str, args: Tuple, kwargs: Dict) -> Any:
