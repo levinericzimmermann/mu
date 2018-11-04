@@ -19,6 +19,8 @@ def is_private(string: str) -> bool:
 
 
 class AbstractPitch(abc.ABC):
+    _cent_calculation_constant = 1200 / (math.log10(2))
+
     @abc.abstractmethod
     def calc(self) -> float:
         raise NotImplementedError
@@ -26,6 +28,10 @@ class AbstractPitch(abc.ABC):
     @property
     def freq(self) -> float:
         return self.calc()
+
+    @abc.abstractproperty
+    def cents(self) -> float:
+        raise NotImplementedError
 
     @classmethod
     def mk_iterable(cls, template) -> abc.ABCMeta:
@@ -88,6 +94,10 @@ class AbstractPitch(abc.ABC):
     @staticmethod
     def hz2ct(freq0, freq1) -> float:
         return 1200 * math.log(freq1 / freq0, 2)
+
+    @staticmethod
+    def ratio2ct(ratio) -> float:
+        return AbstractPitch._cent_calculation_constant * math.log10(ratio)
 
     def convert2midi_tuning(self) -> tuple:
         """calculates the MIDI Tuning Standard of the pitch

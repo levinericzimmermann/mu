@@ -4,6 +4,28 @@ from typing import Any
 import collections
 
 
+class SimplePitch(abstract.AbstractPitch):
+    """A very simple pitch / interval implementation.
+
+    SimplePitch - objects are specified via a concert_pitch frequency
+    and a cent value, that describe the distance to the concert_pitch.
+    """
+
+    def __init__(self, concert_pitch_freq: float, cents: float = 0):
+        self.concert_pitch_freq = concert_pitch_freq
+        self.__cents = cents
+
+    def calc(self) -> float:
+        return self.concert_pitch_freq * (2 ** (self.cents / 1200))
+
+    @property
+    def cents(self) -> float:
+        return self.__cents
+
+    def copy(self) -> "SimplePitch":
+        return type(self)(self.concert_pitch_freq, self.cents)
+
+
 class EmptyPitch(abstract.AbstractPitch):
     def calc(self, factor=0):
         return None
@@ -13,6 +35,13 @@ class EmptyPitch(abstract.AbstractPitch):
 
     def copy(self):
         return type(self)()
+
+    @property
+    def cents(self) -> None:
+        return None
+
+
+TheEmptyPitch = EmptyPitch()
 
 
 class Mel(muobjects.MUList):
@@ -34,9 +63,13 @@ class Mel(muobjects.MUList):
     def freq(self) -> tuple:
         return self.calc()
 
+    @property
+    def cents(self) -> tuple:
+        return tuple(item.cents for item in self)
+
     def uniqify(self):
-        return type(self)(
-                collections.OrderedDict((x, True) for x in self).keys())
+        unique = collections.OrderedDict((x, True) for x in self).keys()
+        return type(self)(unique)
 
 
 class Harmony(muobjects.MUSet):
@@ -52,6 +85,10 @@ class Harmony(muobjects.MUSet):
     @property
     def freq(self) -> tuple:
         return self.calc()
+
+    @property
+    def cents(self) -> tuple:
+        return tuple(item.cents for item in self)
 
 
 class Cadence(muobjects.MUList):
@@ -73,12 +110,12 @@ class Scale(muobjects.MUOrderedSet):
         if not type(period) == self._period_cls:
             period = self._period_cls(period)
         period = period.sort().uniqify()
-        muobjects.MUOrderedSet.__init__(
-                self, period + self._period_cls((periodsize, )))
+        muobjects.MUOrderedSet.__init__(self, period + self._period_cls((periodsize,)))
         self.period = period
         self.periodsize = periodsize
 
     def __add__(self, other):
         return type(self)(
-                tuple(self.period) + tuple(other.period),
-                max((self.periodsize, other.periodsize)))
+            tuple(self.period) + tuple(other.period),
+            max((self.periodsize, other.periodsize)),
+        )

@@ -66,6 +66,12 @@ class EdoPitch(abstract.AbstractPitch):
         return pow(self._frame, 1 / self._steps)
 
     @property
+    def cents(self) -> float:
+        factor = self.ratio2ct(self.factor)
+        multiply = self.ratio2ct(self.multiply)
+        return (self.pitchclass * factor) + multiply
+
+    @property
     def p0(self):
         return self._concert_pitch / pow(
             self.factor, self._concert_pitch_shift)

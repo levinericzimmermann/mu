@@ -1,3 +1,7 @@
+import bisect
+import functools
+import math
+import operator
 from typing import Callable, Optional, Tuple, Union
 
 from mu.abstract import muobjects
@@ -6,6 +10,234 @@ from mu.mel.abstract import AbstractPitch
 from mu.rhy import rhy
 from mu.sco import abstract
 from mu.time import time
+from mu.utils import interpolation
+
+
+class InterpolationEvent(abstract.UniformEvent):
+    def __init__(self, delay: rhy.RhyUnit, interpolation_type=interpolation.Linear()):
+        if isinstance(delay, rhy.RhyUnit) is False:
+            delay = rhy.RhyUnit(delay)
+        self.__delay = delay
+        self.__interpolation_type = interpolation_type
+
+    @property
+    def delay(self):
+        return self.__delay
+
+    @property
+    def interpolation_type(self):
+        return self.__interpolation_type
+
+    @abstract.abc.abstractproperty
+    def interpolate(self, other, steps):
+        raise NotImplementedError
+
+
+class PitchInterpolation(InterpolationEvent):
+    def __init__(
+        self,
+        delay: rhy.RhyUnit,
+        pitch: AbstractPitch,
+        interpolation_type: interpolation.Interpolation = interpolation.Linear(),
+    ):
+        InterpolationEvent.__init__(delay, interpolation_type)
+        self.__pitch = pitch
+
+    @property
+    def pitch(self):
+        return self.__pitch
+
+    def __hash__(self) -> int:
+        return hash((hash(self.delay), hash(self.pitch), hash(self.interpolation_type)))
+
+    def copy(self):
+        return type(self)(
+            rhy.RhyUnit(self.delay), self.pitch.copy(), self.interpolation_type
+        )
+
+    def interpolate(self, other, steps) -> tuple:
+        cents0 = self.pitch.cents
+        cents1 = self.pitch.cents
+        return self.interpolation_type(cents0, cents1, steps)
+
+
+class RhythmicInterpolation(InterpolationEvent):
+    def __init__(
+        self,
+        delay: rhy.RhyUnit,
+        rhythm: rhy.RhyUnit,
+        interpolation_type: interpolation.Interpolation = interpolation.Linear(),
+    ):
+        InterpolationEvent.__init__(delay, interpolation_type)
+        self.__rhythm = rhythm
+
+    @property
+    def rhythm(self):
+        return self.__rhythm
+
+    def __hash__(self) -> int:
+        return hash(
+            (hash(self.delay), hash(self.rhythm), hash(self.interpolation_type))
+        )
+
+    def copy(self):
+        return type(self)(
+            rhy.RhyUnit(self.delay), self.rhythm.copy(), self.interpolation_type
+        )
+
+    def interpolate(self, other, steps) -> tuple:
+        return self.interpolation_type(self.rhythm, other.rhythm, steps)
+
+
+class InterpolationLine(muobjects.MUTuple):
+    """Container class to describe interpolations between states.
+    They are expected to contain InterpolationEvent - objects.
+    InterpolationLine - objects can be called to generate the interpolation.
+    Input arguments are only Gridsize that describe how small
+    one interpolation step is. InterpolationLine - objects are
+    unchangeable objects.
+
+    The last event is expected to have delay == 0.
+    """
+
+    def __init__(self, iterable):
+        try:
+            assert iterable[-1].delay == 0
+        except AssertionError:
+            raise ValueError("The last element has to have delay = 0")
+        muobjects.MUTuple.__init__(self, iterable)
+
+    def __call__(self, gridsize: float):
+        def find_closest_point(points, time):
+            pos = bisect.bisect_right(points, time)
+            try:
+                return min(
+                    (
+                        (abs(time - points[pos]), pos),
+                        (abs(time - points[pos - 1]), pos - 1),
+                    ),
+                    key=operator.itemgetter(1),
+                )[0]
+            except IndexError:
+                # if pos is len(points) + 1
+                return pos - 1
+
+        points = tuple(range(0, self.duration, gridsize))
+        absolute_delays = self.delay.convert2absolute_time()
+        positions = tuple(
+            find_closest_point(points, delay) for delay in absolute_delays
+        )
+        interpolation_size = tuple(b - a for a, b in zip(positions, positions[1:]))
+        interpolations = (
+            item0.interpolate(item1, steps)
+            for item0, item1, steps in zip(self, self[1:], interpolation_size)
+        )
+        return tuple(functools.reduce(operator.add, interpolations))
+
+    def copy(self):
+        return type(self)(item.copy() for item in self)
+
+    @property
+    def delay(self) -> rhy.RhyCompound:
+        return rhy.RhyCompound(obj.delay.copy() for obj in self)
+
+    @property
+    def duration(self):
+        return sum(self.delay)
+
+
+class GlissandoLine(object):
+    """Class to simulate the Glissando of a Tone.
+
+    Only necessary input is an InterpolationLine,
+    containing PitchInterpolation - objects.
+    """
+
+    def __init__(self, pitch_line: InterpolationLine):
+        self.pitch_line = pitch_line
+
+    def interpolate(self, gridsize: float) -> tuple:
+        """Return tuple filled with cent values."""
+        pass
+
+
+class VibratoLine(object):
+    """Class to simulate the Vibrato of a Tone.
+
+    up_pitch_line is in the InterpolationLine for
+    the maximum pitch to go up. The pitch object is
+    expected to have a positve cent value.
+    down_pitch_line is the InterpolationLine for
+    the maximum pitch to go down. The pitch object
+    is expected to have negative cent value.
+    The period_size_line describes the size of one
+    vibrato-period where the pitch goes once down
+    and once up.
+    The direction argument specifies whether
+    the vibrato goes first to the upper pitch
+    or first to the lower pitch.
+    """
+
+    def __init__(
+        self,
+        up_pitch_line: InterpolationLine,
+        down_pitch_line: InterpolationLine,
+        period_size_line: InterpolationLine,
+        direction="up",
+    ):
+        self.direction = direction
+        try:
+            assert up_pitch_line.duration == down_pitch_line.duration
+            assert period_size_line.duration == down_pitch_line.duration
+        except AssertionError:
+            raise ValueError("The different InterpolationsLines need the same length!")
+        self.__up_pitch_line = up_pitch_line
+        self.__down_pitch_line = down_pitch_line
+        self.__period_size_line = period_size_line
+
+    @property
+    def direction(self):
+        return self.__direction
+
+    @direction.setter
+    def direction(self, direction: str):
+        try:
+            assert direction == "up" or direction == "down"
+        except AssertionError:
+            raise ValueError("Direction has to be 'up' or 'down'!")
+        self.__direction = direction
+
+    def calculate_pitch_size(self, period_position, max_up, max_down) -> float:
+        if self.direction is "up":
+            max_cent = max_up.cents
+            min_cent = max_down.cents
+        else:
+            min_cent = max_up.cents
+            max_cent = max_down.cents
+        percent = round(math.sin(period_position * 2 * math.pi), 5)
+        if percent > 0:
+            return max_cent * percent
+        else:
+            return min_cent * abs(percent)
+
+    def interpolate(self, gridsize: float) -> tuple:
+        """Return a tuple filled with cent values."""
+        up_pitch_line = self.__up_pitch_line.interpolate(gridsize)
+        down_pitch_line = self.__down_pitch_line.interpolate(gridsize)
+        period_size_line = self.__period_size_line.interpolate(gridsize)
+        generator = zip(up_pitch_line, down_pitch_line, period_size_line)
+        acc = 0
+        cents = []
+        for up_pitch, down_pitch, period_size in generator:
+            current = acc * gridsize
+            if current >= period_size:
+                acc = 0
+            cent = self.calculate_pitch_size(
+                current / period_size, up_pitch, down_pitch
+            )
+            cents.append(cent)
+            acc += 1
+        return tuple(cents)
 
 
 class Tone(abstract.UniformEvent):
@@ -15,8 +247,8 @@ class Tone(abstract.UniformEvent):
         delay: rhy.RhyUnit,
         duration: Optional[rhy.RhyUnit] = None,
         volume: Optional = None,
-        glissando: list = None,
-        vibrato: list = None,
+        glissando: GlissandoLine = None,
+        vibrato: VibratoLine = None,
     ) -> None:
         if pitch is None:
             pitch = mel.EmptyPitch()
@@ -59,19 +291,6 @@ class Tone(abstract.UniformEvent):
             self.glissando,
             self.vibrato,
         )
-
-
-class Glissando(object):
-    def __init__(self, position: rhy.RhyUnit, pitch: AbstractPitch):
-        self.pitch = pitch
-        self.position = position
-
-
-class Vibrato(object):
-    def __init__(
-        self, position: rhy.RhyUnit, vibratosize: AbstractPitch, speed: rhy.RhyUnit
-    ):
-        pass
 
 
 class Rest(Tone):
@@ -140,8 +359,19 @@ class Chord(abstract.SimultanEvent):
         )
 
 
-class AbstractTimeLine(abstract.MultiSequentialEvent):
-    _sub_sequences_class_names = ("delay",)
+class AbstractLine(abstract.MultiSequentialEvent):
+    """Abstract superclass for subclasses that describe specific events on a time line.
+
+    The specific attributes of those events are:
+        * pitch
+        * delay
+        * duration
+        * volume
+
+    Examples of those events would be: Tone or Chord.
+    """
+
+    _sub_sequences_class_names = ("pitch", "delay", "dur", "volume")
 
     def __init__(self, iterable, time_measure="relative"):
         abstract.MultiSequentialEvent.__init__(self, iterable)
@@ -159,10 +389,6 @@ class AbstractTimeLine(abstract.MultiSequentialEvent):
     @property
     def time_measure(self):
         return self._time_measure
-
-    @property
-    def duration(self):
-        return time.Time(sum(self.delay))
 
     def __hash__(self):
         return hash(tuple(hash(item) for item in self))
@@ -195,20 +421,16 @@ class AbstractTimeLine(abstract.MultiSequentialEvent):
             copy._time_measure = "relative"
         return copy
 
-
-class AbstractLine(AbstractTimeLine):
-    _sub_sequences_class_names = ("pitch", "delay", "dur", "volume")
-
     @property
     def freq(self) -> Tuple[float]:
         return self.pitch.freq
 
     @property
     def duration(self):
-        return time.Time(sum(self.delay))
-
-    def __hash__(self):
-        return hash(tuple(hash(item) for item in self))
+        if self.time_measure == "relative":
+            return time.Time(sum(self.delay))
+        else:
+            return time.Time(self.dur[-1])
 
     def tie_by(self, function):
         tied = function(list(self))

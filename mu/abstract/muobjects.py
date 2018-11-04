@@ -14,7 +14,7 @@ class MUTuple(mutate.mutate_class(tuple)):
     def reverse(self) -> "MUTuple":
         return type(self)(reversed(self))
 
-    def sort(self) -> "MUList":
+    def sort(self) -> "MUTuple":
         return type(self)(sorted(self))
 
 

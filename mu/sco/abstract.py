@@ -65,6 +65,7 @@ class MultiSequentialEvent(ComplexEvent):
             def set_value(self, arg):
                 self.sequences[num] = arg
             return lambda self: self.sequences[num], set_value
+
         for i, name in enumerate(cls._sub_sequences_class_names):
             getter, setter = mk_property(i)
             getter_name = "get_{0}".format(name)
@@ -113,11 +114,6 @@ class MultiSequentialEvent(ComplexEvent):
         return [type(self)._obj_class(
                 *data) for data in zip(*self.sequences)]
 
-    def __setitem__(self, idx, item):
-        subverted = self.subvert_object(item)
-        for name, sub in zip(self._sub_sequences_class_names, subverted):
-            getattr(self, name)[idx] = sub
-
     def __getitem__(self, idx):
         if type(idx) == slice:
             copied = self.copy()
@@ -127,6 +123,11 @@ class MultiSequentialEvent(ComplexEvent):
             return copied
         else:
             return self.mk_sequence()[idx]
+
+    def __setitem__(self, idx, item):
+        subverted = self.subvert_object(item)
+        for name, sub in zip(self._sub_sequences_class_names, subverted):
+            getattr(self, name)[idx] = sub
 
     def __repr__(self):
         return repr(self.mk_sequence())

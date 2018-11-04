@@ -81,7 +81,6 @@ class Monzo(object):
     """
 
     _val_shift = 0
-    __cent_calculation_constant = 1200 / (math.log10(2))
 
     def __init__(self, iterable, val_border=1):
         self._vector = Monzo._init_vector(iterable, val_border)
@@ -976,7 +975,7 @@ class Monzo(object):
 
     @property
     def cents(self) -> float:
-        return self.__cent_calculation_constant * math.log10(self.ratio)
+        return self.ratio2ct(self.ratio)
 
     def __float__(self) -> float:
         return float(self.float)

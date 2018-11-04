@@ -23,6 +23,12 @@ class InheritanceTest(unittest.TestCase):
         def calc(self):
             return self._freq
 
+        @property
+        def cents(self) -> None:
+            # dummy method for being able
+            # to initalise abstract class
+            return None
+
         def multiply(self, arg):
             self._freq *= arg
 
