@@ -191,11 +191,6 @@ class VibratoLine(object):
         direction="up",
     ):
         self.direction = direction
-        try:
-            assert up_pitch_line.duration == down_pitch_line.duration
-            assert period_size_line.duration == down_pitch_line.duration
-        except AssertionError:
-            raise ValueError("The different InterpolationsLines need the same length!")
         self.__up_pitch_line = up_pitch_line
         self.__down_pitch_line = down_pitch_line
         self.__period_size_line = period_size_line
@@ -211,6 +206,18 @@ class VibratoLine(object):
         except AssertionError:
             raise ValueError("Direction has to be 'up' or 'down'!")
         self.__direction = direction
+
+    @property
+    def up_pitch_line(self):
+        return self.__up_pitch_line.copy()
+
+    @property
+    def down_pitch_line(self):
+        return self.__down_pitch_line.copy()
+
+    @property
+    def period_size_line(self):
+        return self.__period_size_line.copy()
 
     def calculate_pitch_size(self, period_position, max_up, max_down) -> float:
         if self.direction is "up":

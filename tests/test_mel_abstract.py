@@ -95,7 +95,7 @@ class InheritanceTest(unittest.TestCase):
         cent_difference = abstract.AbstractPitch.hz2ct(closest_pitch, f0)
         steps0 = int(cent_difference // 0.78125)
         steps1 = int((cent_difference - (steps0 * 0.78125)) // 0.0061)
-        expected_hex = 50, steps0, steps1
+        expected_hex = 62, steps0, steps1
         self.assertEqual(hex_number, expected_hex)
 
 
