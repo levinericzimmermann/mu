@@ -5,6 +5,7 @@ import bisect
 import operator
 import os
 import math
+import warnings
 
 
 __directory = os.path.dirname(os.path.abspath(__file__))
@@ -129,15 +130,19 @@ class AbstractPitch(abc.ABC):
             difference0 = closest_s1[1]
             difference1 = closest_s0[1][1]
             if difference0 <= difference1:
-                return closest_s0[0][0], closest_s1[0]
+                return closest_s0[0][0], closest_s1[0], difference0
             else:
-                return closest_s0[1][0], 0
+                return closest_s0[1][0], 0, difference1
 
         freq = self.freq
         if freq:
             closest = bisect.bisect_right(_12edo_freq, freq) - 1
             diff = self.hz2ct(_12edo_freq[closest], freq)
-            steps0, steps1 = detect_steps(diff)
+            steps0, steps1, diff = detect_steps(diff)
+            if diff >= 5:
+                msg = "Closest midi-pitch of {0} ({1} Hz) ".format(self, freq)
+                msg += "is still {0} cents apart!".format(diff)
+                warnings.warn(msg)
             return closest, steps0, steps1
         else:
             return tuple([])
