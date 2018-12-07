@@ -111,8 +111,13 @@ class AbstractPitch(abc.ABC):
             size1 = 0.0061
             steps0 = int(diff // size0)
             steps1 = int((diff - (steps0 * size0)) // size1)
-            assert steps0 < 128
-            assert steps1 < 128
+            try:
+                assert steps0 < 128
+                assert steps1 < 128
+            except AssertionError:
+                msg = "Pitch {0} with frequency {1} is too ".format(self, freq)
+                msg += "far from any midi pitch. No midi-tuning msg could be found."
+                raise RuntimeError(msg)
             return closest, steps0, steps1
         else:
             return tuple([])
