@@ -2,6 +2,7 @@ from mu.abstract import mutate
 
 import abc
 import bisect
+import operator
 import os
 import math
 
@@ -20,6 +21,8 @@ def is_private(string: str) -> bool:
 
 class AbstractPitch(abc.ABC):
     _cent_calculation_constant = 1200 / (math.log10(2))
+    _midi_tuning_table0 = tuple(i * 0.78125 for i in range(128))
+    _midi_tuning_table1 = tuple(i * 0.0061 for i in range(128))
 
     @abc.abstractmethod
     def calc(self) -> float:
@@ -103,21 +106,38 @@ class AbstractPitch(abc.ABC):
         """calculates the MIDI Tuning Standard of the pitch
         (http://www.microtonal-synthesis.com/MIDItuning.html)
         """
+
+        def detect_steps(difference):
+            def find_lower_and_higher(table, element):
+                closest = bisect.bisect_right(table, element)
+                if closest < len(table):
+                    indices = (closest - 1, closest)
+                    differences = tuple(abs(element - table[idx]) for idx in indices)
+                else:
+                    idx = closest - 1
+                    difference = abs(table[idx] - element)
+                    indices, differences = (idx, idx), (difference, difference)
+                return tuple(zip(indices, differences))
+
+            closest_s0 = find_lower_and_higher(
+                AbstractPitch._midi_tuning_table0, difference
+            )
+            closest_s1 = find_lower_and_higher(
+                AbstractPitch._midi_tuning_table1, closest_s0[0][1]
+            )
+            closest_s1 = min(closest_s1, key=operator.itemgetter(1))
+            difference0 = closest_s1[1]
+            difference1 = closest_s0[1][1]
+            if difference0 <= difference1:
+                return closest_s0[0][0], closest_s1[0]
+            else:
+                return closest_s0[1][0], 0
+
         freq = self.freq
         if freq:
             closest = bisect.bisect_right(_12edo_freq, freq) - 1
             diff = self.hz2ct(_12edo_freq[closest], freq)
-            size0 = 0.78125
-            size1 = 0.0061
-            steps0 = int(diff // size0)
-            steps1 = int((diff - (steps0 * size0)) // size1)
-            try:
-                assert steps0 < 128
-                assert steps1 < 128
-            except AssertionError:
-                msg = "Pitch {0} with frequency {1} is too ".format(self, freq)
-                msg += "far from any midi pitch. No midi-tuning msg could be found."
-                raise RuntimeError(msg)
+            steps0, steps1 = detect_steps(diff)
             return closest, steps0, steps1
         else:
             return tuple([])
