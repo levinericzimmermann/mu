@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/uummoo/mu.svg?branch=master)](https://travis-ci.org/uummoo/mu)
 [![Coverage Status](https://coveralls.io/repos/github/uummoo/mu/badge.svg?branch=master)](https://coveralls.io/github/uummoo/mu?branch=master)
 
-Python-representation of different musical content, e.g. Harmony, Melody and Rhythm.
+Representation of different musical content, e.g. Harmony, Melody and Rhythm.
 Might be useful for algorithmic composition.
 
 Current status:
