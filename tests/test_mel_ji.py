@@ -255,6 +255,28 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m1 * m6, m4)
         self.assertEqual(m1 * m7, m5)
 
+    def test_octave(self):
+        m0 = ji.Monzo([0])
+        m1 = ji.Monzo([1])
+        m2 = ji.Monzo([2])
+        m3 = ji.Monzo([3])
+        m4 = ji.Monzo([-1])
+        m5 = ji.Monzo([-2])
+        m6 = ji.Monzo([-3])
+        m7 = ji.Monzo([-1, 1])
+        m8 = ji.Monzo([0, 1])
+        m9 = ji.Monzo([1, -1])
+        self.assertEqual(m0.octave, 0)
+        self.assertEqual(m1.octave, 1)
+        self.assertEqual(m2.octave, 2)
+        self.assertEqual(m3.octave, 3)
+        self.assertEqual(m4.octave, -1)
+        self.assertEqual(m5.octave, -2)
+        self.assertEqual(m6.octave, -3)
+        self.assertEqual(m7.octave, 0)
+        self.assertEqual(m8.octave, 1)
+        self.assertEqual(m9.octave, -1)
+
     def test_sum(self):
         m0 = ji.Monzo([0, -1, 1, 3, 2, -3])
         self.assertEqual(m0.summed(), 10)

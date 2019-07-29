@@ -1073,6 +1073,16 @@ class Monzo(object):
         return res_pitch_for_concert_pitch_adjusted
 
     @property
+    def octave(self) -> int:
+        fl = self.float
+        ref, exp = 2, 0
+        while ref ** exp <= fl:
+            exp += 1
+        while ref ** exp > fl:
+            exp -= 1
+        return exp
+
+    @property
     def gender(self) -> bool:
         """Return the gender (bool) of a Monzo or JIPitch - object.
 
@@ -1097,15 +1107,11 @@ class Monzo(object):
         if self:
             maxima = max(self)
             minima = min(self)
-            if (maxima > 0 and minima >= 0) or (
-                maxima > 0 and self.index(maxima) > self.index(minima)
-            ):
-                return True
-            elif (
-                maxima <= 0
-                and minima < 0
-                or (minima < 0 and self.index(minima) > self.index(maxima))
-            ):
+            test = (
+                maxima <= 0 and minima < 0,
+                minima < 0 and self.index(minima) > self.index(maxima),
+            )
+            if any(test):
                 return False
         return True
 
@@ -1440,7 +1446,7 @@ class Monzo(object):
     def summed(self) -> int:
         return sum(map(lambda x: abs(x), self))
 
-    def normalize(self, prime) -> "Monzo":
+    def normalize(self, prime=2) -> "Monzo":
         ratio = self.ratio
         adjusted = type(self).adjust_ratio(ratio, prime)
         return type(self).from_ratio(adjusted.numerator, adjusted.denominator)
@@ -2084,7 +2090,8 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
         return intervals
 
     def dot(self: "JIHarmony", other: "JIHarmony") -> int:
-        """Calculates dot product between every Pitch of itself with every Pitch of the other JIHarmony.
+        """Calculates dot product between every Pitch of itself with every Pitch of the
+        other JIHarmony.
 
         It accumulates the results.
         """

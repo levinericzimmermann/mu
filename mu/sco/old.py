@@ -363,6 +363,10 @@ class Chord(abstract.SimultanEvent):
     def duration(self):
         return self._dur
 
+    @duration.setter
+    def duration(self, dur):
+        self._dur = dur
+
     def __repr__(self):
         return str((repr(self.harmony), repr(self.delay), repr(self.duration)))
 
@@ -454,19 +458,41 @@ class AbstractLine(abstract.MultiSequentialEvent):
         return copied
 
     def tie(self):
-        def sub(melody):
+        def sub(line):
             new = []
-            for i, it0 in enumerate(melody):
+            for i, it0 in enumerate(line):
                 try:
-                    it1 = melody[i + 1]
+                    it1 = line[i + 1]
                 except IndexError:
                     new.append(it0)
                     break
-                if it0.duration == it0.delay and it0.pitch == it1.pitch:
+                if it0.duration >= it0.delay and it0.pitch == it1.pitch:
                     t_new = type(it0)(
                         it0.pitch, it0.duration + it1.delay, it0.duration + it1.duration
                     )
-                    return new + sub([t_new] + melody[i + 2 :])
+                    return new + sub([t_new] + line[i + 2 :])
+                else:
+                    new.append(it0)
+            return new
+
+        return self.tie_by(sub)
+
+    def discard_rests(self):
+        def is_rest(pitch) -> bool:
+            try:
+                return len(pitch) == 0
+            except TypeError:
+                return pitch == mel.TheEmptyPitch
+
+        def sub(line):
+            new = []
+            for i, it0 in enumerate(line):
+                if i != 0:
+                    if is_rest(it0.pitch):
+                        new[-1].delay += it0.delay
+                        new[-1].duration += it0.duration
+                    else:
+                        new.append(it0)
                 else:
                     new.append(it0)
             return new

@@ -7,7 +7,7 @@ replaced pyprimes.primes by primesieve.Iterator(), which improves
 speed about a factor of 10.
 """
 
-
+"""
 def __load_precalculated_factors():
     import json
     import os
@@ -19,7 +19,7 @@ def __load_precalculated_factors():
 
 
 __PRECALCULATED_FACTORS = __load_precalculated_factors()
-
+"""
 
 class Prime_Generator(object):
     def __init__(self):
@@ -61,10 +61,11 @@ def factors(n):
     is given as the only factor. For all other integer n, all of the factors
     returned are prime.
     """
-    if n < 900000 - 1:
-        pre = __PRECALCULATED_FACTORS[n]
-        for fac in pre:
-            yield fac
+    # if n < 900000 - 1:
+    if False:
+        # pre = __PRECALCULATED_FACTORS[n]
+        # for fac in pre:
+        #     yield fac
         return
     else:
         if n in (0, 1, -1):
