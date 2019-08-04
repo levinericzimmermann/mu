@@ -123,10 +123,12 @@ class InterpolationLine(muobjects.MUList):
                 # if pos is len(points) + 1
                 return pos
 
-        points = interpolation.Linear()(0, self.duration, int(self.duration / gridsize))
+        points = interpolation.Linear()(
+            0, float(self.duration), int(self.duration / gridsize)
+        )
         absolute_delays = self.delay.convert2absolute()
         positions = tuple(
-            find_closest_point(points, delay) for delay in absolute_delays
+            find_closest_point(points, float(delay)) for delay in absolute_delays
         )
         interpolation_size = tuple(b - a for a, b in zip(positions, positions[1:]))
         interpolations = (
@@ -315,7 +317,7 @@ class Rest(Tone):
         self.volume = 0
 
     def __repr__(self):
-        return repr(self.duration)
+        return repr(self.delay)
 
     @property
     def pitch(self):
@@ -540,7 +542,7 @@ class Melody(AbstractLine):
 
     @property
     def mel(self):
-        """Alias for backwards compatbility,"""
+        """Alias for backwards compatibility,"""
         return self.pitch
 
     @mel.setter
@@ -549,7 +551,7 @@ class Melody(AbstractLine):
 
     @property
     def rhy(self):
-        """Alias for backwards compatbility,"""
+        """Alias for backwards compatibility,"""
         return self.delay
 
     @rhy.setter
@@ -597,7 +599,7 @@ class Cadence(AbstractLine):
 
     @property
     def harmony(self):
-        """Alias for backwards compatbility."""
+        """Alias for backwards compatibility."""
         return self.pitch
 
     @harmony.setter
@@ -606,7 +608,7 @@ class Cadence(AbstractLine):
 
     @property
     def rhy(self):
-        """Alias for backwards compatbility."""
+        """Alias for backwards compatibility."""
         return self.delay
 
     @rhy.setter
