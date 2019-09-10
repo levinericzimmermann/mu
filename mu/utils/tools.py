@@ -6,7 +6,7 @@ import scipy
 import numpy as np
 
 
-def accumulate_from_zero(iterator) -> tuple:
+def accumulate_from_zero(iterator: tuple) -> tuple:
     return tuple(itertools.accumulate((0,) + (tuple(iterator))))
 
 
@@ -81,7 +81,7 @@ def scale(a, minima=0, maxima=15):
     return np.interp(a, (a.min(), a.max()), (minima, maxima))
 
 
-def graycode(length, modulus):
+def graycode(length: int, modulus: int) -> tuple:
     """
     Returns the n-tuple reverse Gray code mod m.
     https://yetanothermathblog.com/tag/gray-codes/
@@ -110,7 +110,7 @@ def graycode(length, modulus):
     return M0
 
 
-def euclid(size, distribution) -> tuple:
+def euclid(size: int, distribution: int) -> tuple:
     standard_size = size // distribution
     rest = size % distribution
     data = (standard_size for n in range(distribution))
@@ -146,7 +146,7 @@ def interlock_tuples(t0, t1) -> tuple:
     if difference > 0:
         indices = tuple(0 for i in range(difference)) + indices
     else:
-        indices = indices + tuple(1 for i in range(difference))
+        indices = indices + tuple(1 for i in range(abs(difference)))
     t0_it = iter(t0)
     t1_it = iter(t1)
     return tuple(next(t0_it) if idx == 0 else next(t1_it) for idx in indices)
@@ -171,3 +171,26 @@ def not_fibonacci_transition(size0: int, size1: int, element0=0, element1=1) -> 
             )
         ),
     )
+
+
+def gcd(x, y) -> int:
+    # from https://coderforevers.com/python/python-program/find-lcm/
+    """This function implements the Euclidian algorithm
+   to find G.C.D. of two numbers"""
+
+    while y:
+        x, y = y, x % y
+
+    return x
+
+
+def lcm(x, y) -> int:
+    """This function takes two
+   integers and returns the L.C.M."""
+
+    lcm = (x * y) // gcd(x, y)
+    return lcm
+
+
+def cyclic_permutation(iterable: tuple) -> tuple:
+    return (iterable[x:] + iterable[0:x] for x in range(len(iterable)))

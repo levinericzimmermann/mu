@@ -850,7 +850,7 @@ class Polyphon(PolyLine):
 
     def chordify(
         self, cadence_class=Cadence, harmony_class=mel.Harmony, add_longer=False
-    ):
+    ) -> Cadence:
         """
         Similar to music21.stream.Stream.chordify() - method:
         Create a chordal reduction of polyphonic music, where each

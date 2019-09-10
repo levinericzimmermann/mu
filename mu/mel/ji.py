@@ -1630,10 +1630,66 @@ class JIContainer(object):
         self.multiply = multiply
         self._val_border = 1
 
-    @staticmethod
-    def from_str(cls, string):
+    @classmethod
+    def from_str(cls, string: str) -> "JIContainer":
         ratios = string.split(", ")
         return cls(JIPitch.from_str(r) for r in ratios)
+
+    @classmethod
+    def from_scl(cls, name: str) -> "JIContainer":
+        """Generating JIContainer from the scl file format.
+
+        See: http://huygens-fokker.org/scala/scl_format.html
+        """
+
+        def convert2pitch(scl_line: str) -> JIPitch:
+            p = scl_line.split(" ")[0]
+            if p[-1] == ".":
+                msg = "Can't translate cent values to JIPitch"
+                raise NotImplementedError(msg)
+            else:
+                ratio = p.split("/")
+                ratio_size = len(ratio)
+                if ratio_size == 2:
+                    num, den = tuple(int(n) for n in ratio)
+                elif ratio_size == 1:
+                    num = int(ratio[0])
+                    den = 1
+                else:
+                    msg = "Can't read ratio {0}.".format(ratio)
+                    raise NotImplementedError(msg)
+
+                try:
+                    assert num > den
+                except AssertionError:
+                    msg = "ERROR: Invalide ratio {0}. ".format(ratio)
+                    msg += "Ratios have to be positiv (numerator "
+                    msg += "has to be bigger than denominator)."
+                    raise ValueError(msg)
+
+                return r(num, den)
+
+        with open(name, "r") as f:
+            lines = f.read().splitlines()
+            # deleting comments
+            lines = tuple(l for l in lines if l and l[0] != "!")
+            description = lines[0]
+            pitches = lines[2:]
+            estimated_amount_pitches = int(lines[1])
+            real_amount_pitches = len(pitches)
+
+            try:
+                assert estimated_amount_pitches == real_amount_pitches
+            except AssertionError:
+                msg = "'{0}' contains {1} pitches ".format(
+                    description, real_amount_pitches
+                )
+                msg += "while {2} pitches are expected.".format(
+                    estimated_amount_pitches
+                )
+                raise ValueError(msg)
+
+        return cls((r(1, 1),) + tuple(convert2pitch(p) for p in pitches))
 
     @property
     def val_border(self) -> int:

@@ -1,7 +1,13 @@
 from mu.abstract import muobjects
 from mu.mel import abstract
+
 from typing import Any
 import collections
+
+try:
+    import quicktions as fractions
+except ImportError:
+    import fractions
 
 
 class SimplePitch(abstract.AbstractPitch):
@@ -15,8 +21,40 @@ class SimplePitch(abstract.AbstractPitch):
         self.concert_pitch_freq = concert_pitch_freq
         self.__cents = cents
 
+    def __repr__(self) -> str:
+        return "<{0}ct|{1}Hz>".format(self.cents, self.concert_pitch_freq)
+
     def calc(self) -> float:
         return self.concert_pitch_freq * (2 ** (self.cents / 1200))
+
+    @classmethod
+    def from_scl(cls, scl_line: str, concert_pitch_freq: float) -> "SimplePitch":
+        p = scl_line.split(" ")[0]
+        if p[-1] == ".":
+            cents = float(p[:-1])
+        else:
+            ratio = p.split("/")
+            ratio_size = len(ratio)
+            if ratio_size == 2:
+                num, den = tuple(int(n) for n in ratio)
+            elif ratio_size == 1:
+                num = int(ratio[0])
+                den = 1
+            else:
+                msg = "Can't read ratio {0}.".format(ratio)
+                raise NotImplementedError(msg)
+
+            try:
+                assert num > den
+            except AssertionError:
+                msg = "ERROR: Invalide ratio {0}. ".format(ratio)
+                msg += "Ratios have to be positiv (numerator "
+                msg += "has to be bigger than denominator)."
+                raise ValueError(msg)
+
+            cents = abstract.AbstractPitch.ratio2ct(fractions.Fraction(num, den))
+
+        return cls(concert_pitch_freq, cents)
 
     @property
     def cents(self) -> float:
@@ -48,6 +86,36 @@ class Mel(muobjects.MUList):
     def __init__(self, iterable: Any, multiply: int = 260) -> None:
         muobjects.MUList.__init__(self, iterable)
         self.multiply = multiply
+
+    @classmethod
+    def from_scl(cls, name: str, concert_pitch: float) -> "JIContainer":
+        """Generating JIContainer from the scl file format.
+
+        See: http://huygens-fokker.org/scala/scl_format.html
+        """
+
+        with open(name, "r") as f:
+            lines = f.read().splitlines()
+            # deleting comments
+            lines = tuple(l for l in lines if l and l[0] != "!")
+            description = lines[0]
+            pitches = lines[2:]
+            estimated_amount_pitches = int(lines[1])
+            real_amount_pitches = len(pitches)
+
+            try:
+                assert estimated_amount_pitches == real_amount_pitches
+            except AssertionError:
+                msg = "'{0}' contains {1} pitches ".format(
+                    description, real_amount_pitches
+                )
+                msg += "while {2} pitches are expected.".format(
+                    estimated_amount_pitches
+                )
+                raise ValueError(msg)
+
+        pitches = tuple(SimplePitch.from_scl(p, concert_pitch) for p in pitches)
+        return cls((SimplePitch(concert_pitch, 0),) + pitches)
 
     def copy(self):
         iterable = tuple(item.copy() for item in self)
