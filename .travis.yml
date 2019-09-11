@@ -1,6 +1,7 @@
 language: python
+dist: xenial  
 python:
-  - 3.7
+  - 3.72
 before_install:
   - sudo apt-get update
   - sudo apt install g++ python-dev
