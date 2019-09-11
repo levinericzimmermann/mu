@@ -1514,6 +1514,23 @@ class Monzo(object):
         """Return the dot-product of two Monzos."""
         return sum(a * b for a, b in zip(self, other))
 
+    def intersection(self, other) -> "Monzo":
+        m0, m1 = tuple(self), tuple(other)
+        while len(m1) < len(m0):
+            m1 += (0,)
+
+        return type(self)(
+            [p if m1[idx] != 0 else 0 for idx, p in enumerate(m0)], self.val_border
+        )
+
+    def difference(self, other) -> "Monzo":
+        m0, m1 = tuple(self), tuple(other)
+        while len(m1) < len(m0):
+            m1 += (0,)
+        return type(self)(
+            [p if m1[idx] == 0 else 0 for idx, p in enumerate(m0)], self.val_border
+        )
+
     def matrix(self, other):
         """Return the matrix-product of two Monzos."""
         m0 = tuple(
@@ -1630,7 +1647,7 @@ class JIContainer(object):
         self.multiply = multiply
         self._val_border = 1
 
-    @classmethod
+    @staticmethod
     def from_str(cls, string: str) -> "JIContainer":
         ratios = string.split(", ")
         return cls(JIPitch.from_str(r) for r in ratios)
