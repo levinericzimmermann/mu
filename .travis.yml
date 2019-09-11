@@ -3,6 +3,7 @@ python:
   - 3.6 
 before_install:
   - sudo apt-get update
+  - sudo apt install g++ python-dev
 install:
   - pip3 install .
   - pip3 install -r requirements.txt
