@@ -194,3 +194,43 @@ def lcm(x, y) -> int:
 
 def cyclic_permutation(iterable: tuple) -> tuple:
     return (iterable[x:] + iterable[0:x] for x in range(len(iterable)))
+
+
+def backtracking(elements: tuple, tests: tuple, return_indices: bool = False) -> tuple:
+    """General backtracking algorithm function."""
+
+    def convert_indices2elements(indices: tuple) -> tuple:
+        current_elements = tuple(elements)
+        resulting_elements = []
+        for idx in indices:
+            resulting_elements.append(current_elements[idx])
+            current_elements = tuple(
+                p for i, p in enumerate(current_elements) if i != idx
+            )
+        return tuple(resulting_elements)
+
+    def is_valid(indices: tuple) -> bool:
+        resulting_elements = convert_indices2elements(tuple(element_indices))
+        return all(tuple(test(resulting_elements) for test in tests))
+
+    amount_available_elements = len(elements)
+    aapppppi = tuple(reversed(tuple(range(1, amount_available_elements + 1))))
+    element_indices = [0]
+    while True:
+        if is_valid(tuple(element_indices)):
+            if len(element_indices) < amount_available_elements:
+                element_indices.append(0)
+            else:
+                break
+        else:
+            while element_indices[-1] + 1 == aapppppi[len(element_indices) - 1]:
+                element_indices = element_indices[:-1]
+                if len(element_indices) == 0:
+                    raise ValueError("No solution found")
+            element_indices[-1] += 1
+
+    res = convert_indices2elements(element_indices)
+    if return_indices:
+        return res, element_indices
+    else:
+        return res
