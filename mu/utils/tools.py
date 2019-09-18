@@ -234,3 +234,10 @@ def backtracking(elements: tuple, tests: tuple, return_indices: bool = False) ->
         return res, element_indices
     else:
         return res
+
+
+def fib(x: int) -> int:
+    """Fast fibonacci function
+    written by https://www.codespeedy.com/find-fibonacci-series-in-python/
+    """
+    return round(math.pow((math.sqrt(5) + 1) / 2, x) / math.sqrt(5))

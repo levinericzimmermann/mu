@@ -18,7 +18,7 @@ class SimplePitch(abstract.AbstractPitch):
     """
 
     def __init__(self, concert_pitch_freq: float, cents: float = 0):
-        self.concert_pitch_freq = concert_pitch_freq
+        self.__concert_pitch_freq = concert_pitch_freq
         self.__cents = cents
 
     def __repr__(self) -> str:
@@ -60,8 +60,15 @@ class SimplePitch(abstract.AbstractPitch):
     def cents(self) -> float:
         return self.__cents
 
+    @property
+    def concert_pitch_freq(self) -> float:
+        return self.__concert_pitch_freq
+
     def copy(self) -> "SimplePitch":
         return type(self)(self.concert_pitch_freq, self.cents)
+
+    def __add__(self, other) -> "SimplePitch":
+        return type(self)(self.concert_pitch_freq, self.cents + other.cents)
 
 
 class EmptyPitch(abstract.AbstractPitch):
@@ -83,9 +90,9 @@ TheEmptyPitch = EmptyPitch()
 
 
 class Mel(muobjects.MUList):
-    def __init__(self, iterable: Any, multiply: int = 260) -> None:
+    def __init__(self, iterable: Any, multiply: int = 1) -> None:
         muobjects.MUList.__init__(self, iterable)
-        self.multiply = multiply
+        self.multiply = 1
 
     @classmethod
     def from_scl(cls, name: str, concert_pitch: float) -> "JIContainer":
@@ -125,7 +132,8 @@ class Mel(muobjects.MUList):
         return hash(tuple(hash(t) for t in self))
 
     def calc(self, factor: int = 1) -> tuple:
-        return tuple(p.calc(self.multiply * factor) for p in self)
+        f = self.multiply * factor
+        return tuple(p.calc() * f for p in self)
 
     @property
     def freq(self) -> tuple:
@@ -148,7 +156,7 @@ class Harmony(muobjects.MUSet):
         return sorted(self.calc())
 
     def calc(self, factor=1) -> tuple:
-        return tuple(t.calc(self.multiply * factor) for t in self)
+        return tuple(t.calc() * factor for t in self)
 
     @property
     def freq(self) -> tuple:
@@ -164,7 +172,7 @@ class Cadence(muobjects.MUList):
         return hash(tuple(hash(h) for h in self))
 
     def calc(self, factor=1) -> tuple:
-        return tuple(h.calc(self.multiply * factor) for h in self)
+        return tuple(h.calc(factor) for h in self)
 
     @property
     def freq(self) -> tuple:

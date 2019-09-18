@@ -1,6 +1,5 @@
 import functools
 import operator
-import re
 
 from mu.mel import ji
 from mu.mel import mel
@@ -55,7 +54,7 @@ def translate2pitch(
         return number ** abs(exp), ret
 
     splited_by_octave_remarks = info.split(".")
-    octave = ji.r(1, 1)
+    octave = 0
     before = True
     pitch = None
     for item in splited_by_octave_remarks:
@@ -68,9 +67,9 @@ def translate2pitch(
             before = False
         else:
             if before:
-                octave += ji.r(1, 2)
+                octave -= 1
             else:
-                octave += ji.r(2, 1)
+                octave += 1
 
     numbers = tuple(str(i) for i in range(10))
     positive, negative = [[1], [1]]
@@ -78,45 +77,60 @@ def translate2pitch(
     current_num = ""
     current_exp = []
     if decodex:
-        for name in decodex:
-            pitch = re.sub(name, decodex[name], pitch)
-
-    for element in pitch:
-        if element in numbers:
-            if is_seperating:
-                fac, pos = change2pitch(current_num, current_exp)
-                if pos:
-                    positive.append(fac)
-                else:
-                    negative.append(fac)
-                current_num = element
-                current_exp = []
-                is_seperating = False
-            else:
-                current_num += element
-        elif element == "+":
-            is_seperating = True
-            current_exp.append(1)
-        elif element == "-":
-            is_seperating = True
-            current_exp.append(-1)
-        else:
-            msg = "UNKNOWN SIGN {0} IN {1}".format(element, pitch)
-            if idx:
-                msg += " ({0} element)".format(idx)
-            raise ValueError(msg)
-
-    fac, pos = change2pitch(current_num, current_exp)
-    if pos:
-        positive.append(fac)
+        pitch = decodex[pitch]
     else:
-        negative.append(fac)
+        for element in pitch:
+            if element in numbers:
+                if is_seperating:
+                    fac, pos = change2pitch(current_num, current_exp)
+                    if pos:
+                        positive.append(fac)
+                    else:
+                        negative.append(fac)
+                    current_num = element
+                    current_exp = []
+                    is_seperating = False
+                else:
+                    current_num += element
+            elif element == "+":
+                is_seperating = True
+                current_exp.append(1)
+            elif element == "-":
+                is_seperating = True
+                current_exp.append(-1)
+            else:
+                msg = "UNKNOWN SIGN {0} IN {1}".format(element, pitch)
+                if idx:
+                    msg += " ({0} element)".format(idx)
+                raise ValueError(msg)
 
-    pos_and_neg = (positive, negative)
-    if inverse:
-        pos_and_neg = reversed(pos_and_neg)
-    pitch = ji.r(*tuple(functools.reduce(operator.mul, n) for n in pos_and_neg))
-    return pitch.normalize(2) + octave
+        fac, pos = change2pitch(current_num, current_exp)
+        if pos:
+            positive.append(fac)
+        else:
+            negative.append(fac)
+
+        pos_and_neg = (positive, negative)
+        if inverse:
+            pos_and_neg = reversed(pos_and_neg)
+        pitch = ji.r(
+            *tuple(functools.reduce(operator.mul, n) for n in pos_and_neg)
+        ).normalize()
+
+    if octave > 0:
+        ocp = ji.r(2 ** octave, 1)
+    else:
+        ocp = ji.r(1, 2 ** abs(octave))
+
+    typp = type(pitch)
+    if typp == ji.JIPitch or typp == mel.SimplePitch:
+        pitch = pitch + ocp
+
+    else:
+        msg = "Unknown pitch type {0}".format(typp)
+        raise TypeError(msg)
+
+    return pitch
 
 
 def translate2line(information: str, standard=1, decodex=None, inverse=False) -> tuple:
@@ -142,7 +156,7 @@ def translate2line(information: str, standard=1, decodex=None, inverse=False) ->
 
 def translate(
     information: str, allow_chords=True, decodex: dict = None, inverse: bool = False
-) -> ji.JICadence:
+) -> mel.Cadence:
     if allow_chords:
         not_closed_msg = "Paranthesis not closed for one chord in {0}".format(
             information
@@ -188,19 +202,19 @@ def translate(
             if identity == id_line:
                 for pitch in translation:
                     if pitch != mel.TheEmptyPitch:
-                        cadence.append(ji.JIHarmony([pitch]))
+                        cadence.append(mel.Harmony([pitch]))
                     else:
-                        cadence.append(ji.JIHarmony([]))
+                        cadence.append(mel.Harmony([]))
             elif identity == id_chord:
                 cadence.append(
-                    ji.JIHarmony(
+                    mel.Harmony(
                         tuple(p for p in translation if p != mel.TheEmptyPitch)
                     )
                 )
             else:
                 raise ValueError("UNKNOWN IDENTITY {0}".format(identity))
 
-        return ji.JICadence(cadence)
+        return mel.Cadence(cadence)
     else:
         return translate2line(information, decodex=decodex, inverse=inverse)[0]
 
