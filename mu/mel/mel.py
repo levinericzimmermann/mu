@@ -156,7 +156,8 @@ class Harmony(muobjects.MUSet):
         return sorted(self.calc())
 
     def calc(self, factor=1) -> tuple:
-        return tuple(t.calc() * factor for t in self)
+        c = (t.calc() for t in self)
+        return tuple(t * factor if t else None for t in c)
 
     @property
     def freq(self) -> tuple:

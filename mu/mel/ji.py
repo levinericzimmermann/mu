@@ -1082,6 +1082,15 @@ class Monzo(object):
             exp -= 1
         return exp
 
+    def register(self, octave: int) -> "Monzo":
+        n = self.normalize()
+        factor = 2 ** abs(octave)
+        if octave < 1:
+            added = r(1, factor)
+        else:
+            added = r(factor, 1)
+        return n + added
+
     @property
     def gender(self) -> bool:
         """Return the gender (bool) of a Monzo or JIPitch - object.
