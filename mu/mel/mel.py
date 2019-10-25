@@ -78,6 +78,9 @@ class EmptyPitch(abstract.AbstractPitch):
     def __repr__(self):
         return "NoPitch"
 
+    def __bool__(self) -> bool:
+        return False
+
     def copy(self):
         return type(self)()
 
