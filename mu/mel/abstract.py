@@ -92,6 +92,12 @@ class AbstractPitch(abc.ABC):
     def __gt__(self, other: "AbstractPitch") -> bool:
         return self.freq > other.freq
 
+    def __ge__(self, other: "AbstractPitch") -> bool:
+        return self.freq >= other.freq
+
+    def __le__(self, other: "AbstractPitch") -> bool:
+        return self.freq <= other.freq
+
     def __hash__(self) -> int:
         return hash(self.freq)
 
