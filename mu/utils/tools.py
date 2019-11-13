@@ -1,3 +1,4 @@
+import bisect
 import functools
 import math
 import operator
@@ -8,6 +9,26 @@ import numpy as np
 
 def accumulate_from_zero(iterator: tuple) -> tuple:
     return tuple(itertools.accumulate((0,) + (tuple(iterator))))
+
+
+def find_closest_index(item: float, data: tuple) -> int:
+    """Return index of element in data whose difference to
+    input argument 'item' is the smallest."""
+    solution = bisect.bisect_left(data, item)
+    if solution == len(data):
+        return solution - 1
+    elif solution == 0:
+        return solution
+    else:
+        indices = (solution, solution - 1)
+        differences = tuple(abs(item - data[n]) for n in indices)
+        return indices[differences.index(min(differences))]
+
+
+def find_closest_item(item: float, data: tuple) -> float:
+    """Return element in data whose difference to
+    input argument 'item' is the smallest."""
+    return data[find_closest_index(item, data)]
 
 
 def brownian(x0, n, dt, delta, out=None, random_state=None):
@@ -173,22 +194,18 @@ def not_fibonacci_transition(size0: int, size1: int, element0=0, element1=1) -> 
     )
 
 
-def gcd(x, y) -> int:
-    # from https://coderforevers.com/python/python-program/find-lcm/
-    """This function implements the Euclidian algorithm
-   to find G.C.D. of two numbers"""
-
-    while y:
-        x, y = y, x % y
-
-    return x
+def gcd(*arg):
+    return functools.reduce(math.gcd, arg)
 
 
-def lcm(x, y) -> int:
-    """This function takes two
-   integers and returns the L.C.M."""
-
-    lcm = (x * y) // gcd(x, y)
+def lcm(*arg: int) -> int:
+    """from
+    https://stackoverflow.com/questions/37237954/
+    calculate-the-lcm-of-a-list-of-given-numbers-in-python
+    """
+    lcm = arg[0]
+    for i in arg[1:]:
+        lcm = lcm * i // gcd(lcm, i)
     return lcm
 
 

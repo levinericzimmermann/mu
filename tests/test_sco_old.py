@@ -181,6 +181,22 @@ class MelodyTest(unittest.TestCase):
         melody1 = old.Melody([tone0B, pause0, tone1B, pause1])
         self.assertEqual(melody0.split(), melody1)
 
+    def test_cut_up_by_time(self):
+        t0 = old.Tone(ji.r(1, 1), rhy.RhyUnit(2))
+        t1 = old.Tone(ji.r(2, 1), rhy.RhyUnit(2))
+        t2 = old.Tone(ji.r(1, 1), rhy.RhyUnit(1))
+        r0 = old.Rest(1)
+        melody0 = old.Melody([t0, t1, t1, t0, t1])
+        melody1 = old.Melody([t1, t1, t0])
+        melody2 = old.Melody([r0, t1, t1, t0])
+        melody3 = old.Melody([t2, t1, t1, t0])
+        melody4 = old.Melody([t1, t1, t2])
+        self.assertEqual(melody0.cut_up_by_time(2, 8), melody1)
+        self.assertEqual(melody0.cut_up_by_time(1, 8), melody2)
+        self.assertEqual(melody0.cut_up_by_time(1, 8, add_earlier=True), melody3)
+        self.assertEqual(melody0.cut_up_by_time(2, 7, hard_cut=True), melody4)
+        self.assertEqual(melody0.cut_up_by_time(2, 7, hard_cut=False), melody1)
+
     def test_convert2absolute_time(self):
         melody_converted = old.Melody(
             (

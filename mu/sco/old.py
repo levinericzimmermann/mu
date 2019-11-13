@@ -501,6 +501,63 @@ class AbstractLine(abstract.MultiSequentialEvent):
 
         return self.tie_by(sub)
 
+    def cut_up_by_time(
+        self, start: rhy.RhyUnit, stop: rhy.RhyUnit, add_earlier=False, hard_cut=True
+    ) -> "AbstractLine":
+        """
+        """
+
+        line = self.convert2absolute_time()
+        new = []
+
+        for event in line:
+            ev_start = event.delay
+            ev_stop = event.duration
+
+            appendable_conditions = (
+                ev_start >= start and ev_start < stop,
+                ev_stop <= stop and ev_stop > start,
+                ev_start <= start and ev_stop >= stop,
+            )
+
+            appendable = any(appendable_conditions)
+
+            if ev_start < start and appendable:
+                appendable = bool(add_earlier)
+
+            if appendable:
+                if hard_cut:
+                    if ev_stop > stop:
+                        event.duration = stop
+                    if ev_start < start:
+                        event.delay = start
+
+                new.append(event)
+
+        if new:
+            if new[0].delay > start:
+                new.insert(0, Rest(start, new[0].delay))
+        else:
+            new.append(Rest(start, stop))
+
+        new = type(self)(new)
+
+        if self.time_measure is "relative":
+            new.dur = type(new.dur)(du - de for du, de in zip(new.dur, new.delay))
+            new.delay = type(new.delay)(new.dur)
+
+        return new
+
+    def cut_up_by_idx(
+        self, itemidx, add_earlier=False, hard_cut=True
+    ) -> "AbstractLine":
+        """
+        """
+        item = self.convert2absolute_time()[itemidx]
+        item_start = item.delay
+        item_stop = item.duration
+        return self.cut_up_by_time(item_start, item_stop, hard_cut, add_earlier)
+
     def split(self):
         """
         Split items, whose delay may be longer than their
