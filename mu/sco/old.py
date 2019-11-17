@@ -481,10 +481,10 @@ class AbstractLine(abstract.MultiSequentialEvent):
 
     def discard_rests(self):
         def is_rest(pitch) -> bool:
-            try:
+            if isinstance(pitch, AbstractPitch):
+                return pitch is mel.TheEmptyPitch
+            else:
                 return len(pitch) == 0
-            except TypeError:
-                return pitch == mel.TheEmptyPitch
 
         def sub(line):
             new = []
