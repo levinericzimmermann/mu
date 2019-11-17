@@ -151,7 +151,8 @@ class Monzo(object):
         return len(self._vec)
 
     def __bool__(self):
-        return bool(self._vec)
+        # return bool(self._vec)
+        return True
 
     def index(self, arg):
         return self._vec.index(arg)
@@ -1113,7 +1114,7 @@ class Monzo(object):
         True
         """
 
-        if self:
+        if self.val:
             maxima = max(self)
             minima = min(self)
             test = (
@@ -1310,14 +1311,14 @@ class Monzo(object):
 
     @property
     def lv(self) -> int:
-        if self:
+        if self.val:
             return abs(Monzo.gcd(*tuple(filter(lambda x: x != 0, self))))
         else:
             return 1
 
     @property
     def identity(self) -> Type["Monzo"]:
-        if self:
+        if self._val:
             val_border = self.val_border
             filtered = type(self)([1 / self.lv] * len(self), val_border)
             monzo = tuple(int(x) for x in self * filtered)
@@ -1335,10 +1336,7 @@ class Monzo(object):
     def is_root(self) -> bool:
         test = Monzo(self._vector, 1)
         test.val_border = 2
-        if test:
-            return False
-        else:
-            return True
+        return not any(test.val)
 
     @property
     def virtual_root(self) -> Type["Monzo"]:
