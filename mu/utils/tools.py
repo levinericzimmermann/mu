@@ -3,7 +3,7 @@ import functools
 import math
 import operator
 import itertools
-import scipy
+from scipy.stats import norm
 import numpy as np
 
 
@@ -80,7 +80,7 @@ def brownian(x0, n, dt, delta, out=None, random_state=None):
 
     # For each element of x0, generate a sample of n numbers from a
     # normal distribution.
-    r = scipy.stats.norm.rvs(
+    r = norm.rvs(
         size=x0.shape + (n,), scale=delta * math.sqrt(dt), random_state=random_state
     )
 

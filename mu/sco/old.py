@@ -2,7 +2,7 @@ import bisect
 import functools
 import math
 import operator
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Optional, Tuple
 
 from mu.abstract import muobjects
 from mu.mel import ji, mel
@@ -578,16 +578,26 @@ class Melody(AbstractLine):
     """A Melody contains sequentially played Pitches."""
 
     _obj_class = Tone
-    _sub_sequences_class = (mel.Mel, rhy.RhyCompound, rhy.RhyCompound, list)
+    _sub_sequences_class = (mel.Mel, rhy.RhyCompound, rhy.RhyCompound, list, list, list)
+    _sub_sequences_class_names = (
+        "pitch",
+        "delay",
+        "dur",
+        "volume",
+        "glissando",
+        "vibrato",
+    )
 
     @classmethod
-    def subvert_object(
-        cls, tone: Tone
-    ) -> Union[
-        Tuple[AbstractPitch, rhy.RhyUnit, rhy.RhyUnit],
-        Tuple[None, rhy.RhyUnit, rhy.RhyUnit],
-    ]:
-        return tone.pitch, tone.delay, tone.duration, tone.volume
+    def subvert_object(cls, tone: Tone):
+        return (
+            tone.pitch,
+            tone.delay,
+            tone.duration,
+            tone.volume,
+            tone.glissando,
+            tone.vibrato,
+        )
 
     @property
     def freq(self) -> Tuple[float]:
