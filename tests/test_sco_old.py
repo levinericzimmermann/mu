@@ -311,19 +311,38 @@ class PolyTest(unittest.TestCase):
     t6 = old.Tone(p0, rhy.RhyUnit(2))
     t7 = old.Tone(p0, rhy.RhyUnit(0.5))
     t8 = old.Tone(p0, rhy.RhyUnit(1.5))
+    t9 = old.Tone(p1, rhy.RhyUnit(1.5))
+    t10 = old.Tone(p5, rhy.RhyUnit(0.5))
+    t11 = old.Tone(p2, rhy.RhyUnit(1))
     melody0 = old.JIMelody((t0, t1))
     melody1 = old.JIMelody((t2, t3))
-    melody2 = old.JIMelody((t6, t6, t0, t7))
-    melody3 = old.JIMelody((t7, t6, t2, t2))
-    melody4 = old.JIMelody((t7, t7, t7, t2, t2))
+    melody2 = old.JIMelody((t6, t6, t0, t7))  # duration 5.5
+    melody3 = old.JIMelody((t7, t6, t2, t2))  # duration 4.5
+    melody4 = old.JIMelody((t7, t7, t7, t2, t2))  # duration 3.5
+    melody5 = old.JIMelody((t10, t9, t3, t8, t0))  # duration 5.5
+    melody6 = old.JIMelody((t6, t6, t2, t7))  # duration 5.5
+
     poly0 = old.Polyphon([melody0, melody1])
     poly1 = old.Polyphon([melody2, melody3, melody4])
+    poly2 = old.Polyphon([melody6, melody5])
 
     def test_chordify(self):
         chord0 = old.Chord(ji.JIHarmony([self.t0, self.t2]), rhy.RhyUnit(1))
         chord1 = old.Chord(ji.JIHarmony([self.t1, self.t3]), rhy.RhyUnit(1))
         cadence0 = old.Cadence([chord0, chord1])
         self.assertEqual(cadence0, self.poly0.chordify())
+
+        chord0 = old.Chord(ji.JIHarmony([self.p0, self.p5]), rhy.RhyUnit(0.5))
+        chord1 = old.Chord(ji.JIHarmony([self.p0, self.p1]), rhy.RhyUnit(1.5))
+        chord2 = old.Chord(ji.JIHarmony([self.p0, self.p3]), rhy.RhyUnit(1))
+        chord3 = old.Chord(ji.JIHarmony([self.p0]), rhy.RhyUnit(1))
+        chord4 = old.Chord(ji.JIHarmony([self.p0, self.p2]), rhy.RhyUnit(0.5))
+        chord5 = old.Chord(ji.JIHarmony([self.p0]), rhy.RhyUnit(0.5))
+        expected = old.Cadence([chord0, chord1, chord2, chord3, chord4, chord4, chord5])
+        result = self.poly2.chordify(
+            harmony_class=ji.JIHarmony, cadence_class=old.JICadence, add_longer=True
+        )
+        self.assertEqual(expected, result)
 
     def test_find_simultan_events(self):
         simultan_events0 = self.poly0.find_simultan_events(0, 0)

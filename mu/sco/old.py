@@ -327,6 +327,14 @@ class Rest(Tone):
     def harmony(self):
         return mel.Harmony((self.pitch,))
 
+    @property
+    def glissando(self):
+        return None
+
+    @property
+    def vibrato(self):
+        return None
+
     def copy(self):
         return type(self)(self.delay.copy())
 
@@ -655,7 +663,14 @@ class Melody(AbstractLine):
 
 
 class JIMelody(Melody):
-    _sub_sequences_class = (ji.JIMel, rhy.RhyCompound, rhy.RhyCompound, list)
+    _sub_sequences_class = (
+        ji.JIMel,
+        rhy.RhyCompound,
+        rhy.RhyCompound,
+        list,
+        list,
+        list,
+    )
 
 
 class Cadence(AbstractLine):
@@ -919,49 +934,40 @@ class Polyphon(PolyLine):
         self, cadence_class=Cadence, harmony_class=mel.Harmony, add_longer=False
     ) -> Cadence:
         """
-        Similar to music21.stream.Stream.chordify() - method:
         Create a chordal reduction of polyphonic music, where each
         change to a new pitch results in a new chord.
         """
-        t_set = ToneSet.from_polyphon(self)
-        melody = t_set.convert2melody()
-        cadence = []
-        current_set = []
-        for t in melody:
-            if t.delay == 0:
-                current_set.append(t)
-            else:
-                current_set.append(t)
-                if len(current_set) > 1:
-                    harmony = harmony_class(t.pitch for t in current_set)
-                    durations = tuple(t.duration for t in current_set)
-                    min_dur = min(durations)
-                    volume = tuple(
-                        t.volume for t in current_set if t.volume is not None
-                    )
-                    if volume:
-                        volume = max(volume)
-                    else:
-                        volume = None
-                    new_set = []
-                    for subtone in current_set:
-                        if add_longer is True:
-                            diff = subtone.duration - min_dur
-                            if diff > 0 and subtone.pitch != mel.EmptyPitch():
-                                new_set.append(Tone(subtone.pitch, 0, diff))
-                    new_chord = Chord(harmony, t.delay, min_dur, volume)
-                    current_set = []
-                    current_set.extend(new_set)
-                else:
-                    new_chord = Chord(
-                        harmony_class((current_set[0].pitch,)),
-                        current_set[0].delay,
-                        current_set[0].duration,
-                        current_set[0].volume,
-                    )
-                    current_set = []
-                cadence.append(new_chord)
-        return cadence_class(cadence)
+        events = functools.reduce(
+            operator.add, tuple(line.convert2absolute_time() for line in self)
+        )
+        starts = tuple(ev.delay for ev in events)
+        stops = tuple(ev.duration for ev in events)
+        positions = sorted(set(starts + stops))
+        available_chords = len(positions) - 1
+        harmonies = [[] for i in range(available_chords)]
+        volumes = [None for i in range(available_chords)]
+
+        for event in events:
+            indices = [positions.index(event.delay)]
+
+            if add_longer:
+                for position in positions[indices[0] + 1 :]:
+                    if position < event.duration:
+                        indices.append(indices[-1] + 1)
+
+            pitch = event.pitch
+            volume = event.volume
+            for idx in indices:
+                harmonies[idx].append(pitch)
+                if volumes[idx] is None or volumes[idx] < volume:
+                    volumes[idx] = volume
+
+        rhythms = tuple(b - a for a, b in zip(positions, positions[1:]))
+
+        return cadence_class(
+            Chord(harmony_class(h), r, r, volume=v)
+            for h, r, v in zip(harmonies, rhythms, volumes)
+        )
 
 
 class Instrument(object):
