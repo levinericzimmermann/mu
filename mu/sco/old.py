@@ -5,7 +5,9 @@ import operator
 from typing import Callable, Optional, Tuple
 
 from mu.abstract import muobjects
-from mu.mel import ji, mel
+from mu.mel import ji
+from mu.mel import mel
+
 from mu.mel.abstract import AbstractPitch
 from mu.rhy import rhy
 from mu.sco import abstract
@@ -91,6 +93,7 @@ class RhythmicInterpolation(InterpolationEvent):
 
 class InterpolationLine(muobjects.MUList):
     """Container class to describe interpolations between states.
+
     They are expected to contain InterpolationEvent - objects.
     InterpolationLine - objects can be called to generate the interpolation.
     Input arguments are only Gridsize that describe how small
@@ -421,7 +424,8 @@ class AbstractLine(abstract.MultiSequentialEvent):
         return hash(tuple(hash(item) for item in self))
 
     def convert2absolute_time(self):
-        """
+        """Change time dimension of the object.
+
         Delay becomes the starting time of the specific event,
         duration becomes the stoptime of the specific event.
         """
@@ -434,7 +438,8 @@ class AbstractLine(abstract.MultiSequentialEvent):
         return copy
 
     def convert2relative_time(self):
-        """
+        """Change time dimension of the object.
+
         Starting time of specific event becomes its Delay ,
         stoptime of specific event becomes its duration.
         """
@@ -512,9 +517,6 @@ class AbstractLine(abstract.MultiSequentialEvent):
     def cut_up_by_time(
         self, start: rhy.RhyUnit, stop: rhy.RhyUnit, add_earlier=False, hard_cut=True
     ) -> "AbstractLine":
-        """
-        """
-
         line = self.convert2absolute_time()
         new = []
 
@@ -559,17 +561,14 @@ class AbstractLine(abstract.MultiSequentialEvent):
     def cut_up_by_idx(
         self, itemidx, add_earlier=False, hard_cut=True
     ) -> "AbstractLine":
-        """
-        """
         item = self.convert2absolute_time()[itemidx]
         item_start = item.delay
         item_stop = item.duration
         return self.cut_up_by_time(item_start, item_stop, hard_cut, add_earlier)
 
     def split(self):
-        """
-        Split items, whose delay may be longer than their
-        duration into Item-Rest - Pairs.
+        """Split items to Item-Rest pairs if their delay is longer than their duration.
+
         """
         new = []
         for item in self:
@@ -770,10 +769,9 @@ class PolyLine(abstract.SimultanEvent):
         return copied
 
     def fill(self) -> "PolyLine":
-        """
-        Add Rests to all Voices, which stop earlier than the
-        longest voice, so that
-        sum(Polyphon[0].rhy) == sum(Polyphon[1].rhy) == ...
+        """Add Rests until each Voice has the same length.
+
+        so that: sum(Polyphon[0].rhy) == sum(Polyphon[1].rhy) == ...
         """
         poly = self.copy()
         total = self.duration
@@ -792,7 +790,8 @@ class PolyLine(abstract.SimultanEvent):
             return None
 
     def convert2absolute_time(self):
-        """
+        """Change time dimension.
+
         Delay becomes the starting time of the specific event,
         duration becomes the stoptime of the specific event.
         """
@@ -804,7 +803,8 @@ class PolyLine(abstract.SimultanEvent):
         return copy
 
     def convert2relative_time(self):
-        """
+        """Change time dimension.
+
         Starting time of specific event becomes its Delay,
         stoptime of specific event becomes its duration.
         """
@@ -834,8 +834,6 @@ class PolyLine(abstract.SimultanEvent):
         return res
 
     def find_simultan_events(self, polyidx, itemidx) -> tuple:
-        """
-        """
         converted_poly = self.convert2absolute_time()
         return self.find_simultan_events_in_absolute_polyline(
             converted_poly, polyidx, itemidx
@@ -844,8 +842,6 @@ class PolyLine(abstract.SimultanEvent):
     def find_exact_simultan_events(
         self, polyidx, itemidx, convert2relative=True
     ) -> tuple:
-        """
-        """
         converted_poly = self.convert2absolute_time()
         simultan = self.find_simultan_events_in_absolute_polyline(
             converted_poly, polyidx, itemidx
@@ -867,8 +863,6 @@ class PolyLine(abstract.SimultanEvent):
     def cut_up_by_time(
         self, start: rhy.RhyUnit, stop: rhy.RhyUnit, hard_cut=True, add_earlier=True
     ) -> "PolyLine":
-        """
-        """
         polyline = self.convert2absolute_time()
         for i, sub in enumerate(polyline):
             new = []
@@ -917,8 +911,6 @@ class PolyLine(abstract.SimultanEvent):
     def cut_up_by_idx(
         self, polyidx, itemidx, hard_cut=True, add_earlier=True
     ) -> "PolyLine":
-        """
-        """
         item = self[polyidx].convert2absolute_time()[itemidx]
         item_start = item.delay
         item_stop = item.duration
@@ -926,16 +918,14 @@ class PolyLine(abstract.SimultanEvent):
 
 
 class Polyphon(PolyLine):
-    """
-    Container for Melody - Objects.
-    """
+    """Container for Melody - Objects."""
 
     def chordify(
         self, cadence_class=Cadence, harmony_class=mel.Harmony, add_longer=False
     ) -> Cadence:
-        """
-        Create a chordal reduction of polyphonic music, where each
-        change to a new pitch results in a new chord.
+        """Return chordal reduction of polyphonic music.
+
+        Each change of a pitch results in a new chord.
         """
         events = functools.reduce(
             operator.add, tuple(line.convert2absolute_time() for line in self)
@@ -945,7 +935,7 @@ class Polyphon(PolyLine):
         positions = sorted(set(starts + stops))
         available_chords = len(positions) - 1
         harmonies = [[] for i in range(available_chords)]
-        volumes = [None for i in range(available_chords)]
+        volumes = [[] for i in range(available_chords)]
 
         for event in events:
             indices = [positions.index(event.delay)]
@@ -959,10 +949,11 @@ class Polyphon(PolyLine):
             volume = event.volume
             for idx in indices:
                 harmonies[idx].append(pitch)
-                if volumes[idx] is None or volumes[idx] < volume:
-                    volumes[idx] = volume
+                if volume is not None:
+                    volumes[idx].append(volume)
 
         rhythms = tuple(b - a for a, b in zip(positions, positions[1:]))
+        volumes = [sum(v) / len(v) if v else None for v in volumes]
 
         return cadence_class(
             Chord(harmony_class(h), r, r, volume=v)
@@ -986,10 +977,7 @@ class Ensemble(muobjects.MUDict):
     melody_class = Melody
 
     def get_instrument_by_pitch(self, pitch):
-        """
-        return all Instruments, which could play the
-        asked pitch
-        """
+        """return all Instruments, which could play the asked pitch"""
         possible = []
         for instr in self:
             if pitch in instr.pitches:

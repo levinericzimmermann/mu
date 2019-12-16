@@ -1,7 +1,6 @@
 from mu.abstract import muobjects
 from mu.mel import abstract
 
-from typing import Any
 import collections
 
 try:
@@ -29,9 +28,9 @@ class SimplePitch(abstract.AbstractPitch):
 
     @classmethod
     def from_scl(cls, scl_line: str, concert_pitch_freq: float) -> "SimplePitch":
-        p = scl_line.split(" ")[0]
-        if p[-1] == ".":
-            cents = float(p[:-1])
+        p = tuple(l for l in scl_line.split(" ") if l)[0]
+        if "." in p:
+            cents = float(p)
         else:
             ratio = p.split("/")
             ratio_size = len(ratio)
@@ -93,7 +92,7 @@ TheEmptyPitch = EmptyPitch()
 
 
 class Mel(muobjects.MUList):
-    def __init__(self, iterable: Any, multiply: int = 1) -> None:
+    def __init__(self, iterable, multiply: int = 1) -> None:
         muobjects.MUList.__init__(self, iterable)
         self.multiply = 1
 
