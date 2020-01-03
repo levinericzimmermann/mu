@@ -2,7 +2,9 @@ import bisect
 import functools
 import math
 import operator
-from typing import Callable, Optional, Tuple
+from typing import Callable
+from typing import Optional
+from typing import Tuple
 
 from mu.abstract import muobjects
 from mu.mel import ji
@@ -13,6 +15,9 @@ from mu.rhy import rhy
 from mu.sco import abstract
 from mu.time import time
 from mu.utils import interpolation
+
+
+"""This module represents musical structures that are based on discreet tones."""
 
 
 class InterpolationEvent(abstract.UniformEvent):
@@ -286,7 +291,7 @@ class Tone(abstract.UniformEvent):
     def __hash__(self) -> int:
         return hash((self.pitch, self.delay, self.duration, self.volume))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(
             (repr(self.pitch), repr(self.delay), repr(self.duration), repr(self.volume))
         )
