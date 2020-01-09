@@ -4,7 +4,11 @@ import itertools
 import json
 import math
 import operator
-from typing import Callable, List, Type
+
+from typing import Callable
+from typing import List
+from typing import Type
+
 import primesieve
 
 from mu.mel import abstract
@@ -246,7 +250,8 @@ class Monzo(object):
 
     @staticmethod
     def adjust_ratio(r: Fraction, val_border: int) -> Fraction:
-        r"""Multiply / divide a Fraction - Object with the val_border - argument,
+        r"""Multiply or divide a Fraction - Object with the val_border - argument,
+
         until it is equal or bigger than 1 and smaller than val_border.
 
         Arguments:
@@ -785,7 +790,9 @@ class Monzo(object):
 
     @property
     def val(self) -> tuple:
-        r"""Return complete list of primes (e.g. 'val'), until the
+        r"""Return complete list of primes (e.g. 'val'),
+
+        until the
         highest Prime, which the Monzo / JIPitch contains in respect
         to the current val_border or _val_shift - property of the object.
 
@@ -2171,8 +2178,8 @@ class JIHarmony(JIPitch.mk_iterable(mel.Harmony), JIContainer):
 
     def dot(self: "JIHarmony", other: "JIHarmony") -> int:
         """Calculates dot product between every Pitch of itself with every Pitch of the
-        other JIHarmony.
 
+        other JIHarmony.
         It accumulates the results.
         """
 
@@ -2556,7 +2563,7 @@ class JIStencil(object):
     (JIPitch((1,), 2), 0, 2) would result in a harmony
     containing (JIPitch((0,), val_border=2), JIPitch((1,), val_border=2)).
 
-    If the first number equals 0 it could be skipped, meaining
+    If the first number equals 0 it could be skipped, meaning
     that (JIPitch((1,), 2), 0, 2) == (JIPitch((1,), 2), 2).
     """
 
@@ -2604,6 +2611,57 @@ class JIStencil(object):
                 operator.add, (self.convertvec2harmony(v) for v in self._vector)
             )
         )
+
+
+def find_best_voice_leading(pitches: tuple, tonal_range: tuple) -> tuple:
+    """Brute force searching for the best voice leading.
+
+    The best voice leading is defined as the voice leading
+    with the smallest sum of cent differences between two
+    succeeding pitches.
+    """
+
+    def find_all_available_pitches_in_a_specified_range(
+        pitch: JIPitch, minima: JIPitch, maxima: JIPitch
+    ) -> tuple:
+        p_norm = pitch.normalize()
+        min_norm = minima.normalize()
+        max_norm = maxima.normalize()
+        oct0 = minima.octave
+        oct1 = maxima.octave + 1
+        if p_norm.float < min_norm.float:
+            oct0 += 1
+        if p_norm.float > max_norm.float:
+            oct1 -= 1
+
+        assert oct0 != oct1
+        return tuple(p_norm.register(o) for o in range(oct0, oct1))
+
+    assert len(tonal_range) == 2
+    minima, maxima = tonal_range
+
+    element = None
+    fitness = None
+    for solution in itertools.product(
+        *tuple(
+            find_all_available_pitches_in_a_specified_range(p, minima, maxima)
+            for p in pitches
+        )
+    ):
+        differences = sum(
+            abs((p0 - p1).cents) for p0, p1 in zip(solution, solution[1:])
+        )
+
+        is_addable = True
+
+        if element:
+            is_addable = differences < fitness
+
+        if is_addable:
+            element = solution
+            fitness = differences
+
+    return element
 
 
 """

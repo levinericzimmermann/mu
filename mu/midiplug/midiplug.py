@@ -224,6 +224,9 @@ class PyteqTone(MidiTone, metaclass=SynthesizerMidiTone):
         "mic_1_azimuth": ((-180, 180), 86),
         "mic_1_elevation": ((-180, 180), 87),
         "mic_1_level_1": ((-85, 6), 90),
+        "reverb_switch": ((0, 1), 91),
+        "sound_speed": ((200, 500), 92),
+        "wall_distance": ((0, 6), 93),
     }
 
 

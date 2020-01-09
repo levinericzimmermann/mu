@@ -87,6 +87,11 @@ class EmptyPitch(abstract.AbstractPitch):
     def cents(self) -> None:
         return None
 
+    @property
+    def is_empty(self) -> bool:
+        """Return True if pitch equals a Rest. Otherwise False."""
+        return True
+
 
 TheEmptyPitch = EmptyPitch()
 

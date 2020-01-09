@@ -1,10 +1,11 @@
 import bisect
 import functools
+import itertools
 import math
 import operator
-import itertools
-from scipy.stats import norm
+
 import numpy as np
+from scipy.stats import norm
 
 
 def accumulate_from_zero(iterator: tuple) -> tuple:
@@ -12,8 +13,7 @@ def accumulate_from_zero(iterator: tuple) -> tuple:
 
 
 def find_closest_index(item: float, data: tuple) -> int:
-    """Return index of element in data whose difference to
-    input argument 'item' is the smallest."""
+    """Return index of element in data with smallest difference to item"""
     solution = bisect.bisect_left(data, item)
     if solution == len(data):
         return solution - 1
@@ -26,14 +26,12 @@ def find_closest_index(item: float, data: tuple) -> int:
 
 
 def find_closest_item(item: float, data: tuple) -> float:
-    """Return element in data whose difference to
-    input argument 'item' is the smallest."""
+    """Return element in data with smallest difference to item"""
     return data[find_closest_index(item, data)]
 
 
 def brownian(x0, n, dt, delta, out=None, random_state=None):
-    """
-    Generate an instance of Brownian motion (i.e. the Wiener process):
+    """Generate an instance of Brownian motion (i.e. the Wiener process):
 
         X(t) = X(0) + N(0, delta**2 * t; 0, t)
 
@@ -103,9 +101,9 @@ def scale(a, minima=0, maxima=15):
 
 
 def graycode(length: int, modulus: int) -> tuple:
-    """
-    Returns the n-tuple reverse Gray code mod m.
-    https://yetanothermathblog.com/tag/gray-codes/
+    """Returns the n-tuple reverse Gray code mod m.
+
+    source: https://yetanothermathblog.com/tag/gray-codes/
     """
     n, m = length, modulus
     F = range(m)
@@ -200,6 +198,7 @@ def gcd(*arg):
 
 def lcm(*arg: int) -> int:
     """from
+
     https://stackoverflow.com/questions/37237954/
     calculate-the-lcm-of-a-list-of-given-numbers-in-python
     """
@@ -255,6 +254,7 @@ def backtracking(elements: tuple, tests: tuple, return_indices: bool = False) ->
 
 def fib(x: int) -> int:
     """Fast fibonacci function
+
     written by https://www.codespeedy.com/find-fibonacci-series-in-python/
     """
     return round(math.pow((math.sqrt(5) + 1) / 2, x) / math.sqrt(5))

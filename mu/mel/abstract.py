@@ -2,9 +2,9 @@ from mu.abstract import mutate
 
 import abc
 import bisect
+import math
 import operator
 import os
-import math
 import warnings
 
 
@@ -36,6 +36,11 @@ class AbstractPitch(abc.ABC):
     @abc.abstractproperty
     def cents(self) -> float:
         raise NotImplementedError
+
+    @property
+    def is_empty(self) -> bool:
+        """Return True if pitch equals a Rest. Otherwise False."""
+        return False
 
     @classmethod
     def mk_iterable(cls, template) -> abc.ABCMeta:
@@ -111,6 +116,7 @@ class AbstractPitch(abc.ABC):
 
     def convert2midi_tuning(self) -> tuple:
         """calculates the MIDI Tuning Standard of the pitch
+
         (http://www.microtonal-synthesis.com/MIDItuning.html)
         """
 
