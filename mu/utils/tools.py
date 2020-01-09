@@ -258,3 +258,20 @@ def fib(x: int) -> int:
     written by https://www.codespeedy.com/find-fibonacci-series-in-python/
     """
     return round(math.pow((math.sqrt(5) + 1) / 2, x) / math.sqrt(5))
+
+
+def split_iterable_by_function(iterable: tuple, function) -> tuple:
+    seperate_indices = tuple(idx + 1 for idx, v in enumerate(iterable) if function(v))
+    if seperate_indices:
+        size = len(iterable)
+        zip0 = (0,) + seperate_indices
+        zip1 = seperate_indices + (
+            (size,) if seperate_indices[-1] != size else tuple([])
+        )
+        return type(iterable)(iterable[i:j] for i, j in zip(zip0, zip1))
+    else:
+        return type(iterable)((tuple(iterable),))
+
+
+def split_iterable_by_n(iterable: tuple, n) -> tuple:
+    return split_iterable_by_function(iterable, lambda x: x == n)

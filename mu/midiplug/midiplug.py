@@ -71,8 +71,6 @@ class MidiTone(old.Tone):
                 normalized = value - boundaries[0]
                 percent = normalized / difference
                 value = int(127 * percent)
-                print(arg)
-                print(value)
                 message = mido.Message(
                     "control_change",
                     time=0,
