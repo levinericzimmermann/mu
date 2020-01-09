@@ -4,21 +4,27 @@
 # mu/utils/tsp.py: 4
 # crosstrainer == 0.0.1
 
-# mu/__init__.py: 1,2,3,4,5,6
+# mu/midiplug/midiplug.py: 14
+mido == 1.2.8
+
+# mu/__init__.py: 1,2,3,4,5,6,7
 # mu/abstract/__init__.py: 1,2
 # mu/abstract/muobjects.py: 2
 # mu/mel/__init__.py: 1,2,3,4,5
 # mu/mel/abstract.py: 1
 # mu/mel/edo.py: 1,2
-# mu/mel/ji.py: 10,11,12
+# mu/mel/ji.py: 14,15,16
 # mu/mel/mel.py: 1,2
-# mu/mel/shortwriting.py: 5,6
+# mu/mel/shortwriting.py: 4,5
+# mu/midiplug/__init__.py: 1
+# mu/midiplug/midiplug.py: 1,2,3,4
 # mu/rhy/__init__.py: 1,2
 # mu/rhy/indispensability.py: 6
 # mu/rhy/rhy.py: 1,2,3
-# mu/sco/__init__.py: 1,2
+# mu/sco/__init__.py: 1,2,3
 # mu/sco/abstract.py: 2,3
-# mu/sco/old.py: 8,9,10,11,12,13
+# mu/sco/new.py: 1,2
+# mu/sco/old.py: 9,10,11,13,14,15,16,17
 # mu/time/__init__.py: 1
 # mu/time/time.py: 1
 # mu/utils/__init__.py: 1,2,3
@@ -34,29 +40,29 @@
 # tests/test_time_time.py: 2
 # tests/test_utils_interpolation.py: 3
 # tests/test_utils_prime_factors.py: 2
-# mu == 0.0.2
+mu == 0.0.2
 
 # mu/utils/interpolation.py: 3
-# mu/utils/tools.py: 6
-numpy == 1.15.2
+# mu/utils/tools.py: 7
+numpy == 1.18.0
 
 # mu/abstract/muobjects.py: 1
 orderedset == 2.0.1
 
-# mu/mel/ji.py: 8
+# mu/mel/ji.py: 12
 # mu/utils/prime_factors.py: 1
-primesieve == 1.3.0
+primesieve == 2.0.0
 
 # mu/utils/tsp.py: 44
-progressbar2 == 3.38.0
+progressbar2 == 3.37.1
 
-# mu/mel/ji.py: 15,462
-# mu/mel/mel.py: 8
+# mu/mel/ji.py: 19,468
+# mu/mel/mel.py: 7
 quicktions == 1.6
 
-# mu/utils/tools.py: 5
+# mu/utils/tools.py: 8
 # mu/utils/tsp.py: 78
-scipy == 1.1.0
+scipy == 1.4.1
 
 # setup.py: 1
 setuptools == 39.0.1
