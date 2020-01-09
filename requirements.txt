@@ -40,7 +40,7 @@ mido == 1.2.8
 # tests/test_time_time.py: 2
 # tests/test_utils_interpolation.py: 3
 # tests/test_utils_prime_factors.py: 2
-mu == 0.0.2
+# mu == 0.0.2
 
 # mu/utils/interpolation.py: 3
 # mu/utils/tools.py: 7
