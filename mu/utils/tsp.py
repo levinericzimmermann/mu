@@ -1,8 +1,8 @@
 import itertools
 import math
 
-import crosstrainer
 from mu.mel import mel
+from mu.utils import crosstrainer
 
 
 def solve(distance_matrix: tuple, circular=True, add_progressbar=False) -> tuple:
@@ -47,6 +47,7 @@ def solve(distance_matrix: tuple, circular=True, add_progressbar=False) -> tuple
 
     amount_elements = len(distance_matrix)
     elements = tuple(range(amount_elements))
+
     if circular is True:
         permutations = itertools.permutations(elements[1:])
         append_function = append_circular
@@ -55,6 +56,7 @@ def solve(distance_matrix: tuple, circular=True, add_progressbar=False) -> tuple
         permutations = itertools.permutations(elements)
         append_function = append_non_circular
         amount_permutations = math.factorial(amount_elements)
+
     hof = crosstrainer.MultiDimensionalRating(
         size=amount_permutations, fitness=[-1], condition_to_add_if_not_full_yet=False
     )
