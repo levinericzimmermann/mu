@@ -271,7 +271,7 @@ class MidiFile(abc.ABC):
         gridsize = 0.001  # 1 milisecond
         self.__duration = float(sum(t.delay for t in sequence))
         n_hits = int(self.__duration // gridsize)
-        n_hits += self.delay_between_control_messages_and_note_on_message
+        n_hits += self.delay_between_control_messages_and_note_on_message + 2
         self.__grid = tuple(i * gridsize for i in range(0, n_hits))
         self.__gridsize = gridsize
         self.__grid_position_per_tone = MidiFile.detect_grid_position(
