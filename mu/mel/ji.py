@@ -1288,6 +1288,34 @@ class Monzo(object):
         return sign(ind_num - ind_de) / (ind_num + ind_de)
 
     @property
+    def harmonicity_simplified_barlow(self) -> float:
+        r"""Calculate a simplified barlow-harmonicity of an interval.
+
+        This implementation follows Clarence Barlows definition, given
+        in 'The Ratio Book' (1992), with the difference that
+        only positive numbers are returned and that (1/1) is
+        defined as 1 instead of infinite.
+
+        >>> m0 = Monzo((1,), val_border=2)
+        >>> m1 = Monzo([], val_border=2)
+        >>> m2 = Monzo((0, 1,), val_border=2)
+        >>> m3 = Monzo((0, -1,), val_border=2)
+        >>> m0.harmonicity_simplified_barlow
+        0.27272727272727276
+        >>> m1.harmonicity_simplified_barlow # 1/1 is not infinite but 1
+        1
+        >>> m2.harmonicity_simplified_barlow
+        0.11904761904761904
+        >>> m3.harmonicity_simplified_barlow # positive return value
+        0.10638297872340426
+        """
+
+        barlow = abs(self.harmonicity_barlow)
+        if barlow == float("inf"):
+            return 1
+        return barlow
+
+    @property
     def harmonicity_tenney(self) -> float:
         r"""Calculate Tenneys harmonic distance of an interval
 
