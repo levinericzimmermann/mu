@@ -225,6 +225,8 @@ class PyteqTone(MidiTone, metaclass=SynthesizerMidiTone):
         "reverb_switch": ((0, 1), 91),
         "sound_speed": ((200, 500), 92),
         "wall_distance": ((0, 6), 93),
+        "hammer_hard_mezzo": ((0, 2), 94),
+        "hammer_hard_forte": ((0, 2), 95),
     }
 
 

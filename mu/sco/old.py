@@ -428,7 +428,7 @@ class AbstractLine(abstract.MultiSequentialEvent):
     def __hash__(self):
         return hash(tuple(hash(item) for item in self))
 
-    def convert2absolute_time(self):
+    def convert2absolute_time(self) -> "AbstractLine":
         """Change time dimension of the object.
 
         Delay becomes the starting time of the specific event,
