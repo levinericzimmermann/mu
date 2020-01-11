@@ -243,11 +243,7 @@ class DivaTone(MidiTone, metaclass=SynthesizerMidiTone):
         percentage = (cent_deviation + 100) / 200
         value = int(percentage * 127)
         messages += tuple(
-            [
-                mido.Message(
-                    "control_change", time=0, control=2, value=value, channel=0
-                )
-            ]
+            [mido.Message("control_change", time=0, control=2, value=value, channel=0)]
         )
         return messages
 
@@ -256,6 +252,12 @@ class MidiFile(abc.ABC):
     maximum_cent_deviation = 2400
     maximum_pitch_bending = 16382
     maximum_pitch_bending_positive = 8191
+
+    # somehow control messages take some time until they
+    # became valid in Pianoteq. Therefore there has to be
+    # a delay between the last control change and the next
+    # NoteOn - message.
+    delay_between_control_messages_and_note_on_message = 40
 
     # for some weird reason pianoteq don't use channel 9
     available_channel = tuple(i for i in range(16) if i != 9)
@@ -268,9 +270,9 @@ class MidiFile(abc.ABC):
         filtered_sequence = tuple(t for t in sequence if t.pitch != mel.TheEmptyPitch)
         gridsize = 0.001  # 1 milisecond
         self.__duration = float(sum(t.delay for t in sequence))
-        self.__grid = tuple(
-            i * gridsize for i in range(0, int(self.__duration // gridsize))
-        )
+        n_hits = int(self.__duration // gridsize)
+        n_hits += self.delay_between_control_messages_and_note_on_message
+        self.__grid = tuple(i * gridsize for i in range(0, n_hits))
         self.__gridsize = gridsize
         self.__grid_position_per_tone = MidiFile.detect_grid_position(
             sequence, self.__grid, self.__duration
@@ -475,7 +477,7 @@ class MidiFile(abc.ABC):
         return tuple(self.__sequence)
 
     def mk_control_messages_per_tone(self, sequence) -> tuple:
-        channels = itertools.cycle(range(16))
+        channels = itertools.cycle(MidiFile.available_channel)
         return tuple(tone.control_messages(next(channels)) for tone in sequence)
 
     @staticmethod
@@ -586,11 +588,10 @@ class MidiFile(abc.ABC):
         available_frequencies = tuple(_12edo_freq[idx] for idx in available_midi_notes)
         return {pitch: evaluate_rating(pitch) for pitch in pitches}
 
-    @staticmethod
     def mk_complete_messages(
+        self,
         filtered_sequence,
         gridsize,
-        grid,
         grid_position_per_tone,
         control_messages,
         note_on_off_messages,
@@ -602,9 +603,7 @@ class MidiFile(abc.ABC):
         assert length_seq == len(note_on_off_messages)
         assert length_seq == len(tuning_messages)
         messages_per_tick = list(zip(*reversed(pitch_bending_per_channel)))
-        messages_per_tick = [
-            list(s) for s in messages_per_tick
-        ]
+        messages_per_tick = [list(s) for s in messages_per_tick]
         for note_on_off, control, tuning, grid_position in zip(
             note_on_off_messages,
             control_messages,
@@ -613,10 +612,14 @@ class MidiFile(abc.ABC):
         ):
             note_on, note_off = note_on_off
             start, stop = grid_position
-            messages_per_tick[start].append(note_on)
-            messages_per_tick[start].extend(control)
+            messages_per_tick[
+                start + self.delay_between_control_messages_and_note_on_message
+            ].append(note_on)
             messages_per_tick[start].extend(tuning)
-            messages_per_tick[stop].append(note_off)
+            messages_per_tick[start].extend(control)
+            messages_per_tick[
+                stop + self.delay_between_control_messages_and_note_on_message
+            ].append(note_off)
         messages_per_tick = tuple(tuple(reversed(tick)) for tick in messages_per_tick)
         return tuple(item for sublist in messages_per_tick for item in sublist)
 
@@ -638,7 +641,6 @@ class MidiFile(abc.ABC):
         messages = self.mk_complete_messages(
             self.__filtered_sequence,
             self.__gridsize,
-            self.__grid,
             self.__grid_position_per_tone,
             self.__control_messages,
             self.__note_on_off_messages,
@@ -765,7 +767,7 @@ class Diva(NonSysexTuningMidiFile):
         super(Diva, self).__init__(sequence, tuple(range(128)))
 
     def mk_control_messages_per_tone(self, sequence) -> tuple:
-        channels = itertools.cycle(range(16))
+        channels = itertools.cycle(MidiFile.available_channel)
         return tuple(
             tone.control_messages(next(channels), key)
             for tone, key in zip(sequence, self.keys)
