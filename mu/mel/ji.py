@@ -1133,6 +1133,26 @@ class Monzo(object):
         return True
 
     @property
+    def strict_gender(self) -> bool:
+        """Strict version of the gender property.
+
+        Return True if all exponents are positive.
+
+        Return False if all exponents are negative.
+
+        Return None if the pitch contains positive
+        and negative exponents.
+        """
+        gender = None
+        for exponent in self:
+            if exponent != 0:
+                if gender is not None:
+                    return
+                else:
+                    gender = exponent > 0
+        return gender
+
+    @property
     def harmonic(self) -> int:
         """Return the nth - harmonic / subharmonic the pitch may represent.
 

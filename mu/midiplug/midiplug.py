@@ -303,7 +303,7 @@ class MidiFile(abc.ABC):
         self.__pitch_bending_per_tone = MidiFile.detect_pitch_bending_per_tone(
             filtered_sequence, self.__gridsize, self.__grid_position_per_tone
         )
-        self.__pitch_bending_per_channel = MidiFile.distribute_pitch_bends_on_channels(
+        self.__pitch_bending_per_channel = self.distribute_pitch_bends_on_channels(
             self.__pitch_bending_per_tone,
             self.__grid,
             self.__grid_position_per_tone,
@@ -317,9 +317,8 @@ class MidiFile(abc.ABC):
     ) -> tuple:
         raise NotImplementedError
 
-    @staticmethod
     def distribute_pitch_bends_on_channels(
-        pitch_bends_per_tone, grid, grid_position_per_tone, gridsize
+        self, pitch_bends_per_tone, grid, grid_position_per_tone, gridsize
     ) -> tuple:
         channels = itertools.cycle(range(len(MidiFile.available_channel)))
         pitches_per_channels = list(
@@ -327,8 +326,10 @@ class MidiFile(abc.ABC):
         )
         for position, pitch_bends in zip(grid_position_per_tone, pitch_bends_per_tone):
             channel = next(channels)
-            start = position[0]
-            end = position[1]
+            start = (
+                position[0] + self.delay_between_control_messages_and_note_on_message
+            )
+            end = position[1] + self.delay_between_control_messages_and_note_on_message
             pitches_per_channels[channel][start:end] = pitch_bends
 
         # transform to pitch_bending midi - messages
