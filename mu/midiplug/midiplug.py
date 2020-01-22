@@ -249,7 +249,7 @@ class DivaTone(MidiTone, metaclass=SynthesizerMidiTone):
 
 
 class MidiFile(abc.ABC):
-    maximum_cent_deviation = 2400
+    maximum_cent_deviation = 1200
     maximum_pitch_bending = 16382
     maximum_pitch_bending_positive = 8191
 

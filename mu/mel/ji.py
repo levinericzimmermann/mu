@@ -1511,7 +1511,9 @@ class Monzo(object):
     def normalize(self, prime=2) -> "Monzo":
         ratio = self.ratio
         adjusted = type(self).adjust_ratio(ratio, prime)
-        return type(self).from_ratio(adjusted.numerator, adjusted.denominator)
+        return type(self).from_ratio(
+            adjusted.numerator, adjusted.denominator, multiply=self.multiply
+        )
 
     def subvert(self) -> list:
         def ispos(num):
@@ -1539,7 +1541,11 @@ class Monzo(object):
     @comparable_monzo_decorator
     def __math(self, other, operation) -> "Monzo":
         m0, m1 = Monzo.adjusted_monzos(self, other)
-        return Monzo(Monzo.calc_iterables(m0, m1, operation), self.val_border)
+        return Monzo(
+            Monzo.calc_iterables(m0, m1, operation),
+            self.val_border,
+            multiply=self.multiply,
+        )
 
     def __eq__(self: "Monzo", other: "Monzo") -> bool:
         try:
