@@ -21,9 +21,9 @@ from mu.utils import interpolation
 
 
 class InterpolationEvent(abstract.UniformEvent):
-    def __init__(self, delay: rhy.RhyUnit, interpolation_type=interpolation.Linear()):
-        if isinstance(delay, rhy.RhyUnit) is False:
-            delay = rhy.RhyUnit(delay)
+    def __init__(self, delay: rhy.Unit, interpolation_type=interpolation.Linear()):
+        if isinstance(delay, rhy.Unit) is False:
+            delay = rhy.Unit(delay)
         self.__delay = delay
         self.__interpolation_type = interpolation_type
 
@@ -43,7 +43,7 @@ class InterpolationEvent(abstract.UniformEvent):
 class PitchInterpolation(InterpolationEvent):
     def __init__(
         self,
-        delay: rhy.RhyUnit,
+        delay: rhy.Unit,
         pitch: AbstractPitch,
         interpolation_type: interpolation.Interpolation = interpolation.Linear(),
     ):
@@ -59,7 +59,7 @@ class PitchInterpolation(InterpolationEvent):
 
     def copy(self):
         return type(self)(
-            rhy.RhyUnit(self.delay), self.pitch.copy(), self.interpolation_type
+            rhy.Unit(self.delay), self.pitch.copy(), self.interpolation_type
         )
 
     def interpolate(self, other, steps) -> tuple:
@@ -71,8 +71,8 @@ class PitchInterpolation(InterpolationEvent):
 class RhythmicInterpolation(InterpolationEvent):
     def __init__(
         self,
-        delay: rhy.RhyUnit,
-        rhythm: rhy.RhyUnit,
+        delay: rhy.Unit,
+        rhythm: rhy.Unit,
         interpolation_type: interpolation.Interpolation = interpolation.Linear(),
     ):
         InterpolationEvent.__init__(self, delay, interpolation_type)
@@ -89,7 +89,7 @@ class RhythmicInterpolation(InterpolationEvent):
 
     def copy(self):
         return type(self)(
-            rhy.RhyUnit(self.delay), self.rhythm.copy(), self.interpolation_type
+            rhy.Unit(self.delay), self.rhythm.copy(), self.interpolation_type
         )
 
     def interpolate(self, other, steps) -> tuple:
@@ -149,8 +149,8 @@ class InterpolationLine(muobjects.MUList):
         return type(self)(item.copy() for item in self)
 
     @property
-    def delay(self) -> rhy.RhyCompound:
-        return rhy.RhyCompound(obj.delay.copy() for obj in self)
+    def delay(self) -> rhy.Compound:
+        return rhy.Compound(obj.delay.copy() for obj in self)
 
     @property
     def duration(self):
@@ -267,8 +267,8 @@ class Tone(abstract.UniformEvent):
     def __init__(
         self,
         pitch: Optional[AbstractPitch],
-        delay: rhy.RhyUnit,
-        duration: Optional[rhy.RhyUnit] = None,
+        delay: rhy.Unit,
+        duration: Optional[rhy.Unit] = None,
         volume: Optional = None,
         glissando: GlissandoLine = None,
         vibrato: VibratoLine = None,
@@ -276,12 +276,12 @@ class Tone(abstract.UniformEvent):
         if pitch is None:
             pitch = mel.EmptyPitch()
         self.pitch = pitch
-        if isinstance(delay, rhy.RhyUnit) is False:
-            delay = rhy.RhyUnit(delay)
+        if isinstance(delay, rhy.Unit) is False:
+            delay = rhy.Unit(delay)
         if not duration:
             duration = delay
-        elif isinstance(duration, rhy.RhyUnit) is False:
-            duration = rhy.RhyUnit(duration)
+        elif isinstance(duration, rhy.Unit) is False:
+            duration = rhy.Unit(duration)
         self._dur = duration
         self.delay = delay
         self.volume = volume
@@ -318,7 +318,7 @@ class Tone(abstract.UniformEvent):
 
 class Rest(Tone):
     def __init__(
-        self, delay: rhy.RhyUnit, duration: rhy.RhyUnit = rhy.RhyUnit(0)
+        self, delay: rhy.Unit, duration: rhy.Unit = rhy.Unit(0)
     ) -> None:
         self._dur = duration
         self.delay = delay
@@ -353,16 +353,16 @@ class Chord(abstract.SimultanEvent):
     def __init__(
         self,
         harmony,
-        delay: rhy.RhyUnit,
-        duration: Optional[rhy.RhyUnit] = None,
+        delay: rhy.Unit,
+        duration: Optional[rhy.Unit] = None,
         volume=None,
     ) -> None:
-        if isinstance(delay, rhy.RhyUnit) is False:
-            delay = rhy.RhyUnit(delay)
+        if isinstance(delay, rhy.Unit) is False:
+            delay = rhy.Unit(delay)
         if not duration:
             duration = delay
-        elif isinstance(duration, rhy.RhyUnit) is False:
-            duration = rhy.RhyUnit(duration)
+        elif isinstance(duration, rhy.Unit) is False:
+            duration = rhy.Unit(duration)
 
         self.harmony = harmony
         self._dur = duration
@@ -520,7 +520,7 @@ class AbstractLine(abstract.MultiSequentialEvent):
         return self.tie_by(sub)
 
     def cut_up_by_time(
-        self, start: rhy.RhyUnit, stop: rhy.RhyUnit, add_earlier=False, hard_cut=True
+        self, start: rhy.Unit, stop: rhy.Unit, add_earlier=False, hard_cut=True
     ) -> "AbstractLine":
         line = self.convert2absolute_time()
         new = []
@@ -590,7 +590,7 @@ class Melody(AbstractLine):
     """A Melody contains sequentially played Pitches."""
 
     _obj_class = Tone
-    _sub_sequences_class = (mel.Mel, rhy.RhyCompound, rhy.RhyCompound, list, list, list)
+    _sub_sequences_class = (mel.Mel, rhy.Compound, rhy.Compound, list, list, list)
     _sub_sequences_class_names = (
         "pitch",
         "delay",
@@ -669,8 +669,8 @@ class Melody(AbstractLine):
 class JIMelody(Melody):
     _sub_sequences_class = (
         ji.JIMel,
-        rhy.RhyCompound,
-        rhy.RhyCompound,
+        rhy.Compound,
+        rhy.Compound,
         list,
         list,
         list,
@@ -681,7 +681,7 @@ class Cadence(AbstractLine):
     """A Cadence contains sequentially played Harmonies."""
 
     _obj_class = Chord
-    _sub_sequences_class = (mel.Cadence, rhy.RhyCompound, rhy.RhyCompound, list)
+    _sub_sequences_class = (mel.Cadence, rhy.Compound, rhy.Compound, list)
 
     @property
     def harmony(self):
@@ -735,7 +735,7 @@ class Cadence(AbstractLine):
 
 
 class JICadence(Cadence):
-    _sub_sequences_class = (ji.JICadence, rhy.RhyCompound, rhy.RhyCompound, list)
+    _sub_sequences_class = (ji.JICadence, rhy.Compound, rhy.Compound, list)
 
 
 class PolyLine(abstract.SimultanEvent):
@@ -783,7 +783,7 @@ class PolyLine(abstract.SimultanEvent):
         for v in poly:
             summed = sum(v.delay)
             if summed < total:
-                v.append(Rest(rhy.RhyUnit(total - summed)))
+                v.append(Rest(rhy.Unit(total - summed)))
         return poly
 
     @property
@@ -866,7 +866,7 @@ class PolyLine(abstract.SimultanEvent):
         return simultan
 
     def cut_up_by_time(
-        self, start: rhy.RhyUnit, stop: rhy.RhyUnit, hard_cut=True, add_earlier=True
+        self, start: rhy.Unit, stop: rhy.Unit, hard_cut=True, add_earlier=True
     ) -> "PolyLine":
         polyline = self.convert2absolute_time()
         for i, sub in enumerate(polyline):
@@ -1002,7 +1002,7 @@ class ToneSet(muobjects.MUSet):
             d = 0
             for t in melody.copy():
                 delay = float(t.delay)
-                t.delay = rhy.RhyUnit(d)
+                t.delay = rhy.Unit(d)
                 d += delay
                 new_set.add(t)
         return new_set
@@ -1014,7 +1014,7 @@ class ToneSet(muobjects.MUSet):
         for chord in cadence:
             delay = float(chord.delay)
             for p in chord.pitch:
-                t = Tone(p, rhy.RhyUnit(d), chord.duration, chord.volume)
+                t = Tone(p, rhy.Unit(d), chord.duration, chord.volume)
                 new_set.add(t)
             d += delay
         return new_set
@@ -1051,8 +1051,8 @@ class ToneSet(muobjects.MUSet):
             sorted_by_delay.insert(0, Rest(0))
         for t, t_after in zip(sorted_by_delay, sorted_by_delay[1:]):
             diff = t_after.delay - t.delay
-            t.delay = rhy.RhyUnit(diff)
-        sorted_by_delay[-1].delay = rhy.RhyUnit(sorted_by_delay[-1].duration)
+            t.delay = rhy.Unit(diff)
+        sorted_by_delay[-1].delay = rhy.Unit(sorted_by_delay[-1].duration)
         return Melody(sorted_by_delay)
 
     def convert2cadence(self) -> Cadence:
@@ -1070,8 +1070,8 @@ class ToneSet(muobjects.MUSet):
             harmony.add(t.pitch)
             if diff != 0:
                 cadence.append(
-                    Chord(harmony, rhy.RhyUnit(diff), rhy.RhyUnit(t.duration))
+                    Chord(harmony, rhy.Unit(diff), rhy.Unit(t.duration))
                 )
                 harmony = mel.Harmony([])
-        cadence[-1].delay = rhy.RhyUnit(sorted_by_delay[-1].duration)
+        cadence[-1].delay = rhy.Unit(sorted_by_delay[-1].duration)
         return Cadence(cadence)

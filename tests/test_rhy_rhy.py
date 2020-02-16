@@ -1,61 +1,41 @@
-# @Author: Levin Eric Zimmermann
-# @Date:   2018-03-22T13:37:52+01:00
-# @Email:  levin-eric.zimmermann@folkwang-uni.de
-# @Project: mu
-# @Last modified by:   uummoo
-# @Last modified time: 2018-03-22T13:38:25+01:00
-
-
 import unittest
-from mu.time import time
+
 from mu.rhy import rhy
+from mu.time import time
 
 
 class RhyTest(unittest.TestCase):
     def test_delay(self):
-        rh0 = rhy.RhyUnit(4)
-        rhy_comp0 = rhy.RhyCompound([rhy.RhyUnit(2),
-                                     rhy.RhyUnit(4),
-                                     rhy.RhyUnit(1)])
-        rhy_comp1 = rhy.RhyCompound([rhy.RhyUnit(4),
-                                     rhy.RhyUnit(8),
-                                     rhy.RhyUnit(2)])
+        rh0 = rhy.Unit(4)
+        rhy_comp0 = rhy.Compound([rhy.Unit(2), rhy.Unit(4), rhy.Unit(1)])
+        rhy_comp1 = rhy.Compound([rhy.Unit(4), rhy.Unit(8), rhy.Unit(2)])
         self.assertEqual(rh0.delay, time.Time(4))
         self.assertEqual(rhy_comp0.delay, time.Time(7))
         self.assertEqual(rhy_comp1.delay, time.Time(14))
 
     def test_stretch(self):
-        rh0 = rhy.RhyUnit(2)
-        rh1 = rhy.RhyUnit(4)
-        rh2 = rhy.RhyUnit(1)
+        rh0 = rhy.Unit(2)
+        rh1 = rhy.Unit(4)
+        rh2 = rhy.Unit(1)
         self.assertEqual(rh0.stretch(2), rh1)
         self.assertEqual(rh0.stretch(0.5), rh2)
-        rhy_comp0 = rhy.RhyCompound([rhy.RhyUnit(2),
-                                     rhy.RhyUnit(4),
-                                     rhy.RhyUnit(1)])
-        rhy_comp1 = rhy.RhyCompound([rhy.RhyUnit(4),
-                                     rhy.RhyUnit(8),
-                                     rhy.RhyUnit(2)])
-        rhy_comp2 = rhy.RhyCompound([rhy.RhyUnit(1),
-                                     rhy.RhyUnit(2),
-                                     rhy.RhyUnit(0.5)])
+        rhy_comp0 = rhy.Compound([rhy.Unit(2), rhy.Unit(4), rhy.Unit(1)])
+        rhy_comp1 = rhy.Compound([rhy.Unit(4), rhy.Unit(8), rhy.Unit(2)])
+        rhy_comp2 = rhy.Compound([rhy.Unit(1), rhy.Unit(2), rhy.Unit(0.5)])
         self.assertEqual(rhy_comp0, rhy_comp1.stretch(0.5))
         self.assertEqual(rhy_comp0.stretch(2), rhy_comp1)
         self.assertEqual(rhy_comp0.stretch(0.5), rhy_comp2)
 
     def test_convert2absolute(self):
-        r0 = rhy.RhyCompound((2, 2, 3, 1))
-        r1 = rhy.RhyCompound((0, 2, 4, 7, 8))
+        r0 = rhy.Compound((2, 2, 3, 1))
+        r1 = rhy.Compound((0, 2, 4, 7, 8))
         self.assertEqual(r0.convert2absolute(), r1[:-1])
         self.assertEqual(r0.convert2absolute(skiplast=False), r1)
 
     def test_convert2relative(self):
-        r0 = rhy.RhyCompound((0, 2, 4, 7, 8))
-        r1 = rhy.RhyCompound((2, 2, 3, 1))
+        r0 = rhy.Compound((0, 2, 4, 7, 8))
+        r1 = rhy.Compound((2, 2, 3, 1))
         self.assertEqual(r0.convert2relative(), r1)
-
-    def test_convert2music21(self):
-        pass
 
 
 class PulseChromaTest(unittest.TestCase):
@@ -76,8 +56,7 @@ class PulseChromaTest(unittest.TestCase):
         chrome7 = rhy.PulseChroma(5)
         chrome8 = rhy.PulseChroma(1)
         self.assertEqual(chrome0.subpulse, (chrome1,))
-        self.assertEqual(set(chrome1.subpulse), set(
-                (chrome2, chrome3, chrome4)))
+        self.assertEqual(set(chrome1.subpulse), set((chrome2, chrome3, chrome4)))
         self.assertEqual(set(chrome2.subpulse), set((chrome6, chrome7)))
         self.assertEqual(set(chrome3.subpulse), set((chrome5, chrome7)))
         self.assertEqual(set(chrome4.subpulse), set((chrome5, chrome6)))

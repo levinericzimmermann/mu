@@ -1544,7 +1544,6 @@ class Monzo(object):
         return Monzo(
             Monzo.calc_iterables(m0, m1, operation),
             self.val_border,
-            multiply=self.multiply,
         )
 
     def __eq__(self: "Monzo", other: "Monzo") -> bool:

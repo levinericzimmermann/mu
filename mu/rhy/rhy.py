@@ -25,31 +25,31 @@ class AbstractRhythm(abc.ABC):
         raise NotImplementedError
 
 
-class RhyUnit(AbstractRhythm, time.Time):
+class Unit(AbstractRhythm, time.Time):
     def __repr__(self):
         return time.Time.__repr__(self)
 
     def flat(self):
-        return RhyCompound((self,))
+        return Compound((self,))
 
     @property
     def delay(self):
         return time.Time(self)
 
     def stretch(self, arg):
-        return RhyUnit(self * arg)
+        return type(self)(self * arg)
 
     def copy(self):
         return type(self)(self)
 
 
-class RhyCompound(AbstractRhythm, muobjects.MUList):
+class Compound(AbstractRhythm, muobjects.MUList):
     def __init__(self, iterable):
         iterable = list(iterable)
         for i, n in enumerate(iterable):
             if not isinstance(n, AbstractRhythm):
                 try:
-                    iterable[i] = RhyUnit(n)
+                    iterable[i] = Unit(n)
                 except TypeError:
                     raise ValueError("Unknown element {0}.".format(n))
         muobjects.MUList.__init__(self, iterable)
@@ -59,16 +59,16 @@ class RhyCompound(AbstractRhythm, muobjects.MUList):
             return functools.reduce(
                 lambda x, y: x + y, tuple(u.flat() for u in self))
         else:
-            return RhyCompound([])
+            return type(self)([])
 
     @property
     def delay(self):
         return time.Time(sum(u.delay for u in self))
 
     def stretch(self, arg):
-        return RhyCompound(tuple(u.stretch(arg) for u in self))
+        return type(self)(tuple(u.stretch(arg) for u in self))
 
-    def append(self, arg: Union[int, RhyUnit]) -> None:
+    def append(self, arg: Union[int, Unit]) -> None:
         if id(arg) == id(self):
             arg = arg.copy()
         list.append(self, arg)
@@ -92,7 +92,7 @@ class RhyCompound(AbstractRhythm, muobjects.MUList):
 
 
 class PulseChroma(int):
-    def __init__(self, length):
+    def __init__(self, length: int):
         muobjects.MUInt.__init__(length)
         primes = prime_factors.factorise(length)
         length_primes = len(primes)

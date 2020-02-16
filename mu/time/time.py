@@ -11,25 +11,25 @@ class Time(muobjects.MUFloat):
         muobjects.MUFloat.__init__(value)
 
     @staticmethod
-    def seconds2miliseconds(s):
+    def seconds2miliseconds(s: float) -> float:
         return s * 1000
 
     @staticmethod
-    def minutes2miliseconds(m):
+    def minutes2miliseconds(m: float) -> float:
         return m * 60 * 1000
 
     @staticmethod
-    def hours2miliseconds(h):
+    def hours2miliseconds(h: float) -> float:
         return h * 60 * 60 * 1000
 
     @classmethod
-    def from_seconds(cls, s):
+    def from_seconds(cls, s: float) -> "Time":
         return cls(Time.seconds2miliseconds(s))
 
     @classmethod
-    def from_minutes(cls, m):
+    def from_minutes(cls, m: float) -> "Time":
         return cls(Time.minutes2miliseconds(m))
 
     @classmethod
-    def from_hours(cls, h):
+    def from_hours(cls, h: float) -> "Time":
         return cls(Time.hours2miliseconds(h))

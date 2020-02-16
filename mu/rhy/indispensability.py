@@ -50,7 +50,9 @@ def bar_indispensability2indices(bar_indispensability):
     bar_indispensability = tuple((i, n) for i, n in enumerate(bar_indispensability))
     ig0 = operator.itemgetter(0)
     ig1 = operator.itemgetter(1)
-    return tuple(ig0(ind) for ind in sorted(bar_indispensability, key=ig1, reverse=True))
+    return tuple(
+        ig0(ind) for ind in sorted(bar_indispensability, key=ig1, reverse=True)
+    )
 
 
 def convert_dominant_prime_and_length2p(dominant_prime, length):

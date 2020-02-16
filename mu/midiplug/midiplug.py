@@ -18,29 +18,14 @@ with open(os.path.join(__directory, "", "../mel/12edo"), "r") as f:
     _12edo_freq = tuple(float(line[:-1]) for line in f.readlines())
 
 
-def discard_pauses_and_tie_sequence(sequence):
-    """this will change the init sequence!!!"""
-    new = []
-    first = True
-    for event in sequence:
-        if first is False and event.pitch == mel.TheEmptyPitch:
-            information = event.delay
-            new[-1].duration += information
-            new[-1].delay += information
-        else:
-            new.append(event)
-        first = False
-    return tuple(new)
-
-
 class MidiTone(old.Tone):
     _init_args = {}
 
     def __init__(
         self,
         pitch: Optional[AbstractPitch],
-        delay: rhy.RhyUnit,
-        duration: Optional[rhy.RhyUnit] = None,
+        delay: rhy.Unit,
+        duration: Optional[rhy.Unit] = None,
         volume: Optional = None,
         glissando: old.GlissandoLine = None,
         vibrato: old.VibratoLine = None,
@@ -266,7 +251,7 @@ class MidiFile(abc.ABC):
         self, sequence: tuple, available_midi_notes: tuple = tuple(range(128))
     ):
         self.__available_midi_notes = available_midi_notes
-        sequence = discard_pauses_and_tie_sequence(tuple(sequence))
+        sequence = MidiFile.discard_pauses_and_tie_sequence(tuple(sequence))
         filtered_sequence = tuple(t for t in sequence if t.pitch != mel.TheEmptyPitch)
         gridsize = 0.001  # 1 milisecond
         self.__duration = float(sum(t.delay for t in sequence))
@@ -316,6 +301,21 @@ class MidiFile(abc.ABC):
         self, sequence, keys, available_midi_notes, overlapping_dict, midi_pitch_dict
     ) -> tuple:
         raise NotImplementedError
+
+    @staticmethod
+    def discard_pauses_and_tie_sequence(sequence):
+        """this will change the init sequence!!!"""
+        new = []
+        first = True
+        for event in sequence:
+            if first is False and event.pitch == mel.TheEmptyPitch:
+                information = event.delay
+                new[-1].duration += information
+                new[-1].delay += information
+            else:
+                new.append(event)
+            first = False
+        return tuple(new)
 
     def distribute_pitch_bends_on_channels(
         self, pitch_bends_per_tone, grid, grid_position_per_tone, gridsize

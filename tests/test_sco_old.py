@@ -1,8 +1,9 @@
 import unittest
-from mu.sco import old
-from mu.mel import mel
+
 from mu.mel import ji
+from mu.mel import mel
 from mu.rhy import rhy
+from mu.sco import old
 
 
 class InterpolationEventTest(unittest.TestCase):
@@ -19,9 +20,9 @@ class InterpolationEventTest(unittest.TestCase):
         self.assertEqual(p0.interpolate(p1, 3), interp0)
 
     def test_rhythmic_interpolation(self):
-        p0 = old.RhythmicInterpolation(3, rhy.RhyUnit(3))
-        p1 = old.RhythmicInterpolation(0, rhy.RhyUnit(2))
-        p2 = old.RhythmicInterpolation(0, rhy.RhyUnit(2))
+        p0 = old.RhythmicInterpolation(3, rhy.Unit(3))
+        p1 = old.RhythmicInterpolation(0, rhy.Unit(2))
+        p2 = old.RhythmicInterpolation(0, rhy.Unit(2))
         self.assertNotEqual(hash(p0), hash(p1))
         self.assertEqual(hash(p1), hash(p2))
         interp0 = (3, 2.5, 2)
@@ -54,8 +55,8 @@ class InterpolationLineTest(unittest.TestCase):
         p3 = old.PitchInterpolation(4, mel.SimplePitch(0, -200))
         p4 = old.PitchInterpolation(2, mel.SimplePitch(0, -600))
         p5 = old.PitchInterpolation(0, mel.SimplePitch(0, -900))
-        r0 = old.RhythmicInterpolation(6, rhy.RhyUnit(2))
-        r1 = old.RhythmicInterpolation(0, rhy.RhyUnit(2))
+        r0 = old.RhythmicInterpolation(6, rhy.Unit(2))
+        r1 = old.RhythmicInterpolation(0, rhy.Unit(2))
         line0 = old.InterpolationLine((p0, p1, p2))
         line1 = old.InterpolationLine((p3, p4, p5))
         line2 = old.InterpolationLine((r0, r1))
@@ -77,14 +78,14 @@ class InterpolationLineTest(unittest.TestCase):
 class MelodyTest(unittest.TestCase):
     p0 = ji.r(14, 9)
     p1 = ji.r(7, 4)
-    d0 = rhy.RhyUnit(400)
-    d1 = rhy.RhyUnit(800)
+    d0 = rhy.Unit(400)
+    d1 = rhy.Unit(800)
     t0 = old.Tone(p0, d0)
     t1 = old.Tone(p1, d1)
     mel0 = mel.Mel([p0] * 3)
     mel1 = mel.Mel([p1] * 3)
-    rhy0 = rhy.RhyCompound([d0] * 3)
-    rhy1 = rhy.RhyCompound([d1] * 3)
+    rhy0 = rhy.Compound([d0] * 3)
+    rhy1 = rhy.Compound([d1] * 3)
     melody0 = old.Melody([t0] * 3)
 
     def test_constructor(self):
@@ -145,8 +146,8 @@ class MelodyTest(unittest.TestCase):
         self.assertEqual(melody0.sequences[2], self.rhy0)
 
     def test_set_item(self):
-        t0 = old.Tone(ji.r(1, 1), rhy.RhyUnit(2))
-        t1 = old.Tone(ji.r(2, 1), rhy.RhyUnit(2))
+        t0 = old.Tone(ji.r(1, 1), rhy.Unit(2))
+        t1 = old.Tone(ji.r(2, 1), rhy.Unit(2))
         melody0 = old.Melody([t0, t1])
         melody1 = old.Melody([t1, t0])
         melody0[0], melody0[1] = melody1[0], melody1[1]
@@ -171,20 +172,20 @@ class MelodyTest(unittest.TestCase):
         self.assertEqual(melody2.tie(), melody2)
 
     def test_split(self):
-        tone0 = old.Tone(ji.r(1, 1, 2), rhy.RhyUnit(2), rhy.RhyUnit(1))
-        tone0B = old.Tone(ji.r(1, 1, 2), rhy.RhyUnit(1), rhy.RhyUnit(1))
-        tone1 = old.Tone(ji.r(1, 1, 2), rhy.RhyUnit(3), rhy.RhyUnit(1))
-        tone1B = old.Tone(ji.r(1, 1, 2), rhy.RhyUnit(1), rhy.RhyUnit(1))
-        pause0 = old.Rest(rhy.RhyUnit(1))
-        pause1 = old.Rest(rhy.RhyUnit(2))
+        tone0 = old.Tone(ji.r(1, 1, 2), rhy.Unit(2), rhy.Unit(1))
+        tone0B = old.Tone(ji.r(1, 1, 2), rhy.Unit(1), rhy.Unit(1))
+        tone1 = old.Tone(ji.r(1, 1, 2), rhy.Unit(3), rhy.Unit(1))
+        tone1B = old.Tone(ji.r(1, 1, 2), rhy.Unit(1), rhy.Unit(1))
+        pause0 = old.Rest(rhy.Unit(1))
+        pause1 = old.Rest(rhy.Unit(2))
         melody0 = old.Melody([tone0, tone1])
         melody1 = old.Melody([tone0B, pause0, tone1B, pause1])
         self.assertEqual(melody0.split(), melody1)
 
     def test_cut_up_by_time(self):
-        t0 = old.Tone(ji.r(1, 1), rhy.RhyUnit(2))
-        t1 = old.Tone(ji.r(2, 1), rhy.RhyUnit(2))
-        t2 = old.Tone(ji.r(1, 1), rhy.RhyUnit(1))
+        t0 = old.Tone(ji.r(1, 1), rhy.Unit(2))
+        t1 = old.Tone(ji.r(2, 1), rhy.Unit(2))
+        t2 = old.Tone(ji.r(1, 1), rhy.Unit(1))
         r0 = old.Rest(1)
         melody0 = old.Melody([t0, t1, t1, t0, t1])
         melody1 = old.Melody([t1, t1, t0])
@@ -241,22 +242,22 @@ class ToneSetTest(unittest.TestCase):
     p3 = ji.r(6, 5)
     p4 = ji.r(7, 4)
     p5 = ji.r(9, 8)
-    t0 = old.Tone(p0, rhy.RhyUnit(1))
-    t1 = old.Tone(p1, rhy.RhyUnit(1))
-    t2 = old.Tone(p2, rhy.RhyUnit(1))
-    t3 = old.Tone(p3, rhy.RhyUnit(1))
-    t3 = old.Tone(p3, rhy.RhyUnit(1))
-    t4 = old.Tone(p4, rhy.RhyUnit(1))
-    t5 = old.Tone(p5, rhy.RhyUnit(1))
-    t0_set = old.Tone(p0, rhy.RhyUnit(0), rhy.RhyUnit(1))
-    t1_set = old.Tone(p1, rhy.RhyUnit(1), rhy.RhyUnit(1))
-    t2_set = old.Tone(p2, rhy.RhyUnit(2), rhy.RhyUnit(1))
-    t3_set = old.Tone(p3, rhy.RhyUnit(3), rhy.RhyUnit(1))
-    t4_set = old.Tone(p4, rhy.RhyUnit(4), rhy.RhyUnit(1))
-    t5_set = old.Tone(p5, rhy.RhyUnit(5), rhy.RhyUnit(1))
-    t6_set = old.Tone(p5, rhy.RhyUnit(1), rhy.RhyUnit(5))
+    t0 = old.Tone(p0, rhy.Unit(1))
+    t1 = old.Tone(p1, rhy.Unit(1))
+    t2 = old.Tone(p2, rhy.Unit(1))
+    t3 = old.Tone(p3, rhy.Unit(1))
+    t3 = old.Tone(p3, rhy.Unit(1))
+    t4 = old.Tone(p4, rhy.Unit(1))
+    t5 = old.Tone(p5, rhy.Unit(1))
+    t0_set = old.Tone(p0, rhy.Unit(0), rhy.Unit(1))
+    t1_set = old.Tone(p1, rhy.Unit(1), rhy.Unit(1))
+    t2_set = old.Tone(p2, rhy.Unit(2), rhy.Unit(1))
+    t3_set = old.Tone(p3, rhy.Unit(3), rhy.Unit(1))
+    t4_set = old.Tone(p4, rhy.Unit(4), rhy.Unit(1))
+    t5_set = old.Tone(p5, rhy.Unit(5), rhy.Unit(1))
+    t6_set = old.Tone(p5, rhy.Unit(1), rhy.Unit(5))
     mel0 = old.Melody([t0, t1, t2, t3, t4, t5])
-    mel1 = old.Melody([old.Rest(rhy.RhyUnit(1)), t1, t2, t3, t4, t5])
+    mel1 = old.Melody([old.Rest(rhy.Unit(1)), t1, t2, t3, t4, t5])
     mel2 = old.Melody([t0, t1])
     set0 = old.ToneSet([t0_set, t1_set, t2_set, t3_set, t4_set, t5_set])
     set1 = old.ToneSet([t1_set, t2_set, t3_set, t4_set, t5_set])
@@ -272,7 +273,7 @@ class ToneSetTest(unittest.TestCase):
     def test_pop_by(self):
         popped = ToneSetTest.set0.copy().pop_by_pitch(ToneSetTest.p0, ToneSetTest.p1)
         self.assertEqual(ToneSetTest.mel2, popped.convert2melody())
-        popped = ToneSetTest.set0.copy().pop_by_start(rhy.RhyUnit(0), rhy.RhyUnit(1))
+        popped = ToneSetTest.set0.copy().pop_by_start(rhy.Unit(0), rhy.Unit(1))
         self.assertEqual(ToneSetTest.mel2, popped.convert2melody())
 
     def test_pop_by_time(self):
@@ -290,8 +291,8 @@ class ToneSetTest(unittest.TestCase):
     def test_pop_by_correct_dur_and_delay(self):
         poped_by = self.set0.pop_by_pitch(self.p0, self.p5)
         melody = poped_by.convert2melody()
-        self.assertEqual(melody[0].delay, rhy.RhyUnit(5))
-        self.assertEqual(melody[0].duration, rhy.RhyUnit(1))
+        self.assertEqual(melody[0].delay, rhy.Unit(5))
+        self.assertEqual(melody[0].duration, rhy.Unit(1))
 
 
 class PolyTest(unittest.TestCase):
@@ -301,19 +302,19 @@ class PolyTest(unittest.TestCase):
     p3 = ji.r(6, 5)
     p4 = ji.r(7, 4)
     p5 = ji.r(9, 8)
-    t0 = old.Tone(p0, rhy.RhyUnit(1))
-    t1 = old.Tone(p1, rhy.RhyUnit(1))
-    t2 = old.Tone(p2, rhy.RhyUnit(1))
-    t3 = old.Tone(p3, rhy.RhyUnit(1))
-    t3 = old.Tone(p3, rhy.RhyUnit(1))
-    t4 = old.Tone(p4, rhy.RhyUnit(1))
-    t5 = old.Tone(p5, rhy.RhyUnit(1))
-    t6 = old.Tone(p0, rhy.RhyUnit(2))
-    t7 = old.Tone(p0, rhy.RhyUnit(0.5))
-    t8 = old.Tone(p0, rhy.RhyUnit(1.5))
-    t9 = old.Tone(p1, rhy.RhyUnit(1.5))
-    t10 = old.Tone(p5, rhy.RhyUnit(0.5))
-    t11 = old.Tone(p2, rhy.RhyUnit(1))
+    t0 = old.Tone(p0, rhy.Unit(1))
+    t1 = old.Tone(p1, rhy.Unit(1))
+    t2 = old.Tone(p2, rhy.Unit(1))
+    t3 = old.Tone(p3, rhy.Unit(1))
+    t3 = old.Tone(p3, rhy.Unit(1))
+    t4 = old.Tone(p4, rhy.Unit(1))
+    t5 = old.Tone(p5, rhy.Unit(1))
+    t6 = old.Tone(p0, rhy.Unit(2))
+    t7 = old.Tone(p0, rhy.Unit(0.5))
+    t8 = old.Tone(p0, rhy.Unit(1.5))
+    t9 = old.Tone(p1, rhy.Unit(1.5))
+    t10 = old.Tone(p5, rhy.Unit(0.5))
+    t11 = old.Tone(p2, rhy.Unit(1))
     melody0 = old.JIMelody((t0, t1))
     melody1 = old.JIMelody((t2, t3))
     melody2 = old.JIMelody((t6, t6, t0, t7))  # duration 5.5
@@ -327,17 +328,17 @@ class PolyTest(unittest.TestCase):
     poly2 = old.Polyphon([melody6, melody5])
 
     def test_chordify(self):
-        chord0 = old.Chord(ji.JIHarmony([self.t0, self.t2]), rhy.RhyUnit(1))
-        chord1 = old.Chord(ji.JIHarmony([self.t1, self.t3]), rhy.RhyUnit(1))
+        chord0 = old.Chord(ji.JIHarmony([self.t0, self.t2]), rhy.Unit(1))
+        chord1 = old.Chord(ji.JIHarmony([self.t1, self.t3]), rhy.Unit(1))
         cadence0 = old.Cadence([chord0, chord1])
         self.assertEqual(cadence0, self.poly0.chordify())
 
-        chord0 = old.Chord(ji.JIHarmony([self.p0, self.p5]), rhy.RhyUnit(0.5))
-        chord1 = old.Chord(ji.JIHarmony([self.p0, self.p1]), rhy.RhyUnit(1.5))
-        chord2 = old.Chord(ji.JIHarmony([self.p0, self.p3]), rhy.RhyUnit(1))
-        chord3 = old.Chord(ji.JIHarmony([self.p0]), rhy.RhyUnit(1))
-        chord4 = old.Chord(ji.JIHarmony([self.p0, self.p2]), rhy.RhyUnit(0.5))
-        chord5 = old.Chord(ji.JIHarmony([self.p0]), rhy.RhyUnit(0.5))
+        chord0 = old.Chord(ji.JIHarmony([self.p0, self.p5]), rhy.Unit(0.5))
+        chord1 = old.Chord(ji.JIHarmony([self.p0, self.p1]), rhy.Unit(1.5))
+        chord2 = old.Chord(ji.JIHarmony([self.p0, self.p3]), rhy.Unit(1))
+        chord3 = old.Chord(ji.JIHarmony([self.p0]), rhy.Unit(1))
+        chord4 = old.Chord(ji.JIHarmony([self.p0, self.p2]), rhy.Unit(0.5))
+        chord5 = old.Chord(ji.JIHarmony([self.p0]), rhy.Unit(0.5))
         expected = old.Cadence([chord0, chord1, chord2, chord3, chord4, chord4, chord5])
         result = self.poly2.chordify(
             harmony_class=ji.JIHarmony, cadence_class=old.JICadence, add_longer=True
