@@ -296,10 +296,10 @@ class Compound(rhy.AbstractRhythm):
     def modulate(self, other: "Compound") -> "Compound":
         intr_other = other.intr
         converted_self = list(self)
-        assert sum(intr_other) == converted_self
+        assert sum(intr_other) == len(converted_self)
         indices = tools.accumulate_from_zero(intr_other)
         return type(self)(
-            sum(converted_self[x:y] for x, y in zip(indices, indices[1:]))
+            sum(converted_self[x:y]) for x, y in zip(indices, indices[1:])
         )
 
     def difference(self, other: "Compound") -> int:
@@ -324,9 +324,6 @@ class Compound(rhy.AbstractRhythm):
 
     def move_gc(self, n: int) -> "Compound":
         binr = list(self.binr[1:])
-        len_binr = len(binr)
-        gc = tools.graycode(len_binr, 2)
-        position = gc.index(binr)
-        return type(self).from_binary_rhythm(
-            [1] + gc[(position + n) % len_binr], self.multiply
-        )
+        gc = tools.graycode(len(binr), 2)
+        idx = (gc.index(binr) + n) % len(gc)
+        return type(self).from_binary_rhythm([1] + gc[idx], self.multiply)
