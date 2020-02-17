@@ -317,9 +317,10 @@ class Tone(abstract.UniformEvent):
 
 
 class Rest(Tone):
-    def __init__(
-        self, delay: rhy.Unit, duration: rhy.Unit = rhy.Unit(0)
-    ) -> None:
+    def __init__(self, delay: rhy.Unit, duration: rhy.Unit = None) -> None:
+        if duration is None:
+            duration = delay
+
         self._dur = duration
         self.delay = delay
         self.volume = 0
@@ -351,11 +352,7 @@ class Chord(abstract.SimultanEvent):
     """A Chord contains simultanly played Tones."""
 
     def __init__(
-        self,
-        harmony,
-        delay: rhy.Unit,
-        duration: Optional[rhy.Unit] = None,
-        volume=None,
+        self, harmony, delay: rhy.Unit, duration: Optional[rhy.Unit] = None, volume=None
     ) -> None:
         if isinstance(delay, rhy.Unit) is False:
             delay = rhy.Unit(delay)
@@ -465,8 +462,10 @@ class AbstractLine(abstract.MultiSequentialEvent):
     @property
     def duration(self):
         if self.time_measure == "relative":
+            print("HERE")
             return time.Time(sum(self.delay))
         else:
+            print("THERE")
             return time.Time(self.dur[-1])
 
     def tie_by(self, function):
@@ -615,9 +614,9 @@ class Melody(AbstractLine):
     def freq(self) -> Tuple[float]:
         return self.mel.freq
 
-    @property
-    def duration(self):
-        return float(sum(element.delay for element in self))
+    # @property
+    # def duration(self):
+    #     return float(sum(element.delay for element in self))
 
     @property
     def mel(self):
@@ -667,14 +666,7 @@ class Melody(AbstractLine):
 
 
 class JIMelody(Melody):
-    _sub_sequences_class = (
-        ji.JIMel,
-        rhy.Compound,
-        rhy.Compound,
-        list,
-        list,
-        list,
-    )
+    _sub_sequences_class = (ji.JIMel, rhy.Compound, rhy.Compound, list, list, list)
 
 
 class Cadence(AbstractLine):
@@ -899,6 +891,7 @@ class PolyLine(abstract.SimultanEvent):
             else:
                 new.append(Rest(start, stop))
             polyline[i] = type(polyline[i])(new, "absolute")
+
         if hard_cut is False:
             earliest = min(sub.delay[0] for sub in polyline)
             if earliest < start:
@@ -906,11 +899,13 @@ class PolyLine(abstract.SimultanEvent):
                     if sub.delay[0] > earliest:
                         sub.insert(0, Rest(earliest, earliest))
                         polyline[i] = sub
+
         if self.time_measure is "relative":
             for sub in polyline:
                 sub.dur = type(sub.dur)(d - sub.delay[0] for d in sub.dur)
                 sub.delay = type(sub.delay)(d - sub.delay[0] for d in sub.delay)
             polyline = polyline.convert2relative_time()
+
         return polyline
 
     def cut_up_by_idx(
@@ -1069,9 +1064,7 @@ class ToneSet(muobjects.MUSet):
                 diff = t.duration
             harmony.add(t.pitch)
             if diff != 0:
-                cadence.append(
-                    Chord(harmony, rhy.Unit(diff), rhy.Unit(t.duration))
-                )
+                cadence.append(Chord(harmony, rhy.Unit(diff), rhy.Unit(t.duration)))
                 harmony = mel.Harmony([])
         cadence[-1].delay = rhy.Unit(sorted_by_delay[-1].duration)
         return Cadence(cadence)

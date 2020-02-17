@@ -15,13 +15,19 @@ class Compound(rhy.AbstractRhythm):
 
     def __init__(self, iterable: list) -> None:
         iterable = tuple(iterable)
+
+        self.__representation = "relative"
+
+        if iterable:
+            if iterable[0] == 0:
+                self.__representation = "absolute"
+
+        if self.representation == "absolute":
+            iterable = tuple(b - a for a, b in zip(iterable, iterable[1:]))
+
         essence, multiply = self.convert_rhythm2essence_and_multiply(iterable)
         self.__essence = essence
         self.__multiply = multiply
-        if iterable[0] != 0:
-            self.__representation = "relative"
-        else:
-            self.__representation = "absolute"
 
     def copy(self) -> "Compound":
         return type(self).from_int(int(self.essence), fractions.Fraction(self.multiply))
@@ -161,8 +167,10 @@ class Compound(rhy.AbstractRhythm):
         self.essence = essence
         self.multiply = multiply
 
-    def stretch(self, value: float) -> None:
-        self.multiply *= value
+    def stretch(self, value: float) -> "Compound":
+        new = self.copy()
+        new.multiply *= value
+        return new
 
     @staticmethod
     def convert_binary2rhythm(binary: bin) -> tuple:
@@ -209,21 +217,24 @@ class Compound(rhy.AbstractRhythm):
 
     @staticmethod
     def convert_rhythm2essence_and_multiply(rhythm: tuple) -> tuple:
-        rhythm_as_fraction = tuple(fractions.Fraction(r) for r in rhythm)
-        lcd = tools.lcm(*tuple(r.denominator for r in rhythm_as_fraction))
-        int_rhythm = tuple(int(r * lcd) for r in rhythm_as_fraction)
-        essence = int(
-            Compound.convert_binary_rhythm2binary(
-                Compound.convert_int_rhythm2binary_rhythm(int_rhythm)
-            ),
-            2,
-        )
-        return essence, fractions.Fraction(1, lcd)
+        if rhythm:
+            rhythm_as_fraction = tuple(fractions.Fraction(r) for r in rhythm)
+            lcd = tools.lcm(*tuple(r.denominator for r in rhythm_as_fraction))
+            int_rhythm = tuple(int(r * lcd) for r in rhythm_as_fraction)
+            essence = int(
+                Compound.convert_binary_rhythm2binary(
+                    Compound.convert_int_rhythm2binary_rhythm(int_rhythm)
+                ),
+                2,
+            )
+            return essence, fractions.Fraction(1, lcd)
+        else:
+            return 0, 1
 
     @staticmethod
     def is_valid_essence(essence: int) -> bool:
         try:
-            return essence >= 0 and int(essence) == float(essence)
+            return essence >= 0 and (int(essence) - essence) is 0
         except TypeError:
             return False
 
