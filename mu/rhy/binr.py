@@ -1,3 +1,6 @@
+import functools
+import operator
+
 try:
     import quicktions as fractions
 except ImportError:
@@ -37,9 +40,9 @@ class Compound(rhy.AbstractRhythm):
     def from_binary(
         cls, binary_number: bin, multiply: fractions.Fraction = fractions.Fraction(1, 1)
     ) -> "Compound":
-        n = cls(Compound.convert_binary2rhythm(binary_number))
-        n.multiply = multiply
-        return n
+        new = cls(Compound.convert_binary2rhythm(binary_number))
+        new.multiply = multiply
+        return new
 
     @classmethod
     def from_int(
@@ -50,28 +53,43 @@ class Compound(rhy.AbstractRhythm):
         return cls(Compound.convert_essence_and_multiply2rhythm(essence, multiply))
 
     @classmethod
+    def from_barlow(cls, primes: tuple, density: float) -> "Compound":
+        raise NotImplementedError
+
+    @classmethod
     def from_binary_rhythm(
         cls,
         binary_rhythm: tuple,
         multiply: fractions.Fraction = fractions.Fraction(1, 1),
     ) -> "Compound":
-        n = cls(Compound.convert_binary_rhythm2rhythm(binary_rhythm))
-        n.multiply = multiply
-        return n
+        new = cls(Compound.convert_binary_rhythm2rhythm(binary_rhythm))
+        new.multiply = multiply
+        return new
 
     @classmethod
     def from_euclid(
         cls, n: int, m: int, multiply: fractions.Fraction = fractions.Fraction(1, 1)
     ) -> "Compound":
-        n = cls(tools.euclid(n, m))
-        n.multiply = multiply
-        return n
+        new = cls(tools.euclid(n, m))
+        new.multiply = multiply
+        return new
+
+    @classmethod
+    def from_generator(cls, period: int, size: int) -> "Compound":
+        assert period <= size
+        generator = tuple(range(0, size, period))
+        return cls([b - a for a, b in zip(generator, generator[1:])])
 
     @classmethod
     def from_synchronization(
         cls, *fac: int, multiply: fractions.Fraction = fractions.Fraction(1, 1)
     ) -> "Compound":
         """Schillinger-like synchronization algorithm."""
+        size = functools.reduce(operator.mul, fac)
+        return functools.reduce(
+            lambda a, b: a.union(b),
+            tuple(cls.from_generator(factor, size) for factor in fac),
+        )
         raise NotImplementedError
 
     @classmethod

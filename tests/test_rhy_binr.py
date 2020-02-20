@@ -218,3 +218,23 @@ class CompoundTest(unittest.TestCase):
 
         self.assertEqual(r0.modulate(r1), expectation0)
         self.assertEqual(r0.modulate(r2), expectation1)
+
+    def test_union(self) -> None:
+        r0 = binr.Compound([2, 2, 1])  # 0 2 4 (5)
+        r1 = binr.Compound([2, 1, 2])  # 0 2 3 (5)
+        r2 = binr.Compound([2, 1, 1, 1])
+        r3 = binr.Compound([1, 2, 2])  # 0 1 3 (5)
+        r4 = binr.Compound([1, 1, 1, 1, 1])
+
+        self.assertEqual(r0.union(r1), r2)
+        self.assertEqual(r0.union(r3), r4)
+
+    def test_intersection(self) -> None:
+        r0 = binr.Compound([2, 2, 1])  # 0 2 4 (5)
+        r1 = binr.Compound([2, 1, 2])  # 0 2 3 (5)
+        r2 = binr.Compound([2, 3])
+
+        self.assertEqual(r0.intersection(r1), r2)
+
+    def test_from_schillinger(self) -> None:
+        pass
