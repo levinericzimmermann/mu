@@ -21,6 +21,7 @@ def __load_precalculated_factors():
 __PRECALCULATED_FACTORS = __load_precalculated_factors()
 """
 
+
 class Prime_Generator(object):
     def __init__(self):
         self.it = primesieve.Iterator()
@@ -32,9 +33,9 @@ class Prime_Generator(object):
         return self
 
 
-def factorise(n):
-    """
-    factorise(integer) -> [list of factors]
+def factorise(n: int) -> list:
+    """factorise(integer) -> [list of factors]
+
     Returns a list of the (mostly) prime factors of integer n. For negative
     integers, -1 is included as a factor. If n is 0, 1 or -1, [n] is
     returned as the only factor. Otherwise all the factors will be prime.
@@ -49,9 +50,9 @@ def factorise(n):
     return result
 
 
-def factors(n):
-    """
-    factors(integer) -> yield factors of integer lazily
+def factors(n: int):
+    """factors(integer) -> yield factors of integer lazily
+
     >>> list(factors(3*7*7*7*11))
     [(3, 1), (7, 3), (11, 1)]
     Yields tuples of (factor, count) where each factor is unique and usually
@@ -86,3 +87,30 @@ def factors(n):
                 yield (p, count)
         if n != 1:
             yield (n, 1)
+
+
+def is_prime(n: int) -> bool:
+    """Test if number is prime or not.
+
+    from https://www.geeksforgeeks.org/python-program-to-check-
+    whether-a-number-is-prime-or-not/
+    """
+
+    # Corner cases
+    if n <= 1:
+        return False
+    if n <= 3:
+        return True
+
+    # This is checked so that we can skip
+    # middle five numbers in below loop
+    if n % 2 == 0 or n % 3 == 0:
+        return False
+
+    i = 5
+    while i * i <= n:
+        if n % i == 0 or n % (i + 2) == 0:
+            return False
+        i = i + 6
+
+    return True

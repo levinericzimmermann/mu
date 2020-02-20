@@ -1541,10 +1541,7 @@ class Monzo(object):
     @comparable_monzo_decorator
     def __math(self, other, operation) -> "Monzo":
         m0, m1 = Monzo.adjusted_monzos(self, other)
-        return Monzo(
-            Monzo.calc_iterables(m0, m1, operation),
-            self.val_border,
-        )
+        return Monzo(Monzo.calc_iterables(m0, m1, operation), self.val_border)
 
     def __eq__(self: "Monzo", other: "Monzo") -> bool:
         try:
@@ -2666,6 +2663,154 @@ class JIStencil(object):
         )
 
 
+class BlueprintPitch(object):
+    """BlueprintPitch helps to abstract just intonation pitches.
+
+    For init a tuple with two subtuples is expected tuple(tuple, tuple),
+    where the first tuple represents the numerator and the second
+    tuple the denominator of the pitch. Each subtuple contains
+    integers that represent prime numbers.
+
+    Example:
+        BlueprintPitch((0, 1), []) is a blueprint for pitches
+        that contain two prime numbers in its numerator like
+        15/8, 21/16, ...
+
+        BlueprintPitch((0,), (1,)) is a blueprint for pitches
+        that contain one prime number in its numerator and
+        one prime number in its denominator like
+        5/3, 7/6, ...
+    """
+
+    def __init__(self, blueprint: tuple) -> None:
+        try:
+            assert len(blueprint) == 2
+        except AssertionError:
+            msg = "init argument has to contain two elements."
+            msg += "One element for the numerator and one element "
+            msg += "for its numerator."
+            raise ValueError(msg)
+
+        self.__blueprint = blueprint
+        numerator, denominator = blueprint
+
+        for item in numerator:
+            try:
+                assert item not in denominator
+            except AssertionError:
+                msg = "Found {0} twice in numerator and denominator.".format(item)
+                msg += " Every item can only be once either in "
+                msg += "numerator or in denominator."
+                raise ValueError(msg)
+
+        numbers = functools.reduce(operator.add, tuple(tuple(bp) for bp in blueprint))
+        self.__size = len(numbers)
+        try:
+            assert self.is_ascending_from_zero(numbers)
+        except AssertionError:
+            msg = "Input Indices are supposed to be ascending from zero."
+            raise ValueError(msg)
+
+    def __repr__(self) -> str:
+        return "[BlueprintPitch: {0} / {1}]".format(*self.blueprint)
+
+    @staticmethod
+    def is_ascending_from_zero(numbers: tuple) -> bool:
+        return list(range(len(numbers))) == sorted(numbers)
+
+    @property
+    def blueprint(self) -> tuple:
+        return self.__blueprint
+
+    @property
+    def size(self) -> int:
+        return self.__size
+
+    def is_instance(
+        self, pitch: JIPitch, gender: bool = True, ignore: tuple = (2,)
+    ) -> bool:
+        def __is_instance_gender(
+            pitch: JIPitch, gender: bool = True, ignore: tuple = (2,)
+        ) -> bool:
+            numerator_and_denominator = tuple(
+                tuple(n for n in num if n not in ignore)
+                for num in pitch.factorised_numerator_and_denominator
+            )
+
+            blueprint = self.blueprint
+            if not gender:
+                blueprint = tuple(reversed(blueprint))
+
+            return all(
+                len(blue) == len(num)
+                for blue, num in zip(blueprint, numerator_and_denominator)
+            )
+
+        if gender is None:
+            return any(__is_instance_gender(pitch, g, ignore) for g in (True, False))
+        else:
+            return __is_instance_gender(pitch, gender, ignore)
+
+    def __call__(self, *args: int, gender: bool = True) -> JIPitch:
+        for arg in args:
+            try:
+                assert prime_factors.is_prime(arg)
+            except AssertionError:
+                msg = "Every argument has to be a prime number."
+                msg += " {0} is not a prime number.".format(arg)
+                raise ValueError(msg)
+
+        try:
+            assert len(args) == self.size
+        except AssertionError:
+            msg = "This BlueprintPitch needs {0} prime-numbers.".format(self.size)
+            msg += " But only {0} numbers were given.".format(len(args))
+            raise ValueError(msg)
+
+        blueprint = self.blueprint
+        if not gender:
+            blueprint = reversed(blueprint)
+
+        return r(
+            *tuple(
+                functools.reduce(operator.mul, (1,) + tuple(args[idx] for idx in num))
+                for num in blueprint
+            )
+        )
+
+
+class BlueprintHarmony(BlueprintPitch):
+    """BlueprintHarmony helps to abstract just intonation harmonies.
+
+    """
+
+    def __init__(self, blueprint: tuple) -> None:
+        self.__blueprint = blueprint
+        ig1 = operator.itemgetter(1)
+        numbers = tuple(ig1(bp) for bp in blueprint)
+        available_numbers = tuple(set(functools.reduce(operator.add, numbers)))
+
+        try:
+            assert self.is_ascending_from_zero(available_numbers)
+        except AssertionError:
+            msg = "Used indices has to be ascending from zero."
+            raise ValueError(msg)
+
+        self.__size = len(available_numbers)
+        self.__blueprint = blueprint
+
+    def __repr__(self) -> str:
+        return "(BlueprintHarmony: {0})".format(self.blueprint)
+
+    def is_instance(
+        self, harmony: JIHarmony, gender: bool = True, ignore: tuple = (2,)
+    ) -> bool:
+        pass
+
+    def __call__(self, *args, gender=True) -> JIHarmony:
+        pass
+
+
 def find_best_voice_leading(pitches: tuple, tonal_range: tuple) -> tuple:
     """Brute force searching for the best voice leading.
 
@@ -2722,9 +2867,9 @@ def find_best_voice_leading(pitches: tuple, tonal_range: tuple) -> tuple:
 """
 
 
-def r(num, den, val_border=1, multiply=1):
+def r(num: int, den: int, val_border: int = 1, multiply: float = 1) -> JIPitch:
     return JIPitch.from_ratio(num, den, val_border, multiply)
 
 
-def m(*num, val_border=1, multiply=1):
+def m(*num: int, val_border: int = 1, multiply: float = 1) -> JIPitch:
     return JIPitch.from_monzo(*num, val_border=val_border, multiply=multiply)

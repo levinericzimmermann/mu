@@ -1093,24 +1093,6 @@ class JIHarmonyTest(unittest.TestCase):
         self.assertEqual(h0.intervals, h0_intervals)
         self.assertEqual(h1.intervals, h1_intervals)
 
-    def test_adjust_register_by_func(self):
-        """
-        def func(h, identities):
-            adjusted = h.adjust_register_of_identities(*identities)
-            return sum(p.harmonicity_vogel for p in adjusted.intervals)
-        m0 = ji.JIPitch((1,), val_border=2)
-        m1 = ji.JIPitch((2,), val_border=2)
-        m2 = ji.JIPitch((0, 1), val_border=2)
-        m3 = ji.JIPitch((0, 3), val_border=2)
-        m4 = ji.JIPitch((0, -1), val_border=2)
-        h0 = ji.JIHarmony([m0, m1, m2, m3, m4])
-        h0.val_border = 2
-        h0.identity
-        h1 = h0.copy()
-        self.assertEqual(h0.adjust_register_by_fitness(func), h1)
-        """
-        pass
-
 
 class JICadenceTest(unittest.TestCase):
     def test_identity(self):
@@ -1252,6 +1234,82 @@ class JIStencilTest(unittest.TestCase):
         p1 = ji.JIPitch((0, 1), 2)
         teststencil = ji.JIStencil((p0, 0, 2), (p1, 1, 3))
         self.assertEqual(teststencil.identity, (p1, p0))
+
+
+class BlueprintPitchTest(unittest.TestCase):
+    def test_init(self):
+        # 0 occurs twice in numerator and denominator
+        self.assertRaises(ValueError, ji.BlueprintPitch, ((0, 1), (0, 2)))
+
+        # there are three tuples, but we need two
+        self.assertRaises(ValueError, ji.BlueprintPitch, ((0, 1), (0, 2), (3, 4)))
+
+        # there is one tuple, but we need two
+        self.assertRaises(ValueError, ji.BlueprintPitch, ((0, 1),))
+
+        # numbers are not ascending from 0
+        self.assertRaises(ValueError, ji.BlueprintPitch, ((0, 2),))
+
+        # that's the correct form
+        self.assertTrue(ji.BlueprintPitch(((0, 1), (2,))))
+        self.assertTrue(ji.BlueprintPitch(((0, 1), [])))
+        self.assertTrue(ji.BlueprintPitch(([], [])))
+
+    def test_size(self):
+        bp0 = ji.BlueprintPitch(((0, 1), []))
+        bp1 = ji.BlueprintPitch(((0, 1), (2, 3)))
+        bp2 = ji.BlueprintPitch(([], []))
+
+        self.assertEqual(bp0.size, 2)
+        self.assertEqual(bp1.size, 4)
+        self.assertEqual(bp2.size, 0)
+
+    def test_is_instance(self):
+        bp = ji.BlueprintPitch(((0, 1), []))
+        p0 = ji.r(15, 8)
+        p1 = ji.r(3, 2)
+        p2 = ji.r(3, 5)
+        p3 = ji.r(32, 21)
+        p4 = ji.r(33, 21)
+
+        self.assertTrue(bp.is_instance(p0))
+        self.assertFalse(bp.is_instance(p1))
+        self.assertFalse(bp.is_instance(p2))
+        self.assertFalse(bp.is_instance(p3))
+        self.assertTrue(bp.is_instance(p3, gender=False))
+        self.assertTrue(bp.is_instance(p3, gender=None))
+        self.assertFalse(bp.is_instance(p0, gender=False))
+        self.assertTrue(bp.is_instance(p0, gender=None))
+        self.assertFalse(bp.is_instance(p4))
+
+    def test_call(self):
+        bp0 = ji.BlueprintPitch(((0, 1), []))
+        bp1 = ji.BlueprintPitch(((0,), (1,)))
+        bp2 = ji.BlueprintPitch(((1,), (0,)))
+
+        p0 = ji.r(15, 1)
+        p1 = ji.r(7, 3)
+
+        self.assertEqual(bp0(3, 5), p0)
+        self.assertEqual(bp0(5, 3), p0)
+        self.assertNotEqual(bp0(7, 3), p1)
+        self.assertEqual(bp1(7, 3), p1)
+        self.assertNotEqual(bp1(3, 7), p1)
+        self.assertEqual(bp2(3, 7), p1)
+
+        # 10 isn't a prime number
+        self.assertRaises(ValueError, bp0, 7, 10)
+
+        # 4 isn't a prime number
+        self.assertRaises(ValueError, bp0, 7, 4)
+
+        # bp0 only has 2 arguments
+        self.assertRaises(ValueError, bp0, 7, 5, 11)
+
+
+class BlueprintHarmonyTest(unittest.TestCase):
+    def test_init(self):
+        pass
 
 
 class JIModule(unittest.TestCase):
