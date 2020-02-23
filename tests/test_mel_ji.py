@@ -1238,34 +1238,25 @@ class JIStencilTest(unittest.TestCase):
 
 class BlueprintPitchTest(unittest.TestCase):
     def test_init(self):
-        # 0 occurs twice in numerator and denominator
-        self.assertRaises(ValueError, ji.BlueprintPitch, ((0, 1), (0, 2)))
-
-        # there are three tuples, but we need two
-        self.assertRaises(ValueError, ji.BlueprintPitch, ((0, 1), (0, 2), (3, 4)))
-
-        # there is one tuple, but we need two
-        self.assertRaises(ValueError, ji.BlueprintPitch, ((0, 1),))
-
-        # numbers are not ascending from 0
-        self.assertRaises(ValueError, ji.BlueprintPitch, ((0, 2),))
+        self.assertRaises(AssertionError, ji.BlueprintPitch, [0], [1])
+        self.assertRaises(AssertionError, ji.BlueprintPitch, [-1], [1])
 
         # that's the correct form
-        self.assertTrue(ji.BlueprintPitch(((0, 1), (2,))))
-        self.assertTrue(ji.BlueprintPitch(((0, 1), [])))
-        self.assertTrue(ji.BlueprintPitch(([], [])))
+        self.assertTrue(ji.BlueprintPitch([1, 2], []))
+        self.assertTrue(ji.BlueprintPitch())
+        self.assertTrue(ji.BlueprintPitch([2], [1]))
 
     def test_size(self):
-        bp0 = ji.BlueprintPitch(((0, 1), []))
-        bp1 = ji.BlueprintPitch(((0, 1), (2, 3)))
-        bp2 = ji.BlueprintPitch(([], []))
+        bp0 = ji.BlueprintPitch((2,), [])
+        bp1 = ji.BlueprintPitch((2,), (2,))
+        bp2 = ji.BlueprintPitch([], [])
 
         self.assertEqual(bp0.size, 2)
         self.assertEqual(bp1.size, 4)
         self.assertEqual(bp2.size, 0)
 
     def test_is_instance(self):
-        bp = ji.BlueprintPitch(((0, 1), []))
+        bp = ji.BlueprintPitch((2,), [])
         p0 = ji.r(15, 8)
         p1 = ji.r(3, 2)
         p2 = ji.r(3, 5)
@@ -1276,16 +1267,12 @@ class BlueprintPitchTest(unittest.TestCase):
         self.assertFalse(bp.is_instance(p1))
         self.assertFalse(bp.is_instance(p2))
         self.assertFalse(bp.is_instance(p3))
-        self.assertTrue(bp.is_instance(p3, gender=False))
-        self.assertTrue(bp.is_instance(p3, gender=None))
-        self.assertFalse(bp.is_instance(p0, gender=False))
-        self.assertTrue(bp.is_instance(p0, gender=None))
+        self.assertFalse(bp.inverse().is_instance(p0))
         self.assertFalse(bp.is_instance(p4))
 
     def test_call(self):
-        bp0 = ji.BlueprintPitch(((0, 1), []))
-        bp1 = ji.BlueprintPitch(((0,), (1,)))
-        bp2 = ji.BlueprintPitch(((1,), (0,)))
+        bp0 = ji.BlueprintPitch((2,), [])
+        bp1 = ji.BlueprintPitch((1,), (1,))
 
         p0 = ji.r(15, 1)
         p1 = ji.r(7, 3)
@@ -1295,7 +1282,6 @@ class BlueprintPitchTest(unittest.TestCase):
         self.assertNotEqual(bp0(7, 3), p1)
         self.assertEqual(bp1(7, 3), p1)
         self.assertNotEqual(bp1(3, 7), p1)
-        self.assertEqual(bp2(3, 7), p1)
 
         # 10 isn't a prime number
         self.assertRaises(ValueError, bp0, 7, 10)
@@ -1308,8 +1294,98 @@ class BlueprintPitchTest(unittest.TestCase):
 
 
 class BlueprintHarmonyTest(unittest.TestCase):
+    bp0 = ji.BlueprintPitch((1,))
+    bp1 = ji.BlueprintPitch((1,), (1,))
+    bp2 = ji.BlueprintPitch([], (2,))
+    bp3 = ji.BlueprintPitch([0, 1], [])
+
     def test_init(self):
-        pass
+        self.assertTrue(
+            ji.BlueprintHarmony(
+                (BlueprintHarmonyTest.bp0, (0,)),
+                (BlueprintHarmonyTest.bp0, (1,)),
+                (BlueprintHarmonyTest.bp3, (0,)),
+            )
+        )
+
+    def test_call(self):
+        bph0 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp3, (0,)),
+        )
+
+        bph1 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp1, (0, 1)),
+            (BlueprintHarmonyTest.bp1, (1, 0)),
+            (BlueprintHarmonyTest.bp3, (0,)),
+        )
+
+        self.assertEqual(bph0(3, 5), (ji.r(3, 1), ji.r(5, 1), ji.r(9, 1)))
+        self.assertEqual(bph0(7, 5), (ji.r(7, 1), ji.r(5, 1), ji.r(49, 1)))
+
+        self.assertEqual(bph1(3, 5), (ji.r(3, 1), ji.r(3, 5), ji.r(5, 3), ji.r(9, 1)))
+        self.assertEqual(bph1(7, 5), (ji.r(7, 1), ji.r(7, 5), ji.r(5, 7), ji.r(49, 1)))
+
+    def test_identity(self):
+        bph0 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp3, (0,)),
+        )
+
+        identity = {
+            ((hash(BlueprintHarmonyTest.bp0), 0), (hash(BlueprintHarmonyTest.bp3), 0)),
+            ((hash(BlueprintHarmonyTest.bp0), 0),),
+        }
+
+        self.assertEqual(identity, bph0.identity)
+
+    def test_equal(self):
+        bph0 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp3, (0,)),
+        )
+        bph1 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp3, (0,)),
+        )
+        bph2 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp3, (1,)),
+        )
+
+        self.assertEqual(bph0, bph1)
+        self.assertEqual(bph0, bph2)
+        self.assertEqual(bph1, bph2)
+
+    def test_is_instance(self):
+        bph0 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp3, (0,)),
+        )
+        bph1 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp3, (1,)),
+        )
+
+        self.assertTrue(bph0.is_instance((ji.r(3, 1), ji.r(5, 1), ji.r(9, 1))))
+        self.assertTrue(bph1.is_instance((ji.r(3, 1), ji.r(5, 1), ji.r(9, 1))))
+        self.assertTrue(
+            bph1.inverse().is_instance((ji.r(1, 3), ji.r(1, 5), ji.r(1, 9)))
+        )
+
+        self.assertFalse(bph0.is_instance((ji.r(7, 1), ji.r(5, 1), ji.r(9, 1))))
+        self.assertFalse(bph0.is_instance((ji.r(5, 1), ji.r(5, 1), ji.r(7, 1))))
+        self.assertFalse(
+            bph0.inverse().is_instance((ji.r(3, 1), ji.r(5, 1), ji.r(9, 1)))
+        )
 
 
 class JIModule(unittest.TestCase):

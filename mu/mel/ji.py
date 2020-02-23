@@ -4,6 +4,7 @@ import itertools
 import json
 import math
 import operator
+import string
 
 from typing import Callable
 from typing import List
@@ -907,6 +908,19 @@ class Monzo(object):
         )
 
     @property
+    def blueprint(self, ignore: tuple = (2,)) -> tuple:
+        blueprint = []
+        for factorised in self.factorised_numerator_and_denominator:
+            factorised = tuple(fac for fac in factorised if fac not in ignore)
+            counter = collections.Counter(collections.Counter(factorised).values())
+            if counter:
+                maxima = max(counter.keys())
+                blueprint.append(tuple(counter[idx + 1] for idx in range(maxima)))
+            else:
+                blueprint.append(tuple([]))
+        return tuple(blueprint)
+
+    @property
     def ratio(self) -> Fraction:
         """Return the Monzo transformed to a Ratio (Fraction-Object).
 
@@ -1198,6 +1212,13 @@ class Monzo(object):
 
         p = prime_factors.factorise(self.numerator * self.denominator)
         return tuple(sorted(tuple(set(p))))
+
+    @property
+    def primes_for_numerator_and_denominator(self) -> tuple:
+        return tuple(
+            tuple(sorted(set(prime_factors.factorise(n))))
+            for n in (self.numerator, self.denominator)
+        )
 
     @property
     def quantity(self) -> int:
@@ -2682,76 +2703,93 @@ class BlueprintPitch(object):
         5/3, 7/6, ...
     """
 
-    def __init__(self, blueprint: tuple) -> None:
-        try:
-            assert len(blueprint) == 2
-        except AssertionError:
-            msg = "init argument has to contain two elements."
-            msg += "One element for the numerator and one element "
-            msg += "for its numerator."
-            raise ValueError(msg)
+    int2power = {
+        "0": "⁰",
+        "1": "¹",
+        "2": "²",
+        "3": "³",
+        "4": "⁴",
+        "5": "⁵",
+        "6": "⁶",
+        "7": "⁷",
+        "8": "⁸",
+        "9": "⁹",
+    }
 
-        self.__blueprint = blueprint
-        numerator, denominator = blueprint
+    def __init__(
+        self, numerator: tuple = tuple([]), denominator: tuple = tuple([])
+    ) -> None:
+        for n in (numerator, denominator):
+            if n:
+                assert sum(n) > 0
+            for item in n:
+                assert item >= 0
 
-        for item in numerator:
-            try:
-                assert item not in denominator
-            except AssertionError:
-                msg = "Found {0} twice in numerator and denominator.".format(item)
-                msg += " Every item can only be once either in "
-                msg += "numerator or in denominator."
-                raise ValueError(msg)
+        self.__numerator, self.__denominator = tuple(numerator), tuple(denominator)
+        self.__size = sum(sum(n) for n in (self.numerator, self.denominator))
 
-        numbers = functools.reduce(operator.add, tuple(tuple(bp) for bp in blueprint))
-        self.__size = len(numbers)
-        try:
-            assert self.is_ascending_from_zero(numbers)
-        except AssertionError:
-            msg = "Input Indices are supposed to be ascending from zero."
-            raise ValueError(msg)
+    @classmethod
+    def from_pitch(cls, pitch: JIPitch) -> "BlueprintPitch":
+        return cls(*pitch.blueprint)
 
     def __repr__(self) -> str:
-        return "[BlueprintPitch: {0} / {1}]".format(*self.blueprint)
+        item_counter = 0
+        representations = []
+        for num in (self.numerator, self.denominator):
 
-    @staticmethod
-    def is_ascending_from_zero(numbers: tuple) -> bool:
-        return list(range(len(numbers))) == sorted(numbers)
+            representation = ""
+
+            for exponent, amount in enumerate(num):
+                exponent = "".join(
+                    self.int2power[integer] for integer in str(exponent + 1)
+                )
+                for counter in range(amount):
+                    idx = counter + item_counter
+                    if idx < 27:
+                        idx = string.ascii_uppercase[idx]
+                    representation += "{0}{1}".format(idx, exponent)
+                item_counter += amount
+
+            representations.append(representation)
+
+        return "({0}|{1})".format(*representations)
+
+    def __hash__(self) -> int:
+        return hash(self.blueprint)
 
     @property
     def blueprint(self) -> tuple:
-        return self.__blueprint
+        return (self.numerator, self.denominator)
+
+    @property
+    def numerator(self) -> tuple:
+        return self.__numerator
+
+    @property
+    def denominator(self) -> tuple:
+        return self.__denominator
 
     @property
     def size(self) -> int:
         return self.__size
 
-    def is_instance(
-        self, pitch: JIPitch, gender: bool = True, ignore: tuple = (2,)
-    ) -> bool:
-        def __is_instance_gender(
-            pitch: JIPitch, gender: bool = True, ignore: tuple = (2,)
-        ) -> bool:
-            numerator_and_denominator = tuple(
-                tuple(n for n in num if n not in ignore)
-                for num in pitch.factorised_numerator_and_denominator
-            )
+    def inverse(self) -> "BlueprintPitch":
+        return type(self)(self.denominator, self.numerator)
 
-            blueprint = self.blueprint
-            if not gender:
-                blueprint = tuple(reversed(blueprint))
+    def is_instance(self, pitch: JIPitch, ignore: tuple = (2,)) -> bool:
 
-            return all(
-                len(blue) == len(num)
-                for blue, num in zip(blueprint, numerator_and_denominator)
-            )
+        try:
+            return self.blueprint == pitch.blueprint
+        except AttributeError:
+            return False
 
-        if gender is None:
-            return any(__is_instance_gender(pitch, g, ignore) for g in (True, False))
-        else:
-            return __is_instance_gender(pitch, gender, ignore)
+    def __eq__(self, other) -> bool:
+        try:
+            return self.blueprint == other.blueprint
+        except AttributeError:
+            return False
 
-    def __call__(self, *args: int, gender: bool = True) -> JIPitch:
+    def __call__(self, *args: int) -> JIPitch:
         for arg in args:
             try:
                 assert prime_factors.is_prime(arg)
@@ -2767,48 +2805,129 @@ class BlueprintPitch(object):
             msg += " But only {0} numbers were given.".format(len(args))
             raise ValueError(msg)
 
-        blueprint = self.blueprint
-        if not gender:
-            blueprint = reversed(blueprint)
+        index = 0
+        num_and_den = [[1], [1]]
+        for item_idx, item in enumerate(self.blueprint):
+            for exponent, amount in enumerate(item):
+                exponent += 1
+                for n in range(amount):
+                    num_and_den[item_idx].append(args[index] ** exponent)
+                    index += 1
 
-        return r(
-            *tuple(
-                functools.reduce(operator.mul, (1,) + tuple(args[idx] for idx in num))
-                for num in blueprint
-            )
-        )
+        return r(*tuple(functools.reduce(operator.mul, n) for n in num_and_den))
 
 
-class BlueprintHarmony(BlueprintPitch):
+class BlueprintHarmony(object):
     """BlueprintHarmony helps to abstract just intonation harmonies.
 
+    The init-form is:
+        (BlueprintPitch, indices),
+        (BlueprintPitch, indices), ...
+
+    Example:
+        BlueprintHarmony((BlueprintPitch([1], [1]), (0, 1)),
+                         (BlueprintPitch([2], []), (0,)))
     """
 
-    def __init__(self, blueprint: tuple) -> None:
-        self.__blueprint = blueprint
+    def __init__(self, *blueprint: tuple) -> None:
+        # check if the input data is valid:
+        blueprint = tuple((p, tuple(indices)) for p, indices in blueprint)
+
         ig1 = operator.itemgetter(1)
         numbers = tuple(ig1(bp) for bp in blueprint)
         available_numbers = tuple(set(functools.reduce(operator.add, numbers)))
-
         try:
             assert self.is_ascending_from_zero(available_numbers)
         except AssertionError:
             msg = "Used indices has to be ascending from zero."
             raise ValueError(msg)
 
+        # initalise the attributes
         self.__size = len(available_numbers)
         self.__blueprint = blueprint
 
+    @staticmethod
+    def is_ascending_from_zero(numbers: tuple) -> bool:
+        return list(range(len(numbers))) == sorted(numbers)
+
+    @classmethod
+    def from_harmony(cls, harmony: tuple) -> "BlueprintHarmony":
+        def identify_blueprint_for_pitch(pitch: JIPitch, known_primes: tuple) -> tuple:
+            blueprint = pitch.blueprint
+            attributes = [[], []]
+            for idx, num in enumerate(blueprint):
+                for exponent, amount in enumerate(num):
+                    exponent += 1
+
+                    if idx == 1:  # for denominator
+                        exponent = -exponent
+
+                    for monzo_idx, monzo_value in enumerate(pitch.monzo):
+                        if monzo_value is exponent:
+                            attributes[idx].append(
+                                known_primes.index(pitch.val[monzo_idx])
+                            )
+
+            return (
+                BlueprintPitch(*blueprint),
+                tuple(functools.reduce(operator.add, attributes)),
+            )
+
+        primes_per_pitch = tuple(p.primes for p in harmony)
+        primes = tuple(sorted(set(functools.reduce(operator.add, primes_per_pitch))))
+
+        blueprint = tuple(
+            identify_blueprint_for_pitch(pitch, primes) for pitch in harmony
+        )
+
+        return cls(*blueprint)
+
+    @property
+    def identity(self) -> set:
+        items = [[] for i in range(self.size)]
+        for bp in self.blueprint:
+            hashtb = hash(bp[0])
+            for idx, item in enumerate(bp[1]):
+                items[item].append((hashtb, idx))
+        return set(tuple(item) for item in items)
+
+    @property
+    def blueprint(self) -> tuple:
+        return self.__blueprint
+
+    @property
+    def size(self) -> int:
+        return self.__size
+
+    def inverse(self) -> "BlueprintHarmony":
+        return type(self)(
+            *tuple((bp.inverse(), indices) for bp, indices in self.blueprint)
+        )
+
     def __repr__(self) -> str:
-        return "(BlueprintHarmony: {0})".format(self.blueprint)
+        return str(self.blueprint)
+
+    def __eq__(self, other) -> bool:
+        try:
+            return self.identity == other.identity
+        except AttributeError:
+            return False
 
     def is_instance(
         self, harmony: JIHarmony, gender: bool = True, ignore: tuple = (2,)
     ) -> bool:
-        pass
+        return self == type(self).from_harmony(harmony)
 
-    def __call__(self, *args, gender=True) -> JIHarmony:
-        pass
+    def __call__(self, *args) -> tuple:
+        try:
+            assert len(args) == self.size
+        except AssertionError:
+            msg = ""
+            raise ValueError(msg)
+
+        return tuple(
+            p(*tuple(args[idx] for idx in indices)) for p, indices in self.blueprint
+        )
 
 
 def find_best_voice_leading(pitches: tuple, tonal_range: tuple) -> tuple:
