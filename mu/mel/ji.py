@@ -2924,12 +2924,6 @@ class BlueprintHarmony(object):
         return self == type(self).from_harmony(harmony)
 
     def __call__(self, *args) -> tuple:
-        try:
-            assert len(args) == self.size
-        except AssertionError:
-            msg = ""
-            raise ValueError(msg)
-
         return tuple(
             p(*tuple(args[idx] for idx in indices)) for p, indices in self.blueprint
         )
