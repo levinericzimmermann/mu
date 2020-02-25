@@ -2685,22 +2685,36 @@ class JIStencil(object):
 
 
 class BlueprintPitch(object):
-    """BlueprintPitch helps to abstract just intonation pitches.
+    r"""BlueprintPitch helps to abstract just intonation pitches.
 
-    For init a tuple with two subtuples is expected tuple(tuple, tuple),
-    where the first tuple represents the numerator and the second
-    tuple the denominator of the pitch. Each subtuple contains
-    integers that represent prime numbers.
+    To initalise a new object two tuples or lists are necessary,
+    one for the numerator and one for the denominator of the abstract
+    pitch. Those tuples are filled with integer. Each integer express
+    how many prime numbers of the nth power are occurring in the numerator
+    or denominator, where n is the list index of the integer plus one.
 
-    Example:
-        BlueprintPitch((0, 1), []) is a blueprint for pitches
-        that contain two prime numbers in its numerator like
-        15/8, 21/16, ...
+    For instace a list [n, m, o] as an argument for the objects
+    numerator represents an abstract pitch whose numerator is the product of
+        1. n - prime numbers with the power of 1
+        2. m - prime numbers with the power of 2
+        3. o - prime numbers with the power of 3
 
-        BlueprintPitch((0,), (1,)) is a blueprint for pitches
-        that contain one prime number in its numerator and
-        one prime number in its denominator like
-        5/3, 7/6, ...
+    In a concrete case with n = 2, m = 1 and o = 1 and the prime numbers
+    3, 5, 7, 11 this would result in:
+
+        (3 ** 1) * (5 ** 1) * (7 ** 2) * (11 ** 3)
+
+
+    >>> bp0 = BlueprintPitch((2,), (1,))
+    >>> bp0(3, 5, 7)  # (3**1) * (5**1) / (7**1)
+    15/7
+    >>> bp0(7, 3, 5)  # (7**1) * (3**1) / (5**1)
+    21/5
+    >>> bp1 = BlueprintPitch((0, 1), (1,))
+    >>> bp1(3, 5)  # 3**2 / 5**1
+    9/5
+    >>> bp1(5, 3)  # 5**2 / 3**1
+    25/3
     """
 
     int2power = {
@@ -2836,19 +2850,10 @@ class BlueprintHarmony(object):
         ig1 = operator.itemgetter(1)
         numbers = tuple(ig1(bp) for bp in blueprint)
         available_numbers = tuple(set(functools.reduce(operator.add, numbers)))
-        try:
-            assert self.is_ascending_from_zero(available_numbers)
-        except AssertionError:
-            msg = "Used indices has to be ascending from zero."
-            raise ValueError(msg)
 
         # initalise the attributes
         self.__size = len(available_numbers)
         self.__blueprint = blueprint
-
-    @staticmethod
-    def is_ascending_from_zero(numbers: tuple) -> bool:
-        return list(range(len(numbers))) == sorted(numbers)
 
     @classmethod
     def from_harmony(cls, harmony: tuple) -> "BlueprintHarmony":

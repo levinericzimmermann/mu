@@ -1308,6 +1308,22 @@ class BlueprintHarmonyTest(unittest.TestCase):
             )
         )
 
+        # indices don't have to be in ascending order
+        self.assertTrue(
+            ji.BlueprintHarmony(
+                (BlueprintHarmonyTest.bp0, (0,)),
+                (BlueprintHarmonyTest.bp0, (2,)),
+                (BlueprintHarmonyTest.bp3, (0,)),
+            )
+        )
+        self.assertTrue(
+            ji.BlueprintHarmony(
+                (BlueprintHarmonyTest.bp0, (1,)),
+                (BlueprintHarmonyTest.bp0, (4,)),
+                (BlueprintHarmonyTest.bp3, (5,)),
+            )
+        )
+
     def test_call(self):
         bph0 = ji.BlueprintHarmony(
             (BlueprintHarmonyTest.bp0, (0,)),
