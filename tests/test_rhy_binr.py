@@ -238,3 +238,16 @@ class CompoundTest(unittest.TestCase):
 
     def test_from_schillinger(self) -> None:
         pass
+
+    def test_real_stretch(self) -> None:
+        r0 = binr.Compound([2, 2, 1])
+        r1 = binr.Compound([4, 4, 2])
+
+        # showing difference between stretch and
+        # real_stretch method:
+
+        self.assertNotEqual(r0.stretch(2), r1)
+        self.assertNotEqual(r1.stretch(0.5), r0)
+
+        self.assertEqual(r0.real_stretch(2), r1)
+        self.assertEqual(r1.real_stretch(0.5), r0)

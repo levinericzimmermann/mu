@@ -76,6 +76,7 @@ class Compound(rhy.AbstractRhythm):
 
     @classmethod
     def from_generator(cls, period: int, size: int) -> "Compound":
+        """Periodic repetitive rhythm maker."""
         assert period <= size
         generator = tuple(range(0, size, period))
         return cls([b - a for a, b in zip(generator, generator[1:])])
@@ -103,6 +104,10 @@ class Compound(rhy.AbstractRhythm):
     @property
     def intr(self) -> tuple:
         return Compound.convert_int2rhythm(self.essence)
+
+    @property
+    def absr(self) -> tuple:
+        return tools.accumulate_from_zero(self.intr)[:-1]
 
     @property
     def beats(self) -> int:
@@ -185,10 +190,21 @@ class Compound(rhy.AbstractRhythm):
         self.essence = essence
         self.multiply = multiply
 
-    def stretch(self, value: float) -> "Compound":
+    def stretch(self, factor: float) -> "Compound":
         new = self.copy()
-        new.multiply *= value
+        new.multiply *= factor
         return new
+
+    def real_stretch(self, factor: int) -> "Compound":
+        """Stretch the rhythm with factor.
+
+        Unlike the 'stretch' method this method doesn't change
+        the multiply attribute of the object, but its essence
+        attribute.
+        """
+        int_rhythm = tuple(int(r * factor) for r in self.intr)
+        essence = self.convert_int_rhythm2essence(int_rhythm)
+        return type(self).from_int(essence, self.multiply)
 
     @staticmethod
     def convert_binary2rhythm(binary: bin) -> tuple:
@@ -217,6 +233,12 @@ class Compound(rhy.AbstractRhythm):
         return tuple(1 if idx in indices else 0 for idx in range(size))
 
     @staticmethod
+    def convert_int_rhythm2essence(int_rhythm: tuple) -> tuple:
+        return int(Compound.convert_binary_rhythm2binary(
+            Compound.convert_int_rhythm2binary_rhythm(int_rhythm)),
+            2)
+
+    @staticmethod
     def convert_int2binary_rhythm(integer: int) -> tuple:
         return Compound.convert_binary2binary_rhythm(bin(integer))
 
@@ -239,12 +261,7 @@ class Compound(rhy.AbstractRhythm):
             rhythm_as_fraction = tuple(fractions.Fraction(r) for r in rhythm)
             lcd = tools.lcm(*tuple(r.denominator for r in rhythm_as_fraction))
             int_rhythm = tuple(int(r * lcd) for r in rhythm_as_fraction)
-            essence = int(
-                Compound.convert_binary_rhythm2binary(
-                    Compound.convert_int_rhythm2binary_rhythm(int_rhythm)
-                ),
-                2,
-            )
+            essence = Compound.convert_int_rhythm2essence(int_rhythm)
             return essence, fractions.Fraction(1, lcd)
         else:
             return 0, 1

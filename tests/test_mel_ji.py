@@ -1374,10 +1374,65 @@ class BlueprintHarmonyTest(unittest.TestCase):
             (BlueprintHarmonyTest.bp0, (0,)),
             (BlueprintHarmonyTest.bp3, (1,)),
         )
+        bph3 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (3,)),
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp3, (3,)),
+        )
+        bph4 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp2, (0, 1)),
+            (BlueprintHarmonyTest.bp3, (1,)),
+        )
+        bph5 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp2, (0, 1)),
+            (BlueprintHarmonyTest.bp3, (1,)),
+        )
+        bph6 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp2, (0, 1)),
+            (BlueprintHarmonyTest.bp3, (0,)),
+        )
+        bph7 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (2,)),
+            (BlueprintHarmonyTest.bp2, (0, 2)),
+            (BlueprintHarmonyTest.bp3, (0,)),
+        )
+        bph8 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp2, (1, 0)),
+            (BlueprintHarmonyTest.bp3, (1,)),
+        )
+        bph9 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp1, (0, 1)),
+            (BlueprintHarmonyTest.bp3, (1,)),
+        )
+        bph10 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp1, (1, 0)),
+            (BlueprintHarmonyTest.bp3, (1,)),
+        )
+        bph11 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp0, (0,)),
+        )
+        bph12 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp0, (1,)),
+        )
 
         self.assertEqual(bph0, bph1)
         self.assertEqual(bph0, bph2)
         self.assertEqual(bph1, bph2)
+        self.assertEqual(bph1, bph3)
+        self.assertEqual(bph4, bph5)
+        self.assertEqual(bph4, bph6)
+        self.assertEqual(bph4, bph7)
+        self.assertEqual(bph4, bph8)
+        self.assertNotEqual(bph9, bph10)
+        self.assertEqual(bph11, bph12)
 
     def test_is_instance(self):
         bph0 = ji.BlueprintHarmony(
@@ -1402,6 +1457,54 @@ class BlueprintHarmonyTest(unittest.TestCase):
         self.assertFalse(
             bph0.inverse().is_instance((ji.r(3, 1), ji.r(5, 1), ji.r(9, 1)))
         )
+
+    def test_n_pitch_repetitions(self):
+        bph0 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp0, (1,)),
+        )
+        bph1 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp0, (1,)),
+        )
+        bph2 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp1, (0, 1)),
+            (BlueprintHarmonyTest.bp1, (1, 0)),
+        )
+        bph3 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp1, (0, 1)),
+            (BlueprintHarmonyTest.bp1, (0, 1)),
+        )
+        bph4 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp2, (0, 1)),
+            (BlueprintHarmonyTest.bp2, (0, 1)),
+        )
+        bph5 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp2, (0, 1)),
+            (BlueprintHarmonyTest.bp2, (1, 0)),
+        )
+
+        self.assertEqual(bph0.n_pitch_repetitions, 1)
+        self.assertEqual(bph1.n_pitch_repetitions, 2)
+        self.assertEqual(bph2.n_pitch_repetitions, 0)
+        self.assertEqual(bph3.n_pitch_repetitions, 1)
+        self.assertEqual(bph4.n_pitch_repetitions, 1)
+        self.assertEqual(bph5.n_pitch_repetitions, 1)
+
+    def test_n_common_pitches(self):
+        bph0 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp3, (0,)),
+        )
+        bph1 = ji.BlueprintHarmony(
+            (BlueprintHarmonyTest.bp3, (1,)),
+            (BlueprintHarmonyTest.bp1, (0, 1)),
+            (BlueprintHarmonyTest.bp0, (0,)),
+        )
+
+        self.assertEqual(bph0.n_common_pitches(bph1), 1)
 
 
 class JIModule(unittest.TestCase):

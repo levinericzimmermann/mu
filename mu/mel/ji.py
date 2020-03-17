@@ -2689,7 +2689,7 @@ class BlueprintPitch(object):
 
     To initalise a new object two tuples or lists are necessary,
     one for the numerator and one for the denominator of the abstract
-    pitch. Those tuples are filled with integer. Each integer express
+    pitch. Those tuples are filled with integer. Each integer expresses
     how many prime numbers of the nth power are occurring in the numerator
     or denominator, where n is the list index of the integer plus one.
 
@@ -2844,8 +2844,8 @@ class BlueprintHarmony(object):
     """
 
     def __init__(self, *blueprint: tuple) -> None:
-        # check if the input data is valid:
-        blueprint = tuple((p, tuple(indices)) for p, indices in blueprint)
+        blueprint = tuple((p, self.sort_blueprint_pitch_indices(p, indices))
+                          for p, indices in blueprint)
 
         ig1 = operator.itemgetter(1)
         numbers = tuple(ig1(bp) for bp in blueprint)
@@ -2854,6 +2854,7 @@ class BlueprintHarmony(object):
         # initalise the attributes
         self.__size = len(available_numbers)
         self.__blueprint = blueprint
+        self.__sorted_available_indices = tuple(sorted(available_numbers))
 
     @classmethod
     def from_harmony(cls, harmony: tuple) -> "BlueprintHarmony":
@@ -2887,14 +2888,37 @@ class BlueprintHarmony(object):
 
         return cls(*blueprint)
 
+    @staticmethod
+    def get_id_vector_of_blueprint_pitch(blueprint_pitch: BlueprintPitch) -> tuple:
+        bp = tuple(base for base in
+                   functools.reduce(
+                       operator.add, blueprint_pitch.blueprint) if base > 0)
+        res = []
+        for exponent_idx, n_bases in enumerate(bp):
+            for to_add in range(n_bases):
+                res.append(exponent_idx)
+        return tuple(res)
+
+    @staticmethod
+    def sort_blueprint_pitch_indices(
+            blueprint_pitch: BlueprintPitch, indices: tuple) -> tuple:
+        id_vector = BlueprintHarmony.get_id_vector_of_blueprint_pitch(blueprint_pitch)
+        divisions = [[] for i in range(max(id_vector) + 1)]
+        for idx, ID in zip(indices, id_vector):
+            divisions[ID].append(idx)
+        return tuple(functools.reduce(
+            operator.add, tuple(sorted(div) for div in divisions)))
+
     @property
     def identity(self) -> set:
-        items = [[] for i in range(self.size)]
+        items_per_idx = [[] for i in range(self.size)]
         for bp in self.blueprint:
-            hashtb = hash(bp[0])
-            for idx, item in enumerate(bp[1]):
-                items[item].append((hashtb, idx))
-        return set(tuple(item) for item in items)
+            hash_blueprint_pitch = hash(bp[0])
+            id_vector = self.get_id_vector_of_blueprint_pitch(bp[0])
+            for ID, item in zip(id_vector, bp[1]):
+                real_index = self.__sorted_available_indices.index(item)
+                items_per_idx[real_index].append((hash_blueprint_pitch, ID))
+        return set(tuple(item) for item in items_per_idx)
 
     @property
     def blueprint(self) -> tuple:
@@ -2904,19 +2928,37 @@ class BlueprintHarmony(object):
     def size(self) -> int:
         return self.__size
 
+    @property
+    def n_pitch_repetitions(self) -> int:
+        return len(self.blueprint) - len(set(self.blueprint))
+
     def inverse(self) -> "BlueprintHarmony":
         return type(self)(
             *tuple((bp.inverse(), indices) for bp, indices in self.blueprint)
         )
 
+    def __hash__(self) -> int:
+        return hash(self.blueprint)
+
+    def __len__(self) -> int:
+        return len(self.blueprint)
+
     def __repr__(self) -> str:
         return str(self.blueprint)
 
     def __eq__(self, other) -> bool:
+        """Compare two BlueprintHarmony objects.
+
+        Return True if both objects generate the same ouput when they get
+        called with the same attributes in the same order.
+        """
         try:
             return self.identity == other.identity
         except AttributeError:
             return False
+
+    def n_common_pitches(self, other: "BlueprintHarmony") -> int:
+        return len(set(self.blueprint).intersection(set(other.blueprint)))
 
     def is_instance(
         self, harmony: JIHarmony, gender: bool = True, ignore: tuple = (2,)
