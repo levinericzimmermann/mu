@@ -7,6 +7,11 @@ import operator
 import os
 import warnings
 
+try:
+    import quicktions as fractions
+except ImportError:
+    import fractions
+
 
 __directory = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(__directory, "", "12edo"), "r") as f:
@@ -107,12 +112,16 @@ class AbstractPitch(abc.ABC):
         return hash(self.freq)
 
     @staticmethod
-    def hz2ct(freq0, freq1) -> float:
+    def hz2ct(freq0: float, freq1: float) -> float:
         return 1200 * math.log(freq1 / freq0, 2)
 
     @staticmethod
-    def ratio2ct(ratio) -> float:
+    def ratio2ct(ratio: fractions.Fraction) -> float:
         return AbstractPitch._cent_calculation_constant * math.log10(ratio)
+
+    @staticmethod
+    def ct2ratio(ct: float) -> fractions.Fraction:
+        return fractions.Fraction(10 ** (ct / AbstractPitch._cent_calculation_constant))
 
     def convert2midi_tuning(self) -> tuple:
         """calculates the MIDI Tuning Standard of the pitch

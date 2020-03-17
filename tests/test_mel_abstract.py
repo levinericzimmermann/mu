@@ -1,5 +1,13 @@
 import unittest
+
+
 from mu.mel import abstract
+
+
+try:
+    import quicktions as fractions
+except ImportError:
+    import fractions
 
 
 class AbstractTest(unittest.TestCase):
@@ -75,9 +83,12 @@ class InheritanceTest(unittest.TestCase):
         self.assertEqual(test_obj0.freq, correct)
 
     def test_iterable_method_functionality1(self):
-        """test whether funtions which might return a type(self)-object
+        """test iterable
+
+        test whether funtions which might return a type(self)-object
         returns a specific_iterable_type([type(self), ..])-object
-        in the iterable-version."""
+        in the iterable-version.
+        """
         fac = 2
         f0, f1 = 200, 260
         n0, n1 = self.PitchTest(f0), self.PitchTest(f1)
@@ -97,6 +108,13 @@ class InheritanceTest(unittest.TestCase):
         steps1 = int((cent_difference - (steps0 * 0.78125)) // 0.0061)
         expected_hex = 62, steps0, steps1
         self.assertEqual(hex_number, expected_hex)
+
+    def test_ct2ratio(self):
+        self.assertEqual(abstract.AbstractPitch.ct2ratio(1200), 2)
+        self.assertEqual(
+            abstract.AbstractPitch.ct2ratio(702).limit_denominator(10),
+            fractions.Fraction(3, 2),
+        )
 
 
 if __name__ == "__main__":
