@@ -1708,6 +1708,19 @@ class JIPitch(Monzo, abstract.AbstractPitch):
         obj.multiply = multiply
         return obj
 
+    @classmethod
+    def from_cents(
+        cls,
+        cents: float,
+        limit_denominator: int = 32,
+        val_border: int = 1,
+        multiply: float = 1,
+    ) -> "JIPitch":
+        ratio = cls.ct2ratio(cents)
+        if limit_denominator is not None:
+            ratio = ratio.limit_denominator(limit_denominator)
+        return cls.from_ratio(ratio.numerator, ratio.denominator, val_border, multiply)
+
     def convert2json(self):
         return json.dumps((self._vec, self.val_border, self.multiply))
 
@@ -2844,8 +2857,10 @@ class BlueprintHarmony(object):
     """
 
     def __init__(self, *blueprint: tuple) -> None:
-        blueprint = tuple((p, self.sort_blueprint_pitch_indices(p, indices))
-                          for p, indices in blueprint)
+        blueprint = tuple(
+            (p, self.sort_blueprint_pitch_indices(p, indices))
+            for p, indices in blueprint
+        )
 
         ig1 = operator.itemgetter(1)
         numbers = tuple(ig1(bp) for bp in blueprint)
@@ -2890,9 +2905,11 @@ class BlueprintHarmony(object):
 
     @staticmethod
     def get_id_vector_of_blueprint_pitch(blueprint_pitch: BlueprintPitch) -> tuple:
-        bp = tuple(base for base in
-                   functools.reduce(
-                       operator.add, blueprint_pitch.blueprint) if base > 0)
+        bp = tuple(
+            base
+            for base in functools.reduce(operator.add, blueprint_pitch.blueprint)
+            if base > 0
+        )
         res = []
         for exponent_idx, n_bases in enumerate(bp):
             for to_add in range(n_bases):
@@ -2901,13 +2918,15 @@ class BlueprintHarmony(object):
 
     @staticmethod
     def sort_blueprint_pitch_indices(
-            blueprint_pitch: BlueprintPitch, indices: tuple) -> tuple:
+        blueprint_pitch: BlueprintPitch, indices: tuple
+    ) -> tuple:
         id_vector = BlueprintHarmony.get_id_vector_of_blueprint_pitch(blueprint_pitch)
         divisions = [[] for i in range(max(id_vector) + 1)]
         for idx, ID in zip(indices, id_vector):
             divisions[ID].append(idx)
-        return tuple(functools.reduce(
-            operator.add, tuple(sorted(div) for div in divisions)))
+        return tuple(
+            functools.reduce(operator.add, tuple(sorted(div) for div in divisions))
+        )
 
     @property
     def identity(self) -> set:

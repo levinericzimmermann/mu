@@ -106,10 +106,6 @@ class Compound(rhy.AbstractRhythm):
         return Compound.convert_int2rhythm(self.essence)
 
     @property
-    def absr(self) -> tuple:
-        return tools.accumulate_from_zero(self.intr)[:-1]
-
-    @property
     def beats(self) -> int:
         return len(self.binr)
 
