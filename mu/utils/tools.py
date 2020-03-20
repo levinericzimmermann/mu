@@ -8,8 +8,12 @@ import numpy as np
 from scipy.stats import norm
 
 
+def accumulate_from_n(iterator: tuple, n: float) -> tuple:
+    return tuple(itertools.accumulate((n,) + (tuple(iterator))))
+
+
 def accumulate_from_zero(iterator: tuple) -> tuple:
-    return tuple(itertools.accumulate((0,) + (tuple(iterator))))
+    return accumulate_from_n(iterator, 0)
 
 
 def find_closest_index(item: float, data: tuple) -> int:
@@ -275,3 +279,7 @@ def split_iterable_by_function(iterable: tuple, function) -> tuple:
 
 def split_iterable_by_n(iterable: tuple, n) -> tuple:
     return split_iterable_by_function(iterable, lambda x: x == n)
+
+
+def find_all_indices_of_n(n, iterable: tuple) -> tuple:
+    return tuple(idx for idx, item in enumerate(iterable) if item == n)

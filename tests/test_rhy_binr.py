@@ -246,8 +246,8 @@ class CompoundTest(unittest.TestCase):
         # showing difference between stretch and
         # real_stretch method:
 
-        self.assertNotEqual(r0.stretch(2), r1)
-        self.assertNotEqual(r1.stretch(0.5), r0)
+        self.assertNotEqual(hash(r0.stretch(2)), hash(r1))
+        self.assertNotEqual(hash(r1.stretch(0.5)), hash(r0))
 
-        self.assertEqual(r0.real_stretch(2), r1)
-        self.assertEqual(r1.real_stretch(0.5), r0)
+        self.assertEqual(hash(r0.real_stretch(2)), hash(r1))
+        self.assertEqual(hash(r1.real_stretch(0.5)), hash(r0))

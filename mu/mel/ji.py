@@ -15,6 +15,7 @@ import primesieve
 from mu.mel import abstract
 from mu.mel import mel
 from mu.utils import prime_factors
+from mu.utils import tools
 
 try:
     from quicktions import Fraction
@@ -3014,31 +3015,49 @@ def find_best_voice_leading(pitches: tuple, tonal_range: tuple) -> tuple:
         assert oct0 != oct1
         return tuple(p_norm.register(o) for o in range(oct0, oct1))
 
+    def brute_force_algorithm(pitches: tuple) -> tuple:
+        element = None
+        fitness = None
+        for solution in itertools.product(
+            *tuple(
+                find_all_available_pitches_in_a_specified_range(p, minima, maxima)
+                for p in pitches
+            )
+        ):
+            differences = sum(
+                abs((p0 - p1).cents) for p0, p1 in zip(solution, solution[1:])
+            )
+
+            is_addable = True
+
+            if element:
+                is_addable = differences < fitness
+
+            if is_addable:
+                element = solution
+                fitness = differences
+
+        return element
+
     assert len(tonal_range) == 2
     minima, maxima = tonal_range
 
-    element = None
-    fitness = None
-    for solution in itertools.product(
-        *tuple(
-            find_all_available_pitches_in_a_specified_range(p, minima, maxima)
-            for p in pitches
-        )
-    ):
-        differences = sum(
-            abs((p0 - p1).cents) for p0, p1 in zip(solution, solution[1:])
-        )
+    splited_by_rests = tools.split_iterable_by_n(pitches, mel.TheEmptyPitch)
 
-        is_addable = True
+    result = tuple([])
+    for part in splited_by_rests:
+        if part[-1] == mel.TheEmptyPitch:
+            is_last_rest = True
+            part = part[:-1]
+        else:
+            is_last_rest = False
 
-        if element:
-            is_addable = differences < fitness
+        result += brute_force_algorithm(part)
 
-        if is_addable:
-            element = solution
-            fitness = differences
+        if is_last_rest:
+            result += (mel.TheEmptyPitch,)
 
-    return element
+    return tuple(result)
 
 
 """

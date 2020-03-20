@@ -160,10 +160,15 @@ class Compound(rhy.AbstractRhythm):
         return sum(self.__converted())
 
     def __eq__(self, other) -> bool:
+        data_self = list(self.convert2relative())
         try:
-            return self.essence == other.essence and self.multiply == other.multiply
+            data_other = list(other.convert2relative())
+            return data_self == data_other
         except AttributeError:
-            return list(self) == other
+            return data_self == other
+
+    def __hash__(self) -> int:
+        return hash((self.essence, self.multiply))
 
     @property
     def delay(self) -> float:
