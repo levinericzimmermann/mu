@@ -4,12 +4,10 @@ from mu.mel import ji
 from mu.mel import mel
 from mu.rhy import rhy
 from mu.sco import old
+from mu.utils import interpolations
 
 
-class InterpolationEventTest(unittest.TestCase):
-    def test_construction(self):
-        self.assertRaises(TypeError, old.InterpolationEvent)
-
+class PitchAndRhythmicInterpolationEventTest(unittest.TestCase):
     def test_pitch_interpolation(self):
         p0 = old.PitchInterpolation(3, mel.SimplePitch(0, 200))
         p1 = old.PitchInterpolation(0, mel.SimplePitch(0, 0))
@@ -34,16 +32,18 @@ class InterpolationLineTest(unittest.TestCase):
         p0 = old.PitchInterpolation(3, mel.SimplePitch(0, 300))
         p1 = old.PitchInterpolation(4, mel.SimplePitch(0, 0))
         p2 = old.PitchInterpolation(0, mel.SimplePitch(0, -400))
-        line = old.InterpolationLine((p0, p1, p2))
+        line = interpolations.InterpolationLine((p0, p1, p2))
         interpol = line(1)
         self.assertEqual(interpol, (300, 200, 100, 0, -100, -200, -300))
-        self.assertRaises(ValueError, lambda: old.InterpolationLine((p0, p0, p1)))
+        self.assertRaises(
+            ValueError, lambda: interpolations.InterpolationLine((p0, p0, p1))
+        )
 
     def test_glissando_line(self):
         p0 = old.PitchInterpolation(3, mel.SimplePitch(0, 300))
         p1 = old.PitchInterpolation(4, mel.SimplePitch(0, 0))
         p2 = old.PitchInterpolation(0, mel.SimplePitch(0, -400))
-        line = old.InterpolationLine((p0, p1, p2))
+        line = interpolations.InterpolationLine((p0, p1, p2))
         gliss = old.GlissandoLine(line)
         interpol0 = gliss.interpolate(1)
         self.assertEqual(interpol0, (300, 200, 100, 0, -100, -200, -300))
@@ -57,9 +57,9 @@ class InterpolationLineTest(unittest.TestCase):
         p5 = old.PitchInterpolation(0, mel.SimplePitch(0, -900))
         r0 = old.RhythmicInterpolation(6, rhy.Unit(2))
         r1 = old.RhythmicInterpolation(0, rhy.Unit(2))
-        line0 = old.InterpolationLine((p0, p1, p2))
-        line1 = old.InterpolationLine((p3, p4, p5))
-        line2 = old.InterpolationLine((r0, r1))
+        line0 = interpolations.InterpolationLine((p0, p1, p2))
+        line1 = interpolations.InterpolationLine((p3, p4, p5))
+        line2 = interpolations.InterpolationLine((r0, r1))
         vib0 = old.VibratoLine(line0, line1, line2, "up")
         vib1 = old.VibratoLine(line0, line1, line2, "down")
         interpol0 = vib0.interpolate(0.5)

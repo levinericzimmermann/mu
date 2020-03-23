@@ -1,7 +1,7 @@
-import bisect
 import functools
 import math
 import operator
+
 from typing import Callable
 from typing import Optional
 from typing import Tuple
@@ -14,40 +14,22 @@ from mu.mel.abstract import AbstractPitch
 from mu.rhy import rhy
 from mu.sco import abstract
 from mu.time import time
-from mu.utils import interpolation
+from mu.utils import interpolations
+
+print(interpolations)
 
 
 """This module represents musical structures that are based on discreet tones."""
 
 
-class InterpolationEvent(abstract.UniformEvent):
-    def __init__(self, delay: rhy.Unit, interpolation_type=interpolation.Linear()):
-        if isinstance(delay, rhy.Unit) is False:
-            delay = rhy.Unit(delay)
-        self.__delay = delay
-        self.__interpolation_type = interpolation_type
-
-    @property
-    def delay(self):
-        return self.__delay
-
-    @property
-    def interpolation_type(self):
-        return self.__interpolation_type
-
-    @abstract.abc.abstractproperty
-    def interpolate(self, other, steps):
-        raise NotImplementedError
-
-
-class PitchInterpolation(InterpolationEvent):
+class PitchInterpolation(interpolations.InterpolationEvent):
     def __init__(
         self,
         delay: rhy.Unit,
         pitch: AbstractPitch,
-        interpolation_type: interpolation.Interpolation = interpolation.Linear(),
+        interpolation_type: interpolations.Interpolation = interpolations.Linear(),
     ):
-        InterpolationEvent.__init__(self, delay, interpolation_type)
+        super().__init__(delay, interpolation_type)
         self.__pitch = pitch
 
     @property
@@ -68,14 +50,14 @@ class PitchInterpolation(InterpolationEvent):
         return self.interpolation_type(cents0, cents1, steps)
 
 
-class RhythmicInterpolation(InterpolationEvent):
+class RhythmicInterpolation(interpolations.InterpolationEvent):
     def __init__(
         self,
         delay: rhy.Unit,
         rhythm: rhy.Unit,
-        interpolation_type: interpolation.Interpolation = interpolation.Linear(),
+        interpolation_type: interpolations.Interpolation = interpolations.Linear(),
     ):
-        InterpolationEvent.__init__(self, delay, interpolation_type)
+        super().__init__(delay, interpolation_type)
         self.__rhythm = rhythm
 
     @property
@@ -96,67 +78,6 @@ class RhythmicInterpolation(InterpolationEvent):
         return self.interpolation_type(self.rhythm, other.rhythm, steps)
 
 
-class InterpolationLine(muobjects.MUList):
-    """Container class to describe interpolations between states.
-
-    They are expected to contain InterpolationEvent - objects.
-    InterpolationLine - objects can be called to generate the interpolation.
-    Input arguments are only Gridsize that describe how small
-    one interpolation step is. InterpolationLine - objects are
-    unchangeable objects.
-
-    The last event is expected to have delay == 0.
-    """
-
-    def __init__(self, iterable):
-        iterable = tuple(iterable)
-        try:
-            assert iterable[-1].delay == 0
-        except AssertionError:
-            raise ValueError("The last element has to have delay = 0")
-        muobjects.MUList.__init__(self, iterable)
-
-    def __call__(self, gridsize: float):
-        def find_closest_point(points, time):
-            pos = bisect.bisect_right(points, time)
-            try:
-                return min(
-                    (
-                        (abs(time - points[pos]), pos),
-                        (abs(time - points[pos - 1]), pos - 1),
-                    ),
-                    key=operator.itemgetter(0),
-                )[1]
-            except IndexError:
-                # if pos is len(points) + 1
-                return pos
-
-        points = interpolation.Linear()(
-            0, float(self.duration), int(self.duration / gridsize)
-        )
-        absolute_delays = self.delay.convert2absolute()
-        positions = tuple(
-            find_closest_point(points, float(delay)) for delay in absolute_delays
-        )
-        interpolation_size = tuple(b - a for a, b in zip(positions, positions[1:]))
-        interpolations = (
-            item0.interpolate(item1, steps + 1)[:-1]
-            for item0, item1, steps in zip(self, self[1:], interpolation_size)
-        )
-        return tuple(functools.reduce(operator.add, interpolations))
-
-    def copy(self):
-        return type(self)(item.copy() for item in self)
-
-    @property
-    def delay(self) -> rhy.Compound:
-        return rhy.Compound(obj.delay.copy() for obj in self)
-
-    @property
-    def duration(self):
-        return sum(self.delay)
-
-
 class GlissandoLine(object):
     """Class to simulate the Glissando of a Tone.
 
@@ -164,7 +85,7 @@ class GlissandoLine(object):
     containing PitchInterpolation - objects.
     """
 
-    def __init__(self, pitch_line: InterpolationLine):
+    def __init__(self, pitch_line: interpolations.InterpolationLine):
         self.__pitch_line = pitch_line
 
     @property
@@ -195,9 +116,9 @@ class VibratoLine(object):
 
     def __init__(
         self,
-        up_pitch_line: InterpolationLine,
-        down_pitch_line: InterpolationLine,
-        period_size_line: InterpolationLine,
+        up_pitch_line: interpolations.InterpolationLine,
+        down_pitch_line: interpolations.InterpolationLine,
+        period_size_line: interpolations.InterpolationLine,
         direction="up",
     ):
         self.direction = direction

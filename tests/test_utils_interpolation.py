@@ -1,13 +1,13 @@
 import unittest
 
-from mu.utils import interpolation
+from mu.utils import interpolations
 
 
 class AbstractTest(unittest.TestCase):
     def test_construction(self):
-        self.assertRaises(TypeError, interpolation.Interpolation)
+        self.assertRaises(TypeError, interpolations.Interpolation)
 
-        class Test(interpolation.Interpolation):
+        class Test(interpolations.Interpolation):
             pass
 
         self.assertRaises(TypeError, Test)
@@ -15,8 +15,8 @@ class AbstractTest(unittest.TestCase):
 
 class InterpolationsTest(unittest.TestCase):
     def test_linear(self):
-        linear0 = interpolation.Linear()
-        linear1 = interpolation.Linear()
+        linear0 = interpolations.Linear()
+        linear1 = interpolations.Linear()
         self.assertEqual(hash(linear0), hash(linear1))
         inter0 = linear0(0, 10, 6)
         inter1 = linear0(0, 5, 6)
@@ -24,8 +24,8 @@ class InterpolationsTest(unittest.TestCase):
         self.assertEqual(inter1, (0, 1, 2, 3, 4, 5))
 
     def test_logarithmic(self):
-        logarithmic0 = interpolation.Logarithmic()
-        logarithmic1 = interpolation.Logarithmic()
+        logarithmic0 = interpolations.Logarithmic()
+        logarithmic1 = interpolations.Logarithmic()
         self.assertEqual(hash(logarithmic0), hash(logarithmic1))
         inter0 = logarithmic0(0, 10, 6)
         self.assertEqual(
@@ -41,10 +41,10 @@ class InterpolationsTest(unittest.TestCase):
         )
 
     def test_proportional(self):
-        prop0 = interpolation.Proportional(1)
-        prop1 = interpolation.Proportional(1)
-        prop2 = interpolation.Proportional(0.5)
-        prop3 = interpolation.Proportional(2)
+        prop0 = interpolations.Proportional(1)
+        prop1 = interpolations.Proportional(1)
+        prop2 = interpolations.Proportional(0.5)
+        prop3 = interpolations.Proportional(2)
         self.assertEqual(hash(prop0), hash(prop1))
         self.assertNotEqual(hash(prop0), hash(prop2))
         inter0 = prop0(0, 10, 6)
