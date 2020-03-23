@@ -9,6 +9,7 @@ import functools
 import itertools
 import operator
 import os
+import subprocess
 from typing import Optional
 
 import mido
@@ -748,19 +749,31 @@ class Pianoteq(SysexTuningMidiFile):
     ):
         super(Pianoteq, self).__init__(sequence, available_midi_notes)
 
-    def export2wav(self, name, nchnls=1, preset=None, fxp=None, sr=44100):
+    def export2wav(
+        self, name, nchnls=1, preset=None, fxp=None, sr=44100, verbose: bool = False
+    ):
         self.export("{0}.mid".format(name))
-        cmd = "./{0} --rate {1} --bit-depth 32 --midimapping complete ".format(
-            self.software_path, sr
-        )
+        cmd = [
+            "./{}".format(self.software_path),
+            "--rate {}".format(sr),
+            "--bit-depth 32",
+            "--midimapping complete",
+        ]
+
+        if verbose is False:
+            cmd.append("--quiet")
+
         if nchnls == 1:
-            cmd += "--mono "
+            cmd.append("--mono")
+
         if preset is not None:
-            cmd += "--preset {0} ".format(preset)
+            cmd.append("--preset {}".format(preset))
+
         if fxp is not None:
-            cmd += "--fxp {0} ".format(fxp)
-        cmd += "--midi {0}.mid --wav {0}.wav".format(name)
-        os.system(cmd)
+            cmd.append("--fxp {} ".format(fxp))
+
+        cmd.append("--midi {0}.mid --wav {0}.wav".format(name))
+        subprocess.call(" ".join(cmd), shell=True)
 
 
 class Diva(NonSysexTuningMidiFile):

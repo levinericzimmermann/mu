@@ -425,7 +425,7 @@ class AbstractLine(abstract.MultiSequentialEvent):
     def __hash__(self):
         return hash(tuple(hash(item) for item in self))
 
-    def convert2absolute_time(self) -> "AbstractLine":
+    def convert2absolute(self) -> "AbstractLine":
         """Change time dimension of the object.
 
         Delay becomes the starting time of the specific event,
@@ -439,7 +439,7 @@ class AbstractLine(abstract.MultiSequentialEvent):
             copy._time_measure = "absolute"
         return copy
 
-    def convert2relative_time(self):
+    def convert2relative(self):
         """Change time dimension of the object.
 
         Starting time of specific event becomes its Delay ,
@@ -462,10 +462,8 @@ class AbstractLine(abstract.MultiSequentialEvent):
     @property
     def duration(self):
         if self.time_measure == "relative":
-            print("HERE")
             return time.Time(sum(self.delay))
         else:
-            print("THERE")
             return time.Time(self.dur[-1])
 
     def tie_by(self, function):
@@ -499,7 +497,9 @@ class AbstractLine(abstract.MultiSequentialEvent):
     def discard_rests(self):
         def is_rest(pitch) -> bool:
             if isinstance(pitch, AbstractPitch):
-                return pitch is mel.TheEmptyPitch
+                return pitch.is_empty
+            elif pitch is None:
+                return True
             else:
                 return len(pitch) == 0
 
@@ -521,7 +521,7 @@ class AbstractLine(abstract.MultiSequentialEvent):
     def cut_up_by_time(
         self, start: rhy.Unit, stop: rhy.Unit, add_earlier=False, hard_cut=True
     ) -> "AbstractLine":
-        line = self.convert2absolute_time()
+        line = self.convert2absolute()
         new = []
 
         for event in line:
@@ -565,7 +565,7 @@ class AbstractLine(abstract.MultiSequentialEvent):
     def cut_up_by_idx(
         self, itemidx, add_earlier=False, hard_cut=True
     ) -> "AbstractLine":
-        item = self.convert2absolute_time()[itemidx]
+        item = self.convert2absolute()[itemidx]
         item_start = item.delay
         item_stop = item.duration
         return self.cut_up_by_time(item_start, item_stop, hard_cut, add_earlier)
@@ -786,7 +786,7 @@ class PolyLine(abstract.SimultanEvent):
         except ValueError:
             return None
 
-    def convert2absolute_time(self):
+    def convert2absolute(self):
         """Change time dimension.
 
         Delay becomes the starting time of the specific event,
@@ -795,11 +795,11 @@ class PolyLine(abstract.SimultanEvent):
         copy = self.copy()
         if self.time_measure == "relative":
             for i, item in enumerate(copy):
-                copy[i] = item.convert2absolute_time()
+                copy[i] = item.convert2absolute()
             copy._time_measure = "absolute"
         return copy
 
-    def convert2relative_time(self):
+    def convert2relative(self):
         """Change time dimension.
 
         Starting time of specific event becomes its Delay,
@@ -808,7 +808,7 @@ class PolyLine(abstract.SimultanEvent):
         copy = self.copy()
         if self.time_measure == "absolute":
             for i, item in enumerate(copy):
-                copy[i] = item.convert2relative_time()
+                copy[i] = item.convert2relative()
             copy._time_measure = "relative"
         return copy
 
@@ -831,7 +831,7 @@ class PolyLine(abstract.SimultanEvent):
         return res
 
     def find_simultan_events(self, polyidx, itemidx) -> tuple:
-        converted_poly = self.convert2absolute_time()
+        converted_poly = self.convert2absolute()
         return self.find_simultan_events_in_absolute_polyline(
             converted_poly, polyidx, itemidx
         )
@@ -839,7 +839,7 @@ class PolyLine(abstract.SimultanEvent):
     def find_exact_simultan_events(
         self, polyidx, itemidx, convert2relative=True
     ) -> tuple:
-        converted_poly = self.convert2absolute_time()
+        converted_poly = self.convert2absolute()
         simultan = self.find_simultan_events_in_absolute_polyline(
             converted_poly, polyidx, itemidx
         )
@@ -860,7 +860,7 @@ class PolyLine(abstract.SimultanEvent):
     def cut_up_by_time(
         self, start: rhy.Unit, stop: rhy.Unit, hard_cut=True, add_earlier=True
     ) -> "PolyLine":
-        polyline = self.convert2absolute_time()
+        polyline = self.convert2absolute()
         for i, sub in enumerate(polyline):
             new = []
             for event in sub:
@@ -904,14 +904,14 @@ class PolyLine(abstract.SimultanEvent):
             for sub in polyline:
                 sub.dur = type(sub.dur)(d - sub.delay[0] for d in sub.dur)
                 sub.delay = type(sub.delay)(d - sub.delay[0] for d in sub.delay)
-            polyline = polyline.convert2relative_time()
+            polyline = polyline.convert2relative()
 
         return polyline
 
     def cut_up_by_idx(
         self, polyidx, itemidx, hard_cut=True, add_earlier=True
     ) -> "PolyLine":
-        item = self[polyidx].convert2absolute_time()[itemidx]
+        item = self[polyidx].convert2absolute()[itemidx]
         item_start = item.delay
         item_stop = item.duration
         return self.cut_up_by_time(item_start, item_stop, hard_cut, add_earlier)
@@ -928,7 +928,7 @@ class Polyphon(PolyLine):
         Each change of a pitch results in a new chord.
         """
         events = functools.reduce(
-            operator.add, tuple(line.convert2absolute_time() for line in self)
+            operator.add, tuple(line.convert2absolute() for line in self)
         )
         starts = tuple(ev.delay for ev in events)
         stops = tuple(ev.duration for ev in events)
