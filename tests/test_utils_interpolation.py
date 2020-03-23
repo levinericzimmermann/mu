@@ -57,3 +57,8 @@ class InterpolationsTest(unittest.TestCase):
         self.assertEqual(
             tuple(round(n, 2) for n in inter2), (0, 1.33, 2.93, 4.93, 7.33, 10)
         )
+
+
+class InterpolationEventTest(unittest.TestCase):
+    def test_construction(self):
+        self.assertRaises(TypeError, interpolations.InterpolationEvent)

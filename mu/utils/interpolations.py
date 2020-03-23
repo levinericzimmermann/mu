@@ -95,6 +95,9 @@ class InterpolationEvent(object):
         self.__delay = delay
         self.__interpolation_type = interpolation_type
 
+    def __repr__(self) -> str:
+        return "InterpolationEvent({})".format(self.delay)
+
     @property
     def delay(self):
         return self.__delay
@@ -104,8 +107,26 @@ class InterpolationEvent(object):
         return self.__interpolation_type
 
     @abc.abstractproperty
-    def interpolate(self, other, steps):
+    def interpolate(self, other, steps: int) -> tuple:
         raise NotImplementedError
+
+
+class FloatInterpolationEvent(object):
+    def __init__(
+        self, delay: rhy.Unit, value, interpolation_type: Interpolation = Linear()
+    ):
+        super().__init__(delay, interpolation_type)
+        self.__value = value
+
+    def __repr__(self) -> str:
+        return "FloatInterpolationEvent({}, {})".format(self.delay, self.value)
+
+    @property
+    def value(self) -> float:
+        return self.__value
+
+    def interpolate(self, other: "FloatInterpolationEvent", steps: int) -> tuple:
+        return self.interpolation_type(self.value, other.value, steps)
 
 
 class InterpolationLine(muobjects.MUList):
@@ -122,10 +143,12 @@ class InterpolationLine(muobjects.MUList):
 
     def __init__(self, iterable):
         iterable = tuple(iterable)
+
         try:
             assert iterable[-1].delay == 0
         except AssertionError:
             raise ValueError("The last element has to have delay = 0")
+
         muobjects.MUList.__init__(self, iterable)
 
     def __call__(self, gridsize: float):
@@ -165,3 +188,147 @@ class InterpolationLine(muobjects.MUList):
     @property
     def duration(self) -> float:
         return sum(self.delay)
+
+
+class ShadowInterpolationLine(InterpolationLine):
+    """InterpolationLine that follows a particular list of events.
+
+    The following of the events is similar to a 'shadow' of those events.
+
+    The input argument events has the form
+        ((absolute position, value), (absolute position, value), ...)
+
+    If no event is occuring the InterpolationLine has an average value.
+    If an event is occuring the InterpolationLine interpolates to the value
+    of the event. The interpolation time until this new value is reached is
+    declared with the shadow_size argument.
+
+    The complete duration of the ShadowInterpolationLine is declared with
+    the duration argument. If the duration is None, it will be as long as the
+    latest event plus the shadow_size.
+    """
+
+    def __init__(
+        self,
+        average_value: float,
+        shadow_size: float,
+        events: tuple,
+        duration: float = None,
+        interpolation_type: Interpolation = Linear(),
+        precision: int = 10000,
+    ) -> None:
+        if duration is None:
+            duration = events[-1][0] + shadow_size
+
+        try:
+            assert duration > events[-1][0]
+        except AssertionError:
+            msg = "Complete duration has to be bigger than the farest event."
+            raise ValueError(msg)
+
+        line = []
+
+        if events[0][0] != 0:
+            if events[0][0] == shadow_size:
+                line.append((0, average_value))
+
+            elif events[0][0] > shadow_size:
+                line.append((0, average_value))
+                line.append((events[0][0] - shadow_size, average_value))
+
+            else:
+                line.append(
+                    (
+                        0,
+                        self.find_value_after_shorter_duration(
+                            events[0][1], average_value, shadow_size, events[0][0]
+                        ),
+                    )
+                )
+
+        line.append(events[0])
+
+        for ev0, ev1 in zip(events, events[1:]):
+            shadow_position0 = ev0[0] + shadow_size
+            shadow_position1 = ev1[0] - shadow_size
+
+            if shadow_position0 < shadow_position1:
+                line.append((shadow_position0, average_value))
+                line.append((shadow_position1, average_value))
+
+            elif shadow_position0 == shadow_position1:
+                line.append((shadow_position0, average_value))
+
+            else:
+                duration_until_next_shadow = (ev1[0] - ev0[0]) / 2
+
+                target_value = max((ev0[1], ev1[1]))
+
+                line.append(
+                    (
+                        ev0[0] + duration_until_next_shadow,
+                        self.find_value_after_shorter_duration(
+                            target_value,
+                            average_value,
+                            shadow_size,
+                            duration_until_next_shadow,
+                        ),
+                    )
+                )
+
+            line.append(ev1)
+
+        last_shadow_position = events[-1][0] + shadow_size
+
+        if last_shadow_position < duration:
+            line.append((last_shadow_position, average_value))
+            line.append((duration, average_value))
+
+        elif last_shadow_position == duration:
+            line.append((duration, average_value))
+
+        else:
+            line.append(
+                (
+                    duration,
+                    self.find_value_after_shorter_duration(
+                        events[-1][1],
+                        average_value,
+                        shadow_size,
+                        shadow_size - (last_shadow_position - duration),
+                    ),
+                )
+            )
+
+        ig0 = operator.itemgetter(0)
+        ig1 = operator.itemgetter(1)
+
+        line_delays = tuple(ig0(ev) for ev in line)
+        line_values = tuple(ig1(ev) for ev in line)
+
+        line_delays = tuple(
+            b - a for a, b in zip(line_delays, line_delays[1:] + (duration,))
+        )
+
+        line = tuple(
+            FloatInterpolationEvent(delay, value, interpolation_type)
+            for delay, value in zip(line_delays, line_values)
+        )
+
+        super().__init__(line)
+
+    @staticmethod
+    def find_value_after_shorter_duration(
+        value0: float,
+        value1: float,
+        usual_duration: float,
+        shorter_duration: float,
+        interpolation_type: Interpolation,
+        precision: int,
+    ):
+        positions = Linear()(0, usual_duration, precision)
+        interpolated = FloatInterpolationEvent(
+            usual_duration, value0, interpolation_type
+        ).interpolate(FloatInterpolationEvent(0, value1, interpolation_type), precision)
+        index = bisect.bisect_left(positions, shorter_duration)
+        return interpolated[index]

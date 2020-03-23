@@ -16,8 +16,6 @@ from mu.sco import abstract
 from mu.time import time
 from mu.utils import interpolations
 
-print(interpolations)
-
 
 """This module represents musical structures that are based on discreet tones."""
 
@@ -44,7 +42,7 @@ class PitchInterpolation(interpolations.InterpolationEvent):
             rhy.Unit(self.delay), self.pitch.copy(), self.interpolation_type
         )
 
-    def interpolate(self, other, steps) -> tuple:
+    def interpolate(self, other, steps: int) -> tuple:
         cents0 = self.pitch.cents
         cents1 = other.pitch.cents
         return self.interpolation_type(cents0, cents1, steps)
