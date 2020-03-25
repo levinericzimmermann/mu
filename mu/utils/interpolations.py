@@ -111,7 +111,7 @@ class InterpolationEvent(object):
         raise NotImplementedError
 
 
-class FloatInterpolationEvent(object):
+class FloatInterpolationEvent(InterpolationEvent):
     def __init__(
         self, delay: rhy.Unit, value, interpolation_type: Interpolation = Linear()
     ):
@@ -217,6 +217,9 @@ class ShadowInterpolationLine(InterpolationLine):
         interpolation_type: Interpolation = Linear(),
         precision: int = 10000,
     ) -> None:
+        self.__interpolation_type = interpolation_type
+        self.__precision = precision
+
         if duration is None:
             duration = events[-1][0] + shadow_size
 
@@ -317,15 +320,15 @@ class ShadowInterpolationLine(InterpolationLine):
 
         super().__init__(line)
 
-    @staticmethod
     def find_value_after_shorter_duration(
+        self,
         value0: float,
         value1: float,
         usual_duration: float,
         shorter_duration: float,
-        interpolation_type: Interpolation,
-        precision: int,
     ):
+        interpolation_type = self.__interpolation_type
+        precision = self.__precision
         positions = Linear()(0, usual_duration, precision)
         interpolated = FloatInterpolationEvent(
             usual_duration, value0, interpolation_type
