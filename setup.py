@@ -7,7 +7,7 @@ setup(
     description="Representation of musical elements.",
     author="Levin Eric Zimmermann",
     author_email="levin-eric.zimmermann@folkwang-uni.de",
-    url="https://github.com/uummoo/mu",
+    url="https://github.com/levinericzimmermann/mu",
     packages=[
         "mu",
         "mu.abstract",

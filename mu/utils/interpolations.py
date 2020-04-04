@@ -7,6 +7,7 @@ import operator
 
 from mu.abstract import muobjects
 from mu.rhy import rhy
+from mu.utils import tools
 
 
 class Interpolation(abc.ABC):
@@ -151,7 +152,7 @@ class InterpolationLine(muobjects.MUList):
 
         muobjects.MUList.__init__(self, iterable)
 
-    def __call__(self, gridsize: float):
+    def interpolate_by_grid_size(self, gridsize: float) -> tuple:
         def find_closest_point(points, time):
             pos = bisect.bisect_right(points, time)
             try:
@@ -172,11 +173,54 @@ class InterpolationLine(muobjects.MUList):
             find_closest_point(points, float(delay)) for delay in absolute_delays
         )
         interpolation_size = tuple(b - a for a, b in zip(positions, positions[1:]))
-        interpolations = (
+        interpolations = tuple(
             item0.interpolate(item1, steps + 1)[:-1]
-            for item0, item1, steps in zip(self, self[1:], interpolation_size)
+            for item0, item1, steps in zip(self, self[1:-1], interpolation_size)
+        )
+        interpolations += (self[-2].interpolate(self[-1], interpolation_size[-1]),)
+        return tuple(functools.reduce(operator.add, interpolations))
+
+    def interpolate_by_n_points(self, n_points: int) -> tuple:
+        duration = self.duration
+        points = tuple(range(n_points + 1))
+        point_position_per_interpolation = tools.accumulate_from_zero(
+            tuple(float(point.delay / duration) * n_points for point in self[:-1])
+        )
+        point_position_per_interpolation = tuple(
+            tools.find_closest_index(item, points)
+            for item in point_position_per_interpolation
+        )
+        points_per_interpolation = tuple(
+            b - a
+            for a, b in zip(
+                point_position_per_interpolation, point_position_per_interpolation[1:]
+            )
+        )
+        interpolations = tuple(
+            item0.interpolate(item1, points + 1)[:-1]
+            for item0, item1, points_per_interpolation in zip(
+                self, self[1:-1], points_per_interpolation
+            )
+        )
+        interpolations += (
+            self[-2].interpolate(self[-1], points_per_interpolation[-1]),
         )
         return tuple(functools.reduce(operator.add, interpolations))
+
+    def __call__(self, value: float, interpolation_type="grid") -> tuple:
+        interpolations = {
+            "grid": "interpolate_by_grid_size",
+            "points": "interpolate_by_n_points",
+        }
+        try:
+            assert interpolation_type in tuple(interpolations.keys())
+        except AssertionError:
+            msg = "Interpolation type has to be one of the following: {}.".format(
+                tuple(interpolations.keys())
+            )
+            raise ValueError(msg)
+
+        return getattr(self, interpolations[interpolation_type])(value)
 
     def copy(self):
         return type(self)(item.copy() for item in self)

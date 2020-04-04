@@ -31,7 +31,7 @@ class InterpolationLineTest(unittest.TestCase):
     def test_interpolation(self):
         p0 = old.PitchInterpolation(3, mel.SimplePitch(0, 300))
         p1 = old.PitchInterpolation(4, mel.SimplePitch(0, 0))
-        p2 = old.PitchInterpolation(0, mel.SimplePitch(0, -400))
+        p2 = old.PitchInterpolation(0, mel.SimplePitch(0, -300))
         line = interpolations.InterpolationLine((p0, p1, p2))
         interpol = line(1)
         self.assertEqual(interpol, (300, 200, 100, 0, -100, -200, -300))
@@ -42,7 +42,7 @@ class InterpolationLineTest(unittest.TestCase):
     def test_glissando_line(self):
         p0 = old.PitchInterpolation(3, mel.SimplePitch(0, 300))
         p1 = old.PitchInterpolation(4, mel.SimplePitch(0, 0))
-        p2 = old.PitchInterpolation(0, mel.SimplePitch(0, -400))
+        p2 = old.PitchInterpolation(0, mel.SimplePitch(0, -300))
         line = interpolations.InterpolationLine((p0, p1, p2))
         gliss = old.GlissandoLine(line)
         interpol0 = gliss.interpolate(1)
@@ -65,13 +65,40 @@ class InterpolationLineTest(unittest.TestCase):
         interpol0 = vib0.interpolate(0.5)
         interpol1 = vib1.interpolate(0.5)
         self.assertNotEqual(interpol0, interpol1)
+        print(tuple(round(n, 2) for n in interpol0))
         self.assertEqual(
             tuple(round(n, 2) for n in interpol0),
-            (0, 275, 0, -371.43, 0, 250, 0, -600, 0, 450, 0, -840),
+            (
+                -0.0,
+                275.0,
+                -0.0,
+                -371.43,
+                -0.0,
+                257.14,
+                -0.0,
+                -600.0,
+                -0.0,
+                485.71,
+                -0.0,
+                -900.0,
+            ),
         )
         self.assertEqual(
             tuple(round(n, 2) for n in interpol1),
-            (0, -257.14, 0, 225, 0, -485.71, 0, 350, 0, -720, 0, 550),
+            (
+                0.0,
+                -257.14,
+                0.0,
+                225.0,
+                0.0,
+                -485.71,
+                0.0,
+                371.43,
+                0.0,
+                -750.0,
+                0.0,
+                600.0,
+            ),
         )
 
 
