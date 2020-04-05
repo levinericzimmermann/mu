@@ -213,6 +213,15 @@ class PyteqTone(MidiTone, metaclass=SynthesizerMidiTone):
         "wall_distance": ((0, 6), 93),
         "hammer_hard_mezzo": ((0, 2), 94),
         "hammer_hard_forte": ((0, 2), 95),
+        "effect1_switch": ((0, 1), 102),
+        "effect1_param1": ((0, 1), 103),
+        "effect1_param2": ((0, 1), 104),
+        "effect1_param3": ((0, 1), 105),
+        "effect1_param4": ((0, 1), 106),
+        "effect1_param5": ((0, 1), 107),
+        "effect1_param6": ((0, 1), 108),
+        "effect1_param7": ((0, 1), 109),
+        "effect1_param8": ((0, 1), 110),
     }
 
 
@@ -435,6 +444,7 @@ class MidiFile(abc.ABC):
                     velocity = int((tone.volume / 1) * 127)
                 else:
                     velocity = 64
+
                 chnl = next(channels)
                 msg0 = mido.Message(
                     "note_on", note=key, velocity=velocity, time=0, channel=chnl
