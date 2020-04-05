@@ -144,6 +144,23 @@ def euclid(size: int, distribution: int) -> tuple:
         return tuple(data)
 
 
+def euclidic_interlocking(*iterable: tuple) -> tuple:
+    lengths = tuple(len(it) for it in iterable)
+    indices = tuple(0 for i in range(lengths[0]))
+
+    for idx, length in enumerate(lengths[1:]):
+        current_length = len(indices)
+        indices_iter = iter(indices)
+        current_idx = idx + 1
+        indices = tuple(
+            next(indices_iter) if distribution else current_idx
+            for distribution in euclid(current_length , current_length + length)
+        )
+
+    iterables = [iter(it) for it in iterable]
+    return tuple(next(iterables[idx]) for idx in indices)
+
+
 def make_growing_series_with_sum_n(requested_sum: int) -> tuple:
     ls = []
     add_idx = iter([])
@@ -160,7 +177,7 @@ def make_falling_series_with_sum_n(requested_sum: int) -> tuple:
     return tuple(reversed(make_growing_series_with_sum_n(requested_sum)))
 
 
-def interlock_tuples(t0, t1) -> tuple:
+def interlock_tuples(t0: tuple, t1: tuple) -> tuple:
     size0, size1 = len(t0), len(t1)
     difference = size0 - size1
     indices = functools.reduce(
