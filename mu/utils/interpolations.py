@@ -198,7 +198,7 @@ class InterpolationLine(muobjects.MUList):
         )
         interpolations = tuple(
             item0.interpolate(item1, points + 1)[:-1]
-            for item0, item1, points_per_interpolation in zip(
+            for item0, item1, points in zip(
                 self, self[1:-1], points_per_interpolation
             )
         )
