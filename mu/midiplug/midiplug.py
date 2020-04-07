@@ -563,10 +563,17 @@ class MidiFile(abc.ABC):
         return tuple(available_midi_notes[key] for key in converted_keys)
 
     @staticmethod
-    def mk_pitch_sequence(sequence) -> "pitch_sequence, tuning_sequence, midi_dict":
+    def mk_pitch_sequence(
+        sequence: tuple
+    ) -> "pitch_sequence, tuning_sequence, midi_dict":
         pitch_sequence = tuple(t.pitch for t in sequence)
         tuning_sequence = tuple(t.tuning for t in sequence)
-        pitches = set(functools.reduce(operator.add, tuning_sequence) + pitch_sequence)
+        if sequence:
+            pitches = set(
+                functools.reduce(operator.add, tuning_sequence) + pitch_sequence
+            )
+        else:
+            pitches = set([])
         midi_dict = MidiFile.mk_midi_pitch_dictionary(pitches)
         return pitch_sequence, tuning_sequence, midi_dict
 
