@@ -1,9 +1,14 @@
+"""This module implements infinite generators.
+
+With 'infinite generators' the author is refering to objects that infinitely
+support a next - call.
+"""
+
 import abc
 import itertools
 import operator
 
-
-"""This module implements objects that infinitely support a next - call."""
+from mu.utils import activity_levels
 
 
 class InfIt(abc.ABC):
@@ -24,6 +29,19 @@ class Cycle(InfIt):
 
     def __next__(self) -> object:
         return next(self.__cycle)
+
+
+class NestedCycle(Cycle):
+    """Infitine cycle that contains other InfIt objects that can be called."""
+
+    def __init__(self, *infinite_iterable: InfIt):
+        super().__init__(infinite_iterable)
+
+    def __repr__(self) -> str:
+        return "Nested{}".format(super().__repr__())
+
+    def __next__(self) -> object:
+        return next(super().__next__())
 
 
 class MathOperation(InfIt):
@@ -69,13 +87,33 @@ class Random(InfIt):
 
 
 class Uniform(Random):
-    def __init__(self, seed: int = 1, lower_border: float = 0, upper_border: float = 1):
+    def __init__(self, seed: int = 1, border0: float = 0, border1: float = 1):
         super().__init__(seed)
-        self.__lower_border = lower_border
-        self.__uppper_border = upper_border
+        self.__lower_border = border0
+        self.__uppper_border = border1
 
     def __repr__(self) -> str:
         return "Uniform({}, {})".format(self.__lower_border, self.__uppper_border)
 
     def __next__(self) -> float:
         return self.random_module.uniform(self.__lower_border, self.__uppper_border)
+
+
+class ActivityLevel(InfIt):
+    """infit implementation of Activity Levels.
+
+    See mu.utils.activity_levels.ActivityLevel for a more detailed explanation.
+    """
+    def __init__(
+        self, activity_level: int, start_at: int = 0, is_inverse: bool = False
+    ):
+        self.__al = activity_levels.ActivityLevel(
+            start_at=start_at, is_inverse=is_inverse
+        )
+        self.__activity_level = activity_level
+
+    def __repr__(self) -> str:
+        return "InfIt_ActivityLevel({})".format(self.__activity_level)
+
+    def __next__(self) -> int:
+        return self.__al(self.__activity_level)

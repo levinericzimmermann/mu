@@ -103,7 +103,7 @@ class ActivityLevel(object):
         self.__activity_levels = tuple(
             itertools.cycle(
                 functools.reduce(
-                    operator.add, tools.cyclic_perm(levels)[start_at]
+                    operator.add, tuple(tools.cyclic_perm(levels))[start_at]
                 )
             )
             for levels in self.__activity_levels
