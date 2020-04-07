@@ -2778,9 +2778,12 @@ class BlueprintPitch(object):
                     representation += "{0}{1}".format(idx, exponent)
                 item_counter += amount
 
+            if not representation:
+                representation = "1"
+
             representations.append(representation)
 
-        return "({0}|{1})".format(*representations)
+        return "({0} | {1})".format(*representations)
 
     def __hash__(self) -> int:
         return hash(self.blueprint)
@@ -2933,7 +2936,7 @@ class BlueprintHarmony(object):
     def identity(self) -> set:
         items_per_idx = [[] for i in range(self.size)]
         for bp in self.blueprint:
-            hash_blueprint_pitch = hash(bp[0])
+            hash_blueprint_pitch = hash(bp[0].blueprint)
             id_vector = self.get_id_vector_of_blueprint_pitch(bp[0])
             for ID, item in zip(id_vector, bp[1]):
                 real_index = self.__sorted_available_indices.index(item)
