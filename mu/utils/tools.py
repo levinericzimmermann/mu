@@ -196,21 +196,31 @@ def not_fibonacci_transition(size0: int, size1: int, element0=0, element1=1) -> 
     def write_to_n_element(it, element) -> tuple:
         return tuple(tuple(element for n in range(x)) for x in it)
 
-    return functools.reduce(
-        operator.add,
-        interlock_tuples(
-            *tuple(
-                write_to_n_element(s, el)
-                for s, el in zip(
-                    (
-                        make_falling_series_with_sum_n(size0),
-                        make_growing_series_with_sum_n(size1),
-                    ),
-                    (element0, element1),
+    if size0 is 0 and size1 is 0:
+        return tuple([])
+
+    elif size0 is 0:
+        return tuple([element1 for n in range(size1)])
+
+    elif size1 is 0:
+        return tuple([element0 for n in range(size0)])
+
+    else:
+        return functools.reduce(
+            operator.add,
+            interlock_tuples(
+                *tuple(
+                    write_to_n_element(s, el)
+                    for s, el in zip(
+                        (
+                            make_falling_series_with_sum_n(size0),
+                            make_growing_series_with_sum_n(size1),
+                        ),
+                        (element0, element1),
+                    )
                 )
-            )
-        ),
-    )
+            ),
+        )
 
 
 def gcd(*arg):
