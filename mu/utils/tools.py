@@ -315,3 +315,17 @@ def cyclic_perm(iterable: tuple) -> "generator":
     return (
         functools.partial(reorder_from_idx, i)(iterable) for i in range(len(iterable))
     )
+
+
+def round_percentage(percentage_per_item: tuple, n: int) -> tuple:
+    float_per_item = tuple(percentage * n for percentage in percentage_per_item)
+    rounded_items = [int(float_value) for float_value in float_per_item]
+    difference = n - sum(rounded_items)
+    items_sorted_by_decimals = sorted(
+        float_per_item, key=lambda a: a - int(a), reverse=True
+    )
+
+    for i in range(abs(difference)):
+        rounded_items[float_per_item.index(items_sorted_by_decimals[i])] += 1
+
+    return tuple(rounded_items)

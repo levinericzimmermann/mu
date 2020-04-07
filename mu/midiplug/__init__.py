@@ -1,1 +1,1 @@
-from mu.midiplug import midiplug
+from . import midiplug
