@@ -154,7 +154,7 @@ def euclidic_interlocking(*iterable: tuple) -> tuple:
         current_idx = idx + 1
         indices = tuple(
             next(indices_iter) if distribution else current_idx
-            for distribution in euclid(current_length , current_length + length)
+            for distribution in euclid(current_length, current_length + length)
         )
 
     iterables = [iter(it) for it in iterable]
@@ -300,3 +300,18 @@ def split_iterable_by_n(iterable: tuple, n) -> tuple:
 
 def find_all_indices_of_n(n, iterable: tuple) -> tuple:
     return tuple(idx for idx, item in enumerate(iterable) if item == n)
+
+
+def cyclic_perm(iterable: tuple) -> "generator":
+    """Cyclic permutation of an iterable. Return a generator object.
+
+    Adapted function from the reply of Paritosh Singh here
+    https://stackoverflow.com/questions/56171246/cyclic-permutation-operators-in-python/56171531
+    """
+
+    def reorder_from_idx(idx: int, iterable: tuple) -> tuple:
+        return iterable[idx:] + iterable[:idx]
+
+    return (
+        functools.partial(reorder_from_idx, i)(iterable) for i in range(len(iterable))
+    )

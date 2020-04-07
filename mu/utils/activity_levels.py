@@ -9,7 +9,7 @@ import functools
 import itertools
 import operator
 
-from mutools import schillinger
+from mu.utils import tools
 
 
 class ActivityLevel(object):
@@ -100,14 +100,10 @@ class ActivityLevel(object):
             msg += "because there are only three different tuples defined per level."
             raise ValueError(msg)
 
-        # inversing index 1 and 2, because the schillinger.permute_cyclic
-        # function also returns an inversed result.
-        start_at = (0, 2, 1)[start_at]
-
         self.__activity_levels = tuple(
             itertools.cycle(
                 functools.reduce(
-                    operator.add, schillinger.permute_cyclic(levels)[start_at]
+                    operator.add, tools.cyclic_perm(levels)[start_at]
                 )
             )
             for levels in self.__activity_levels
