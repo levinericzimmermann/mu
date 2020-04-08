@@ -31,6 +31,12 @@ class Cycle(InfIt):
         return next(self.__cycle)
 
 
+class Value(Cycle):
+    def __init__(self, item):
+        super().__init__((item,))
+        self.__repr = "Value({})".format(item)
+
+
 class NestedCycle(Cycle):
     """Infitine cycle that contains other InfIt objects that can be called."""
 
@@ -87,7 +93,7 @@ class Random(InfIt):
 
 
 class Uniform(Random):
-    def __init__(self, seed: int = 1, border0: float = 0, border1: float = 1):
+    def __init__(self, border0: float = 0, border1: float = 1, seed: int = 1):
         super().__init__(seed)
         self.__lower_border = border0
         self.__uppper_border = border1
@@ -99,11 +105,37 @@ class Uniform(Random):
         return self.random_module.uniform(self.__lower_border, self.__uppper_border)
 
 
+class Gaussian(Random):
+    def __init__(self, center: float = 0, deviation: float = 1, seed: int = 1):
+        super().__init__(seed)
+        self.__center = center
+        self.__deviation = deviation
+        self.__border0 = center - deviation
+        self.__border1 = center + deviation
+        self.__standard_deviation = deviation / 3
+
+    def __repr__(self) -> str:
+        return "Gaussian({} +/- {})".format(self.__center, self.__deviation)
+
+    def __next__(self) -> float:
+        def next_gaussian() -> float:
+            return self.random_module.gauss(self.__center, self.__standard_deviation)
+
+        result = next_gaussian()
+
+        # making sure the result isn't going too high or too low
+        while result < self.__border0 or result > self.__border1:
+            result = next_gaussian()
+
+        return result
+
+
 class ActivityLevel(InfIt):
-    """infit implementation of Activity Levels.
+    """infit module implementation of Activity Levels.
 
     See mu.utils.activity_levels.ActivityLevel for a more detailed explanation.
     """
+
     def __init__(
         self, activity_level: int, start_at: int = 0, is_inverse: bool = False
     ):
