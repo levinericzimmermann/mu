@@ -258,11 +258,17 @@ class MidiFile(abc.ABC):
     available_channel = tuple(i for i in range(16) if i != 9)
 
     def __init__(
-        self, sequence: tuple, available_midi_notes: tuple = tuple(range(128))
+        self,
+        sequence: tuple,
+        available_midi_notes: tuple = tuple(range(128)),
+        tie: bool = False,
     ):
         self.__available_midi_notes = available_midi_notes
-        sequence = MidiFile.discard_pauses_and_tie_sequence(tuple(sequence))
-        filtered_sequence = tuple(t for t in sequence if t.pitch != mel.TheEmptyPitch)
+        if tie:
+            sequence = MidiFile.discard_pauses_and_tie_sequence(tuple(sequence))
+        else:
+            sequence = tuple(sequence)
+        filtered_sequence = tuple(t for t in sequence if not t.pitch.is_empty)
         gridsize = 0.001  # 1 milisecond
         self.__duration = float(sum(t.delay for t in sequence))
         n_hits = int(self.__duration // gridsize)
@@ -762,9 +768,9 @@ class Pianoteq(SysexTuningMidiFile):
     software_path = "pianoteq"
 
     def __init__(
-        self, sequence: tuple, available_midi_notes: tuple = tuple(range(128))
+        self, sequence: tuple, available_midi_notes: tuple = tuple(range(128)), **kwargs
     ):
-        super(Pianoteq, self).__init__(sequence, available_midi_notes)
+        super().__init__(sequence, available_midi_notes, **kwargs)
 
     def export2wav(
         self, name, nchnls=1, preset=None, fxp=None, sr=44100, verbose: bool = False
@@ -794,8 +800,8 @@ class Pianoteq(SysexTuningMidiFile):
 
 
 class Diva(NonSysexTuningMidiFile):
-    def __init__(self, sequence: tuple):
-        super(Diva, self).__init__(sequence, tuple(range(128)))
+    def __init__(self, sequence: tuple, **kwargs):
+        super().__init__(sequence, tuple(range(128), **kwargs))
 
     def mk_control_messages_per_tone(self, sequence) -> tuple:
         channels = itertools.cycle(MidiFile.available_channel)
