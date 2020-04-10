@@ -127,7 +127,8 @@ def translate2pitch(
         pitch = pitch + ocp
 
     else:
-        msg = "Unknown pitch type {0}".format(typp)
+        msg = "Unknown pitch type {} for pitch {}.".format(typp, pitch)
+        msg += " Perhaps a wrong format for 'decodex' has been enterend?"
         raise TypeError(msg)
 
     return pitch
