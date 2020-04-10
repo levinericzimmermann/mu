@@ -53,15 +53,15 @@ class NestedCycle(Cycle):
 class MetaCycle(Cycle):
     """Infinite cycle that dynamically builds new InfIt objects when it get called."""
 
-    def __init__(self, *object_argument_pair: tuple):
-        super().__init__(object_argument_pair)
+    def __init__(self, *class_argument_pair: tuple):
+        super().__init__(class_argument_pair)
 
     def __repr__(self) -> str:
         return "Meta{}".format(super().__repr__())
 
     def __next__(self) -> InfIt:
-        obj, arguments = next(super().__next__())
-        return obj(*arguments)
+        cls, arguments = next(super().__next__())
+        return cls(*arguments)
 
 
 class MathOperation(InfIt):
