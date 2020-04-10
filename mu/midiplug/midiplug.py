@@ -48,9 +48,24 @@ class MidiTone(old.Tone):
 
     def control_messages(self, channel: int) -> tuple:
         """Generate control messages. Depending on specific channel."""
+
+        # TODO(make control messages per grid point for changing control
+        # messages within one tone! argument for a control message can either
+        # be a floating point number or an interpolations object. for
+        # implementing this new feature two new arguments in the control_messages
+        # method are necessary: (1) gridsize or n_points_per_interpolation)
+
+        # TODO(When implementing the above feature, think about if this
+        # couldn't help to generalize the pitch bending data. but maybe this is
+        # more complex since pitch bending is basically a mixture between
+        # vibrato and glissando.)
+
         messages = []
+
         for arg in self._init_args:
+
             value = getattr(self, arg)
+
             if value is not None:
                 boundaries, control_number = self._init_args[arg]
                 difference = boundaries[1] - boundaries[0]
@@ -65,10 +80,13 @@ class MidiTone(old.Tone):
                     channel=channel,
                 )
                 messages.append(message)
+
         return tuple(messages)
 
 
-class SynthesizerMidiTone(abc.ABCMeta):
+class _SynthesizerMidiTone(abc.ABCMeta):
+    """Metaclass for Tone - objects that are intented to generate midi output."""
+
     tone_args = (
         "pitch",
         "delay",
@@ -115,10 +133,10 @@ class SynthesizerMidiTone(abc.ABCMeta):
             )
 
         attrs["__init__"] = auto_init
-        return super(SynthesizerMidiTone, cls).__new__(cls, name, bases, attrs)
+        return super(_SynthesizerMidiTone, cls).__new__(cls, name, bases, attrs)
 
 
-class PyteqTone(MidiTone, metaclass=SynthesizerMidiTone):
+class PyteqTone(MidiTone, metaclass=_SynthesizerMidiTone):
     """Tone object to work with Pianoteq"""
 
     _init_args = {
@@ -225,14 +243,18 @@ class PyteqTone(MidiTone, metaclass=SynthesizerMidiTone):
     }
 
 
-class DivaTone(MidiTone, metaclass=SynthesizerMidiTone):
+class DivaTone(MidiTone, metaclass=_SynthesizerMidiTone):
     """Tone object to work with U-He Diva."""
 
     # control value 2 in voice 1 is already used for fine_tune_cents
+    # (making sure the right pitch get played)
     # _init_args = {"fine_tune_cents": ((-100, 100), 2)}
 
+    _init_args = {"hidden_volume": ((0, 1), 3)}
+
     def control_messages(self, channel: int, midi_key: int) -> tuple:
-        messages = super(DivaTone, self).control_messages(channel)
+        self.hidden_volume = self.volume
+        messages = super().control_messages(channel)
         cent_deviation = AbstractPitch.ratio2ct(self.pitch.freq / _12edo_freq[midi_key])
         assert cent_deviation > -100 and cent_deviation < 100
         percentage = (cent_deviation + 100) / 200
@@ -248,14 +270,13 @@ class MidiFile(abc.ABC):
     maximum_pitch_bending = 16382
     maximum_pitch_bending_positive = 8191
 
-    # somehow control messages take some time until they
-    # became valid in Pianoteq. Therefore there has to be
-    # a delay between the last control change and the next
-    # NoteOn - message.
+    # somehow control messages take some time until they become valid in Pianoteq.
+    # Therefore there has to be a delay between the last control change and
+    # the next NoteOn - message.
     delay_between_control_messages_and_note_on_message = 40
 
-    # for some weird reason pianoteq don't use channel 9
-    available_channel = tuple(i for i in range(16) if i != 9)
+    # there are 16 midi channels
+    available_channel = tuple(i for i in range(16))
 
     def __init__(
         self,
@@ -298,7 +319,7 @@ class MidiFile(abc.ABC):
         self.__tuning_sequence = pitch_data[1]
         self.__midi_pitch_dictionary = pitch_data[2]
         self.__control_messages = self.mk_control_messages_per_tone(filtered_sequence)
-        self.__note_on_off_messages = MidiFile.mk_note_on_off_messages(
+        self.__note_on_off_messages = self.mk_note_on_off_messages(
             filtered_sequence, self.keys
         )
         self.__pitch_bending_per_tone = MidiFile.detect_pitch_bending_per_tone(
@@ -336,9 +357,9 @@ class MidiFile(abc.ABC):
     def distribute_pitch_bends_on_channels(
         self, pitch_bends_per_tone, grid, grid_position_per_tone, gridsize
     ) -> tuple:
-        channels = itertools.cycle(range(len(MidiFile.available_channel)))
+        channels = itertools.cycle(range(len(self.available_channel)))
         pitches_per_channels = list(
-            list(0 for j in range(len(grid))) for i in MidiFile.available_channel
+            list(0 for j in range(len(grid))) for i in self.available_channel
         )
         for position, pitch_bends in zip(grid_position_per_tone, pitch_bends_per_tone):
             channel = next(channels)
@@ -360,14 +381,14 @@ class MidiFile(abc.ABC):
         )
         standardmessage0 = tuple(
             mido.Message("pitchwheel", channel=channel_number, pitch=0, time=0)
-            for channel_number in MidiFile.available_channel
+            for channel_number in self.available_channel
         )
         standardmessage1 = tuple(
             mido.Message("pitchwheel", channel=channel_number, pitch=0, time=1)
-            for channel_number in MidiFile.available_channel
+            for channel_number in self.available_channel
         )
         for channel_number, channel in zip(
-            reversed(MidiFile.available_channel), reversed(pitches_per_channels)
+            reversed(self.available_channel), reversed(pitches_per_channels)
         ):
             pitch_bending_messages_sub_channel = []
             for cent_deviation in channel:
@@ -396,11 +417,11 @@ class MidiFile(abc.ABC):
                 else:
                     if time == 0:
                         msg = standardmessage0[
-                            MidiFile.available_channel.index(channel_number)
+                            self.available_channel.index(channel_number)
                         ]
                     else:
                         msg = standardmessage1[
-                            MidiFile.available_channel.index(channel_number)
+                            self.available_channel.index(channel_number)
                         ]
                 pitch_bending_messages_sub_channel.append(msg)
             pitch_bending_messages.append(pitch_bending_messages_sub_channel)
@@ -410,19 +431,23 @@ class MidiFile(abc.ABC):
 
     @staticmethod
     def detect_pitch_bending_per_tone(
-        sequence, gridsize, grid_position_per_tone
+        sequence, gridsize: float, grid_position_per_tone: tuple
     ) -> tuple:
         """Return tuple filled with tuples that contain cent deviation per step."""
 
         def mk_interpolation(obj, size):
+
             if obj:
                 obj = list(obj.interpolate(gridsize))
             else:
                 obj = []
+
             while len(obj) > size:
                 obj = obj[:-1]
+
             while len(obj) < size:
                 obj.append(0)
+
             return obj
 
         pitch_bending = []
@@ -434,15 +459,14 @@ class MidiFile(abc.ABC):
             pitch_bending.append(resulting_cents)
         return tuple(pitch_bending)
 
-    @staticmethod
-    def mk_note_on_off_messages(sequence, keys) -> tuple:
+    def mk_note_on_off_messages(self, sequence, keys) -> tuple:
         """Generate Note on / off messages for every tone.
 
         Resulting tuple has the form:
         ((note_on0, note_off0), (note_on1, note_off1), ...)
         """
         assert len(sequence) == len(keys)
-        channels = itertools.cycle(MidiFile.available_channel)
+        channels = itertools.cycle(self.available_channel)
         messages = []
         for tone, key in zip(sequence, keys):
             if tone.pitch != mel.TheEmptyPitch:
@@ -494,12 +518,11 @@ class MidiFile(abc.ABC):
     def sequence(self) -> tuple:
         return tuple(self.__sequence)
 
-    def mk_control_messages_per_tone(self, sequence) -> tuple:
-        channels = itertools.cycle(MidiFile.available_channel)
+    def mk_control_messages_per_tone(self, sequence: tuple) -> tuple:
+        channels = itertools.cycle(self.available_channel)
         return tuple(tone.control_messages(next(channels)) for tone in sequence)
 
-    @staticmethod
-    def mk_midi_track(messages) -> mido.MidiFile:
+    def mk_midi_track(self, messages: tuple) -> mido.MidiFile:
         mid = mido.MidiFile(type=0)
         bpm = 120
         ticks_per_second = 1000
@@ -509,10 +532,13 @@ class MidiFile(abc.ABC):
         track = mido.MidiTrack()
         mid.tracks.append(track)
         track.append(mido.MetaMessage("instrument_name", name="Acoustic Grand Piano"))
-        for i in MidiFile.available_channel:
+
+        for i in self.available_channel:
             track.append(mido.Message("program_change", program=0, time=0, channel=i))
+
         for message in messages:
             track.append(message)
+
         return mid
 
     @staticmethod
@@ -673,7 +699,7 @@ class MidiFile(abc.ABC):
             tuning_messages,
         )
 
-        miditrack = MidiFile.mk_midi_track(messages)
+        miditrack = self.mk_midi_track(messages)
         miditrack.save(name)
 
 
@@ -767,6 +793,9 @@ class NonSysexTuningMidiFile(MidiFile):
 class Pianoteq(SysexTuningMidiFile):
     software_path = "pianoteq"
 
+    # for some weird reason pianoteq don't use channel 9
+    available_channel = tuple(i for i in range(16) if i != 9)
+
     def __init__(
         self, sequence: tuple, available_midi_notes: tuple = tuple(range(128)), **kwargs
     ):
@@ -800,11 +829,13 @@ class Pianoteq(SysexTuningMidiFile):
 
 
 class Diva(NonSysexTuningMidiFile):
+    available_channel = (0,)  # only use one channel since it's monophonic anwyway
+
     def __init__(self, sequence: tuple, **kwargs):
         super().__init__(sequence, tuple(range(128), **kwargs))
 
     def mk_control_messages_per_tone(self, sequence) -> tuple:
-        channels = itertools.cycle(MidiFile.available_channel)
+        channels = itertools.cycle(self.available_channel)
         return tuple(
             tone.control_messages(next(channels), key)
             for tone, key in zip(sequence, self.keys)
