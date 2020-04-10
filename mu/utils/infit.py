@@ -60,7 +60,7 @@ class MetaCycle(Cycle):
         return "Meta{}".format(super().__repr__())
 
     def __next__(self) -> InfIt:
-        cls, arguments = next(super().__next__())
+        cls, arguments = super().__next__()
         return cls(*arguments)
 
 
