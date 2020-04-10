@@ -38,7 +38,7 @@ class Value(Cycle):
 
 
 class NestedCycle(Cycle):
-    """Infitine cycle that contains other InfIt objects that can be called."""
+    """Infinite cycle that contains other InfIt objects that can be called."""
 
     def __init__(self, *infinite_iterable: InfIt):
         super().__init__(infinite_iterable)
@@ -48,6 +48,20 @@ class NestedCycle(Cycle):
 
     def __next__(self) -> object:
         return next(super().__next__())
+
+
+class MetaCycle(Cycle):
+    """Infinite cycle that dynamically builds new InfIt objects when it get called."""
+
+    def __init__(self, *object_argument_pair: tuple):
+        super().__init__(object_argument_pair)
+
+    def __repr__(self) -> str:
+        return "Meta{}".format(super().__repr__())
+
+    def __next__(self) -> InfIt:
+        obj, arguments = next(super().__next__())
+        return obj(*arguments)
 
 
 class MathOperation(InfIt):
