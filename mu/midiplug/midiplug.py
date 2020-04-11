@@ -94,7 +94,7 @@ class MidiTone(old.Tone):
                         self.make_control_message(arg, value, channel)
                     )
 
-                elif typv is infit.InfIt:
+                elif isinstance(value, infit.InfIt):
                     for n in range(n_points):
                         local_value = next(value)
                         if local_value is not None:
@@ -102,7 +102,8 @@ class MidiTone(old.Tone):
                                 self.make_control_message(arg, local_value, channel)
                             )
 
-                elif typv is interpolations.InterpolationLine:
+                elif isinstance(value, interpolations.InterpolationLine):
+
                     for n, local_value in enumerate(
                         value(n_points, interpolation_type="points")
                     ):

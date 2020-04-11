@@ -22,7 +22,7 @@ class Interpolation(abc.ABC):
 
 
 class Linear(Interpolation):
-    def __call__(self, x0, x1, n, dtype=float) -> tuple:
+    def __call__(self, x0: float, x1: float, n: int, dtype=float) -> tuple:
         return tuple(np.linspace(x0, x1, n, dtype=dtype))
 
     def __hash__(self) -> int:
@@ -99,6 +99,9 @@ class InterpolationEvent(object):
     def __repr__(self) -> str:
         return "InterpolationEvent({})".format(self.delay)
 
+    def copy(self):
+        return type(self)(self.delay, interpolation_type=self.interpolation_type)
+
     @property
     def delay(self):
         return self.__delay
@@ -126,6 +129,11 @@ class FloatInterpolationEvent(InterpolationEvent):
     def value(self) -> float:
         return self.__value
 
+    def copy(self):
+        return type(self)(
+            self.delay, self.value, interpolation_type=self.interpolation_type
+        )
+
     def interpolate(self, other: "FloatInterpolationEvent", steps: int) -> tuple:
         return self.interpolation_type(self.value, other.value, steps)
 
@@ -147,8 +155,9 @@ class InterpolationLine(muobjects.MUList):
 
         try:
             assert iterable[-1].delay == 0
+
         except AssertionError:
-            raise ValueError("The last element has to have delay = 0")
+            raise ValueError("The last element has to have delay 0.")
 
         muobjects.MUList.__init__(self, iterable)
 
@@ -198,9 +207,7 @@ class InterpolationLine(muobjects.MUList):
         )
         interpolations = tuple(
             item0.interpolate(item1, points + 1)[:-1]
-            for item0, item1, points in zip(
-                self, self[1:-1], points_per_interpolation
-            )
+            for item0, item1, points in zip(self, self[1:-1], points_per_interpolation)
         )
         interpolations += (
             self[-2].interpolate(self[-1], points_per_interpolation[-1]),
@@ -223,7 +230,8 @@ class InterpolationLine(muobjects.MUList):
         return getattr(self, interpolations[interpolation_type])(value)
 
     def copy(self):
-        return type(self)(item.copy() for item in self)
+        copied = tuple(item.copy() for item in self)
+        return type(self)(copied)
 
     @property
     def delay(self) -> rhy.Compound:
@@ -379,3 +387,69 @@ class ShadowInterpolationLine(InterpolationLine):
         ).interpolate(FloatInterpolationEvent(0, value1, interpolation_type), precision)
         index = bisect.bisect_left(positions, shorter_duration)
         return interpolated[index]
+
+
+class SimpleCurve(InterpolationLine):
+    def __init__(
+        self,
+        minima: float = 0,
+        maxima: float = 1,
+        interpolation_type: Interpolation = Linear(),
+    ):
+        self.__minima = minima
+        self.__maxima = maxima
+        self.__interpolation_type = interpolation_type
+        super().__init__(self.make_iterable())
+
+    @abc.abstractmethod
+    def make_iterable(self) -> tuple:
+        raise NotImplementedError
+
+    @property
+    def minima(self) -> float:
+        return self.__minima
+
+    @property
+    def maxima(self) -> float:
+        return self.__maxima
+
+    @property
+    def interpolation_type(self) -> float:
+        return self.__interpolation_type
+
+    def copy(self):
+        return type(self)(self.__minima, self.__maxima, self.interpolation_type)
+
+
+class Rising(SimpleCurve):
+    def make_iterable(self) -> tuple:
+        return (
+            FloatInterpolationEvent(1, self.minima, self.interpolation_type),
+            FloatInterpolationEvent(0, self.maxima, self.interpolation_type),
+        )
+
+
+class Falling(SimpleCurve):
+    def make_iterable(self) -> tuple:
+        return (
+            FloatInterpolationEvent(1, self.maxima, self.interpolation_type),
+            FloatInterpolationEvent(0, self.minima, self.interpolation_type),
+        )
+
+
+class RisingFalling(SimpleCurve):
+    def make_iterable(self) -> tuple:
+        return (
+            FloatInterpolationEvent(0.5, self.minima, self.interpolation_type),
+            FloatInterpolationEvent(0.5, self.maxima, self.interpolation_type),
+            FloatInterpolationEvent(0, self.minima, self.interpolation_type),
+        )
+
+
+class FallingRising(SimpleCurve):
+    def make_iterable(self) -> tuple:
+        return (
+            FloatInterpolationEvent(0.5, self.maxima, self.interpolation_type),
+            FloatInterpolationEvent(0.5, self.minima, self.interpolation_type),
+            FloatInterpolationEvent(0, self.maxima, self.interpolation_type),
+        )
