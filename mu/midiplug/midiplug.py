@@ -2,11 +2,14 @@ from mu.mel.abstract import AbstractPitch
 from mu.mel import mel
 from mu.rhy import rhy
 from mu.sco import old
+from mu.utils import infit
+from mu.utils import interpolations
 
 import abc
 import bisect
 import functools
 import itertools
+import numbers
 import operator
 import os
 import subprocess
@@ -46,42 +49,74 @@ class MidiTone(old.Tone):
         else:
             self.tuning = tuple([])
 
-    def control_messages(self, channel: int) -> tuple:
-        """Generate control messages. Depending on specific channel."""
+    def make_control_message(
+        self, arg: str, value: float, channel: int
+    ) -> mido.Message:
+        """Make one control message object."""
 
-        # TODO(make control messages per grid point for changing control
-        # messages within one tone! argument for a control message can either
-        # be a floating point number or an interpolations object. for
-        # implementing this new feature two new arguments in the control_messages
-        # method are necessary: (1) gridsize or n_points_per_interpolation)
+        boundaries, control_number = self._init_args[arg]
+        difference = boundaries[1] - boundaries[0]
+        normalized = value - boundaries[0]
+        percent = normalized / difference
+        value = int(127 * percent)
+        return mido.Message(
+            "control_change",
+            time=0,
+            control=control_number,
+            value=value,
+            channel=channel,
+        )
 
-        # TODO(When implementing the above feature, think about if this
-        # couldn't help to generalize the pitch bending data. but maybe this is
-        # more complex since pitch bending is basically a mixture between
-        # vibrato and glissando.)
+    def control_messages(self, channel: int, n_points: int) -> list:
+        """Generate control messages for a particular tone.
 
-        messages = []
+        Since tones can be distributed on different midi channels, the respective
+        channel has to be submitted. Furthermore the function needs to know how many
+        points the tone lasts in the respective grid for control messages that
+        dynamically change within the tone.
+
+        Return list of lists where each sublist represents one tick. Each
+        tick contains control messages that are supposed to get send at this
+        particular tick.
+        """
+
+        messages_per_tick = [[] for i in range(n_points)]
 
         for arg in self._init_args:
 
             value = getattr(self, arg)
+            typv = type(value)
 
             if value is not None:
-                boundaries, control_number = self._init_args[arg]
-                difference = boundaries[1] - boundaries[0]
-                normalized = value - boundaries[0]
-                percent = normalized / difference
-                value = int(127 * percent)
-                message = mido.Message(
-                    "control_change",
-                    time=0,
-                    control=control_number,
-                    value=value,
-                    channel=channel,
-                )
-                messages.append(message)
 
-        return tuple(messages)
+                if isinstance(value, numbers.Real):
+                    messages_per_tick[0].append(
+                        self.make_control_message(arg, value, channel)
+                    )
+
+                elif typv is infit.InfIt:
+                    for n in range(n_points):
+                        local_value = next(value)
+                        if local_value is not None:
+                            messages_per_tick[n].append(
+                                self.make_control_message(arg, local_value, channel)
+                            )
+
+                elif typv is interpolations.InterpolationLine:
+                    for n, local_value in enumerate(
+                        value(n_points, interpolation_type="points")
+                    ):
+                        messages_per_tick[n].append(
+                            self.make_control_message(arg, local_value, channel)
+                        )
+
+                else:
+                    msg = "Unknown type '{}' of value '{}' for argument '{}'.".format(
+                        typv, value, arg
+                    )
+                    raise NotImplementedError(msg)
+
+        return list(list(tick) for tick in messages_per_tick)
 
 
 class _SynthesizerMidiTone(abc.ABCMeta):
@@ -250,19 +285,38 @@ class DivaTone(MidiTone, metaclass=_SynthesizerMidiTone):
     # (making sure the right pitch get played)
     # _init_args = {"fine_tune_cents": ((-100, 100), 2)}
 
-    _init_args = {"hidden_volume": ((0, 1), 3)}
+    _init_args = {
+        "volume_curve": ((0, 1), 3),
+        "vcf1_feedback": ((0, 100), 4),
+        "vcf1_filter_fm": ((-24, 24), 7),
+        "vcf1_freq_mod_depth": ((-120, 120), 12),
+        "vcf1_freq_mod_depth2": ((-120, 120), 10),
+        "vcf1_cutoff_frequency": ((30, 150), 14),
+        "vcf1_resonance": ((0, 100), 17),
+        "vcf1_resonance": ((0, 100), 17),
+        "lfo2_delay": ((0, 100), 20),
+        "lfo2_depth_mod": ((0, 100), 21),
+        "lfo2_freq_mod": ((0, 100), 23),
+        "lfo2_phase": ((0, 100), 24),
+        "lfo2_rate": ((-5, 5), 25),
+        "osc_vibrato": ((0, 100), 26),
+        # mixing between different osciallators (50 means both same level, while
+        # with 0 only the first osciallator can be heard)
+        "osc_mix": ((0, 100), 27),
+        "osc_fm": ((0, 100), 28),
+        "osc_noise_volume": ((0, 100), 29),
+    }
 
-    def control_messages(self, channel: int, midi_key: int) -> tuple:
-        self.hidden_volume = self.volume
-        messages = super().control_messages(channel)
+    def control_messages(self, channel: int, n_points: int, midi_key: int) -> tuple:
+        messages_per_tick = super().control_messages(channel, n_points)
         cent_deviation = AbstractPitch.ratio2ct(self.pitch.freq / _12edo_freq[midi_key])
         assert cent_deviation > -100 and cent_deviation < 100
         percentage = (cent_deviation + 100) / 200
         value = int(percentage * 127)
-        messages += tuple(
-            [mido.Message("control_change", time=0, control=2, value=value, channel=0)]
+        messages_per_tick[0].append(
+            mido.Message("control_change", time=0, control=2, value=value, channel=0)
         )
-        return messages
+        return messages_per_tick
 
 
 class MidiFile(abc.ABC):
@@ -318,7 +372,12 @@ class MidiFile(abc.ABC):
         self.__pitch_sequence = pitch_data[0]
         self.__tuning_sequence = pitch_data[1]
         self.__midi_pitch_dictionary = pitch_data[2]
-        self.__control_messages = self.mk_control_messages_per_tone(filtered_sequence)
+
+        n_points_per_tone = tuple(b - a for a, b in self.__grid_position_per_tone)
+        self.__control_messages = self.mk_control_messages_per_tone(
+            filtered_sequence, n_points_per_tone
+        )
+
         self.__note_on_off_messages = self.mk_note_on_off_messages(
             filtered_sequence, self.keys
         )
@@ -469,9 +528,36 @@ class MidiFile(abc.ABC):
         channels = itertools.cycle(self.available_channel)
         messages = []
         for tone, key in zip(sequence, keys):
-            if tone.pitch != mel.TheEmptyPitch:
-                if tone.volume:
-                    velocity = int((tone.volume / 1) * 127)
+            if not tone.pitch.is_empty:
+                if tone.volume is not None:
+
+                    typv = type(tone.volume)
+
+                    if isinstance(tone.volume, numbers.Real):
+                        volume = float(tone.volume)
+
+                    elif isinstance(tone.volume, infit.InfIt):
+                        volume = next(tone.volume)
+                        try:
+                            assert isinstance(volume, numbers.Real)
+                        except AssertionError:
+                            msg = "infit.InfIt object return bad type '{}'".format(
+                                type(volume)
+                            )
+                            msg += " when trying to find a value for "
+                            msg += "the volume argument."
+                            raise ValueError(msg)
+
+                    elif typv is interpolations.InterpolationLine:
+                        volume = tone.volume(3, interpolation_type="points")[0]
+
+                    else:
+                        msg = "Unknown type '{}' for volume ".format(typv)
+                        msg += "argument with the value '{}'".format(tone.volume)
+                        raise NotImplementedError(msg)
+
+                    velocity = int((volume / 1) * 127)
+
                 else:
                     velocity = 64
 
@@ -483,10 +569,11 @@ class MidiFile(abc.ABC):
                     "note_off", note=key, velocity=velocity, time=0, channel=chnl
                 )
                 messages.append((msg0, msg1))
+
         return tuple(messages)
 
     @staticmethod
-    def detect_grid_position(sequence, grid, duration):
+    def detect_grid_position(sequence: tuple, grid: tuple, duration: float) -> tuple:
         def find_closest_point(points, time):
             pos = bisect.bisect_right(points, time)
             try:
@@ -511,16 +598,21 @@ class MidiFile(abc.ABC):
         return tuple(
             start_end
             for start_end, tone in zip(zipped, sequence)
-            if tone.pitch != mel.TheEmptyPitch
+            if not tone.pitch.is_empty
         )
 
     @property
     def sequence(self) -> tuple:
         return tuple(self.__sequence)
 
-    def mk_control_messages_per_tone(self, sequence: tuple) -> tuple:
+    def mk_control_messages_per_tone(
+        self, sequence: tuple, n_points_per_tone: tuple
+    ) -> tuple:
         channels = itertools.cycle(self.available_channel)
-        return tuple(tone.control_messages(next(channels)) for tone in sequence)
+        return tuple(
+            tone.control_messages(next(channels), n_points)
+            for tone, n_points in zip(sequence, n_points_per_tone)
+        )
 
     def mk_midi_track(self, messages: tuple) -> mido.MidiFile:
         mid = mido.MidiFile(type=0)
@@ -641,21 +733,24 @@ class MidiFile(abc.ABC):
 
     def mk_complete_messages(
         self,
-        filtered_sequence,
-        gridsize,
-        grid_position_per_tone,
+        filtered_sequence: tuple,
+        gridsize: float,
+        grid_position_per_tone: tuple,
         control_messages,
         note_on_off_messages,
         pitch_bending_per_channel,
         tuning_messages,
     ) -> tuple:
         length_seq = len(filtered_sequence)
+
         assert length_seq == len(control_messages)
         assert length_seq == len(note_on_off_messages)
         assert length_seq == len(tuning_messages)
+
         messages_per_tick = list(zip(*reversed(pitch_bending_per_channel)))
         messages_per_tick = [list(s) for s in messages_per_tick]
-        for note_on_off, control, tuning, grid_position in zip(
+
+        for note_on_off, control_per_tick, tuning, grid_position in zip(
             note_on_off_messages,
             control_messages,
             tuning_messages,
@@ -667,7 +762,10 @@ class MidiFile(abc.ABC):
                 start + self.delay_between_control_messages_and_note_on_message
             ].append(note_on)
             messages_per_tick[start].extend(tuning)
-            messages_per_tick[start].extend(control)
+
+            for position, c_msg in zip(range(start, stop), control_per_tick):
+                messages_per_tick[position].extend(c_msg)
+
             messages_per_tick[
                 stop + self.delay_between_control_messages_and_note_on_message
             ].append(note_off)
@@ -834,9 +932,11 @@ class Diva(NonSysexTuningMidiFile):
     def __init__(self, sequence: tuple, **kwargs):
         super().__init__(sequence, tuple(range(128), **kwargs))
 
-    def mk_control_messages_per_tone(self, sequence) -> tuple:
+    def mk_control_messages_per_tone(
+        self, sequence: tuple, n_points_per_tone: tuple
+    ) -> tuple:
         channels = itertools.cycle(self.available_channel)
         return tuple(
-            tone.control_messages(next(channels), key)
-            for tone, key in zip(sequence, self.keys)
+            tone.control_messages(next(channels), n_points, key)
+            for tone, n_points, key in zip(sequence, n_points_per_tone, self.keys)
         )
