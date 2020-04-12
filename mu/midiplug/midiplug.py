@@ -294,7 +294,6 @@ class DivaTone(MidiTone, metaclass=_SynthesizerMidiTone):
         "vcf1_freq_mod_depth2": ((-120, 120), 10),
         "vcf1_cutoff_frequency": ((30, 150), 14),
         "vcf1_resonance": ((0, 100), 17),
-        "vcf1_resonance": ((0, 100), 17),
         "lfo2_delay": ((0, 100), 20),
         "lfo2_depth_mod": ((0, 100), 21),
         "lfo2_freq_mod": ((0, 100), 23),
@@ -306,6 +305,8 @@ class DivaTone(MidiTone, metaclass=_SynthesizerMidiTone):
         "osc_mix": ((0, 100), 27),
         "osc_fm": ((0, 100), 28),
         "osc_noise_volume": ((0, 100), 29),
+        "osc_tune_mod_depth1": ((-24, 24), 33),
+        "osc_tune_mod_depth2": ((-24, 24), 32),
     }
 
     def control_messages(self, channel: int, n_points: int, midi_key: int) -> tuple:
