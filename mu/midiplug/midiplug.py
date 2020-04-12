@@ -325,10 +325,7 @@ class MidiFile(abc.ABC):
     maximum_pitch_bending = 16382
     maximum_pitch_bending_positive = 8191
 
-    # somehow control messages take some time until they become valid in Pianoteq.
-    # Therefore there has to be a delay between the last control change and
-    # the next NoteOn - message.
-    delay_between_control_messages_and_note_on_message = 40
+    delay_between_control_messages_and_note_on_message = 0
 
     # there are 16 midi channels
     available_channel = tuple(i for i in range(16))
@@ -891,6 +888,11 @@ class NonSysexTuningMidiFile(MidiFile):
 
 class Pianoteq(SysexTuningMidiFile):
     software_path = "pianoteq"
+
+    # somehow control messages take some time until they become valid in Pianoteq.
+    # Therefore there has to be a delay between the last control change and
+    # the next NoteOn - message.
+    delay_between_control_messages_and_note_on_message = 40
 
     # for some weird reason pianoteq don't use channel 9
     available_channel = tuple(i for i in range(16) if i != 9)
