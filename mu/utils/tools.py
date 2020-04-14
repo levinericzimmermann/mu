@@ -100,8 +100,12 @@ def brownian(x0, n, dt, delta, out=None, random_state=None):
     return out
 
 
-def scale(a, minima=0, maxima=15):
+def np_scale(a, minima=0, maxima=15):
     return np.interp(a, (a.min(), a.max()), (minima, maxima))
+
+
+def scale(iterable: tuple, minima: float = 0, maxima=1) -> tuple:
+    return tuple(np_scale(np.array(iterable), minima=minima, maxima=maxima))
 
 
 def graycode(length: int, modulus: int) -> tuple:
@@ -196,13 +200,13 @@ def not_fibonacci_transition(size0: int, size1: int, element0=0, element1=1) -> 
     def write_to_n_element(it, element) -> tuple:
         return tuple(tuple(element for n in range(x)) for x in it)
 
-    if size0 is 0 and size1 is 0:
+    if size0 == 0 and size1 == 0:
         return tuple([])
 
-    elif size0 is 0:
+    elif size0 == 0:
         return tuple([element1 for n in range(size1)])
 
-    elif size1 is 0:
+    elif size1 == 0:
         return tuple([element0 for n in range(size0)])
 
     else:
