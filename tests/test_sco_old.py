@@ -65,7 +65,6 @@ class InterpolationLineTest(unittest.TestCase):
         interpol0 = vib0.interpolate(0.5)
         interpol1 = vib1.interpolate(0.5)
         self.assertNotEqual(interpol0, interpol1)
-        print(tuple(round(n, 2) for n in interpol0))
         self.assertEqual(
             tuple(round(n, 2) for n in interpol0),
             (
@@ -334,8 +333,8 @@ class PolyTest(unittest.TestCase):
     poly2 = old.Polyphon([melody6, melody5])
 
     def test_chordify(self):
-        chord0 = old.Chord(ji.JIHarmony([self.t0, self.t2]), rhy.Unit(1))
-        chord1 = old.Chord(ji.JIHarmony([self.t1, self.t3]), rhy.Unit(1))
+        chord0 = old.Chord(ji.JIHarmony([self.t0.pitch, self.t2.pitch]), rhy.Unit(1))
+        chord1 = old.Chord(ji.JIHarmony([self.t1.pitch, self.t3.pitch]), rhy.Unit(1))
         cadence0 = old.Cadence([chord0, chord1])
         self.assertEqual(cadence0, self.poly0.chordify())
 

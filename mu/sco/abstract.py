@@ -128,8 +128,16 @@ class MultiSequentialEvent(ComplexEvent):
     def reverse(self) -> "MultiSequentialEvent":
         return type(self)(list(reversed(self.__iterable)))
 
-    def __getitem__(self, idx) -> list:
-        return self.__iterable[idx]
+    def __getitem__(self, idx):
+        if isinstance(idx, slice):
+            if idx == slice(None):
+                return list(self.__iterable)
+
+            else:
+                return type(self)(self.__iterable[idx])
+
+        else:
+            return self.__iterable[idx]
 
     def __setitem__(self, idx, item) -> None:
         # set compound list

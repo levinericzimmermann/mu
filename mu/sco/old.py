@@ -292,7 +292,7 @@ class Rest(Tone):
         return type(self)(type(self.delay)(self.delay))
 
 
-class Chord(abstract.SimultanEvent):
+class Chord(abstract.UniformEvent):
     """A Chord contains simultanly played Tones."""
 
     def __init__(
@@ -309,18 +309,18 @@ class Chord(abstract.SimultanEvent):
         elif isinstance(duration, rhy.Unit) is False:
             duration = rhy.Unit(duration)
 
-        self.harmony = harmony
+        self.pitch = harmony
         self._dur = duration
         self.delay = delay
         self.volume = volume
 
     @property
-    def pitch(self):
-        return self.harmony
+    def harmony(self):
+        return self.pitch
 
-    @pitch.setter
-    def pitch(self, arg):
-        self.harmony = arg
+    @harmony.setter
+    def harmony(self, arg):
+        self.pitch = arg
 
     @property
     def duration(self):
@@ -331,11 +331,21 @@ class Chord(abstract.SimultanEvent):
         self._dur = dur
 
     def __repr__(self):
-        return str((repr(self.harmony), repr(self.delay), repr(self.duration)))
+        return str((self.pitch, repr(self.delay), repr(self.duration)))
 
     def copy(self) -> "Chord":
         return type(self)(
             self.pitch.copy(), self.delay.copy(), self.duration.copy(), self.volume
+        )
+
+    def __eq__(self, other: "Chord") -> bool:
+        return all(
+            (
+                self.pitch == other.pitch,
+                self.duration == other.duration,
+                self.delay == other.delay,
+                self.volume == other.volume,
+            )
         )
 
 
