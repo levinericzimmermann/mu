@@ -128,49 +128,27 @@ class MelodyTest(unittest.TestCase):
         self.assertEqual(melody1.duration, 3)
 
     def test_get_attributes(self):
-        self.assertEqual(self.melody0.get_pitch(), self.mel0)
-        self.assertEqual(self.melody0.get_delay(), self.rhy0)
-        self.assertEqual(self.melody0.get_dur(), self.rhy0)
+        self.assertEqual(self.melody0.__get_pitch__(), self.mel0)
+        self.assertEqual(self.melody0.__get_delay__(), self.rhy0)
+        self.assertEqual(self.melody0.__get_duration__(), self.rhy0)
 
     def test_set_attributes(self):
         melody0 = old.Melody([])
-        melody0.set_pitch(self.mel0)
-        melody0.set_delay(self.rhy0)
-        self.assertEqual(melody0.get_pitch(), self.mel0)
-        self.assertEqual(melody0.get_delay(), self.rhy0)
-        self.assertEqual(melody0.sequences[0], self.mel0)
-        self.assertEqual(melody0.sequences[1], self.rhy0)
-        melody0.set_pitch(self.mel1)
-        melody0.set_delay(self.rhy1)
-        melody0.set_dur(self.rhy0)
-        self.assertEqual(melody0.get_pitch(), self.mel1)
-        self.assertEqual(melody0.get_delay(), self.rhy1)
-        self.assertEqual(melody0.get_dur(), self.rhy0)
-        self.assertEqual(melody0.sequences[0], self.mel1)
-        self.assertEqual(melody0.sequences[1], self.rhy1)
-        self.assertEqual(melody0.sequences[2], self.rhy0)
-
-    def test_get_attributes_syntactic_sugar(self):
-        self.assertEqual(self.melody0.mel, self.mel0)
-        self.assertEqual(self.melody0.rhy, self.rhy0)
-        self.assertEqual(self.melody0.dur, self.rhy0)
-
-    def test_set_attributes_syntactic_sugar(self):
-        melody0 = old.Melody([])
-        melody0.mel = self.mel0
-        melody0.rhy = self.rhy0
-        self.assertEqual(melody0.mel, self.mel0)
-        self.assertEqual(melody0.rhy, self.rhy0)
-        self.assertEqual(melody0.sequences[0], self.mel0)
-        self.assertEqual(melody0.sequences[1], self.rhy0)
-        melody0.mel = self.mel1
-        melody0.rhy = self.rhy1
-        melody0.dur = self.rhy0
-        self.assertEqual(melody0.mel, self.mel1)
-        self.assertEqual(melody0.rhy, self.rhy1)
-        self.assertEqual(melody0.sequences[0], self.mel1)
-        self.assertEqual(melody0.sequences[1], self.rhy1)
-        self.assertEqual(melody0.sequences[2], self.rhy0)
+        melody0.__set_pitch__(self.mel0)
+        melody0.__set_delay__(self.rhy0)
+        self.assertEqual(melody0.__get_pitch__(), self.mel0)
+        self.assertEqual(melody0.__get_delay__(), self.rhy0)
+        self.assertEqual(melody0.pitch, self.mel0)
+        self.assertEqual(melody0.delay, self.rhy0)
+        melody0.__set_pitch__(self.mel1)
+        melody0.__set_delay__(self.rhy1)
+        melody0.__set_duration__(self.rhy0)
+        self.assertEqual(melody0.__get_pitch__(), self.mel1)
+        self.assertEqual(melody0.__get_delay__(), self.rhy1)
+        self.assertEqual(melody0.__get_duration__(), self.rhy0)
+        self.assertEqual(melody0.pitch, self.mel1)
+        self.assertEqual(melody0.delay, self.rhy1)
+        self.assertEqual(melody0.dur, self.rhy0)
 
     def test_set_item(self):
         t0 = old.Tone(ji.r(1, 1), rhy.Unit(2))
@@ -261,7 +239,6 @@ class MelodyTest(unittest.TestCase):
     def test_copy(self):
         melody0 = old.Melody([old.Tone(self.p0, self.d0), old.Tone(self.p0, self.d0)])
         self.assertEqual(melody0, melody0.copy())
-        self.assertEqual(type(melody0.mel), (type(melody0.copy().mel)))
 
 
 class ToneSetTest(unittest.TestCase):
@@ -344,13 +321,13 @@ class PolyTest(unittest.TestCase):
     t9 = old.Tone(p1, rhy.Unit(1.5))
     t10 = old.Tone(p5, rhy.Unit(0.5))
     t11 = old.Tone(p2, rhy.Unit(1))
-    melody0 = old.JIMelody((t0, t1))
-    melody1 = old.JIMelody((t2, t3))
-    melody2 = old.JIMelody((t6, t6, t0, t7))  # duration 5.5
-    melody3 = old.JIMelody((t7, t6, t2, t2))  # duration 4.5
-    melody4 = old.JIMelody((t7, t7, t7, t2, t2))  # duration 3.5
-    melody5 = old.JIMelody((t10, t9, t3, t8, t0))  # duration 5.5
-    melody6 = old.JIMelody((t6, t6, t2, t7))  # duration 5.5
+    melody0 = old.Melody((t0, t1))
+    melody1 = old.Melody((t2, t3))
+    melody2 = old.Melody((t6, t6, t0, t7))  # duration 5.5
+    melody3 = old.Melody((t7, t6, t2, t2))  # duration 4.5
+    melody4 = old.Melody((t7, t7, t7, t2, t2))  # duration 3.5
+    melody5 = old.Melody((t10, t9, t3, t8, t0))  # duration 5.5
+    melody6 = old.Melody((t6, t6, t2, t7))  # duration 5.5
 
     poly0 = old.Polyphon([melody0, melody1])
     poly1 = old.Polyphon([melody2, melody3, melody4])
@@ -370,7 +347,7 @@ class PolyTest(unittest.TestCase):
         chord5 = old.Chord(ji.JIHarmony([self.p0]), rhy.Unit(0.5))
         expected = old.Cadence([chord0, chord1, chord2, chord3, chord4, chord4, chord5])
         result = self.poly2.chordify(
-            harmony_class=ji.JIHarmony, cadence_class=old.JICadence, add_longer=True
+            harmony_class=ji.JIHarmony, cadence_class=old.Cadence, add_longer=True
         )
         self.assertEqual(expected, result)
 
@@ -461,7 +438,7 @@ class PolyTest(unittest.TestCase):
                 old.Melody([old.Rest(1), old.Tone(ji.r(4, 3), 2)]),
             )
         )
-        self.assertEqual(poly2_cut, poly2_cut_expected)
+        self.assertEqual(poly2_cut[2], poly2_cut_expected[2])
 
     def test_cut_up_by_idx(self):
         poly0 = old.Polyphon(

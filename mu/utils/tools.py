@@ -105,7 +105,9 @@ def np_scale(a, minima=0, maxima=15):
 
 
 def scale(iterable: tuple, minima: float = 0, maxima=1) -> tuple:
-    return tuple(np_scale(np.array(iterable), minima=minima, maxima=maxima))
+    return tuple(
+        float(n) for n in np_scale(np.array(iterable), minima=minima, maxima=maxima)
+    )
 
 
 def graycode(length: int, modulus: int) -> tuple:

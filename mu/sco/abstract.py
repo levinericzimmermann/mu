@@ -1,4 +1,6 @@
 import abc
+import types
+
 from mu.abstract import muobjects
 from mu.time import time
 
@@ -34,6 +36,7 @@ class Event(abc.ABC):
 
 class UniformEvent(Event):
     """Event-Object, which doesn't contain other Event-Objects."""
+
     @classmethod
     def is_uniform(cls):
         return True
@@ -49,6 +52,7 @@ class UniformEvent(Event):
 
 class ComplexEvent(Event):
     """Event-Object, which might contain other Event-Objects."""
+
     @classmethod
     def is_uniform(cls):
         return False
@@ -58,135 +62,196 @@ class ComplexEvent(Event):
 
 
 class MultiSequentialEvent(ComplexEvent):
-    _obj_class = None
-    _sub_sequences_class = None
-    _sub_sequences_class_names = None
+    _object = None
+
+    # TODO(remove bug when melody[0].delay = 100, melody.delay[0] != 100 -> you have to
+    # update linked list before calling them)
 
     def __new__(cls, *args, **kwargs):
-        def mk_property(num):
-            def set_value(self, arg):
-                self.sequences[num] = arg
-            return lambda self: self.sequences[num], set_value
+        def mk_property(attribute: str):
+            def get_value(self) -> list:
 
-        for i, name in enumerate(cls._sub_sequences_class_names):
-            getter, setter = mk_property(i)
-            getter_name = "get_{0}".format(name)
-            setter_name = "set_{0}".format(name)
+                for n in range(len(self)):
+                    self.__update_nth_index_of_linked_lists(n)
+
+                return getattr(self, cls.__format_hidden_attribute(attribute))
+
+            def set_value(self, arg) -> None:
+                arg = _LinkedList(self, attribute, arg[:])
+                setattr(self, cls.__format_hidden_attribute(attribute), arg)
+
+                for item, value in zip(self, arg):
+                    setattr(item, attribute, type(getattr(item, attribute))(value))
+
+            return get_value, set_value
+
+        for name in cls.__find_attributes():
+            getter, setter = mk_property(name)
+            getter_name = "__get_{}__".format(name)
+            setter_name = "__set_{}__".format(name)
             setattr(cls, getter_name, getter)
             setattr(cls, setter_name, setter)
-            setattr(cls, name, property(
-                getattr(cls, getter_name), getattr(cls, setter_name)))
+            if name != "duration":
+                setattr(
+                    cls,
+                    name,
+                    property(getattr(cls, getter_name), getattr(cls, setter_name)),
+                )
+
         return ComplexEvent.__new__(cls)
 
-    def __init__(self, iterable):
-        self.sequences = type(self).subvert_iterable(iterable)
-
-    def __len__(self):
-        return len(self.mk_sequence())
-
-    @abc.abstractclassmethod
-    def subvert_object(cls, obj):
-        raise NotImplementedError
-
-    @classmethod
-    def subvert_iterable(cls, iterable):
-        if iterable:
-            subverted = zip(*(cls.subvert_object(obj) for obj in iterable))
-        else:
-            subverted = ([] for i in range(len(cls._sub_sequences_class)))
-        return list(c(zipped) for c, zipped in
-                    zip(cls._sub_sequences_class, subverted))
-
-    @classmethod
-    def build_objects(cls, *parameter):
-        return tuple(cls._obj_class(*data) for data in zip(*parameter))
+    def __init__(self, iterable: list):
+        self.__iterable = list(iterable)
+        self.__attributes = self.__find_attributes()
+        for attribute in self.__attributes:
+            data = [getattr(item, attribute) for item in self]
+            linked_list = _LinkedList(self, attribute, data)
+            setattr(self, self.__format_hidden_attribute(attribute), linked_list)
 
     @classmethod
     def from_parameter(cls, *parameter):
-        return cls(cls.build_objects(*parameter))
+        obj_class = type(cls._object)
+        return cls([obj_class(*par) for par in zip(*parameter)])
+
+    def __repr__(self) -> str:
+        return repr(self.__iterable)
+
+    def __str__(self) -> str:
+        return str(self.__iterable)
+
+    def __eq__(self, other) -> bool:
+        return self[:] == other[:]
+
+    def __len__(self) -> int:
+        return len(self.__iterable)
+
+    def reverse(self) -> "MultiSequentialEvent":
+        return type(self)(list(reversed(self.__iterable)))
+
+    def __getitem__(self, idx) -> list:
+        return self.__iterable[idx]
+
+    def __setitem__(self, idx, item) -> None:
+        # set compound list
+        self.__iterable[idx] = item
+
+        # set seperated lists
+        if isinstance(idx, slice):
+            indices = tuple(range(*idx.indices(len(self))))
+        else:
+            indices = (idx,)
+
+        for idx in indices:
+            self.__update_nth_index_of_linked_lists(idx)
+
+    def __update_nth_index_of_linked_lists(self, idx: int) -> None:
+        for attribute in self.__attributes:
+            formated_attribute = self.__format_hidden_attribute(attribute)
+            getattr(self, formated_attribute)[idx] = getattr(self[idx], attribute)
+
+    def __iter__(self) -> iter:
+        return iter(self.__iterable)
+
+    def append(self, item) -> None:
+        self.__iterable.append(item)
+        for attribute in self.__attributes:
+            formated_attribute = self.__format_hidden_attribute(attribute)
+            getattr(self, formated_attribute)._append(getattr(item, attribute))
+
+    def extend(self, iterable: tuple) -> None:
+        for item in iterable:
+            self.append(item)
+
+    def insert(self, idx: int, item) -> None:
+        self.__iterable.insert(idx, item)
+        for attribute in self.__attributes:
+            formated_attribute = self.__format_hidden_attribute(attribute)
+            getattr(self, formated_attribute)._insert(idx, getattr(item, attribute))
+
+    def copy(self) -> "MultiSequentialEvent":
+        return type(self)(tuple(item.copy() for item in self))
+
+    def __add__(self, other) -> "MultiSequentialEvent":
+        return type(self)(self[:] + other[:])
+
+    def __mul__(self, factor: int) -> "MultiSequentialEvent":
+        return type(self)(tuple(item.copy() for item in (self.__iterable * factor)))
 
     @classmethod
-    def from_sequences(cls, *sequence):
-        build = cls([])
-        for s, arg in zip(sequence, cls._sub_sequences_class_names):
-            setattr(build, arg, s)
-        return build
+    def __find_attributes(cls) -> tuple:
+        return tuple(
+            attribute
+            for attribute in dir(cls._object)
+            # no private attributes
+            if attribute[0] != "_"
+            # no methods
+            and not isinstance(getattr(cls._object, attribute), types.MethodType)
+        )
 
-    def mk_sequence(self):
-        return [type(self)._obj_class(
-                *data) for data in zip(*self.sequences)]
+    @staticmethod
+    def __format_hidden_attribute(attribute: str) -> str:
+        return "__{}".format(attribute)
+
+
+class _LinkedList(object):
+    """Private helper class for making MultiSequentialEvent."""
+
+    def __init__(
+        self, linked_object: MultiSequentialEvent, attribute: str, iterable: tuple
+    ):
+        self.__attribute = attribute
+        self.__iterable = list(iterable)
+        self.__linked_object = linked_object
+
+    def __str__(self) -> str:
+        return str(self.__iterable)
+
+    def __eq__(self, other) -> bool:
+        return self[:] == other[:]
+
+    def __repr__(self) -> str:
+        return "LinkedList({})".format(repr(self.__iterable))
+
+    def __len__(self) -> int:
+        return len(self.__iterable)
+
+    def __sum__(self):
+        return sum(self[:])
 
     def __getitem__(self, idx):
-        if type(idx) == slice:
-            copied = self.copy()
-            for name in self._sub_sequences_class_names:
-                attr = getattr(copied, name)
-                setattr(copied, name, attr[idx])
-            return copied
+        return self.__iterable[idx]
+
+    def _insert(self, idx: int, arg):
+        self.__iterable.insert(idx, arg)
+
+    def _append(self, idx: int, arg):
+        self.__iterable.append(idx, arg)
+
+    def __setitem__(self, idx, arg):
+        self.__iterable[idx] = arg
+
+        if isinstance(idx, slice):
+            indices = tuple(range(*idx.indices(len(self))))
         else:
-            return self.mk_sequence()[idx]
+            indices = (idx,)
+            arg = (arg,)
 
-    def __setitem__(self, idx, item):
-        subverted = self.subvert_object(item)
-        for name, sub in zip(self._sub_sequences_class_names, subverted):
-            getattr(self, name)[idx] = sub
+        for idx, argument in zip(indices, arg):
+            # special case attribute 'duration' which always has to be overwritten
+            if self.__attribute == "duration":
+                attribute = "dur"
+            else:
+                attribute = self.__attribute
 
-    def __repr__(self):
-        return repr(self.mk_sequence())
+            try:
+                setattr(self.__linked_object[idx], attribute, argument)
 
-    def __iter__(self):
-        return iter(self.mk_sequence())
+            except AttributeError:
+                # if it can't be set, just ignore it
+                pass
 
-    def __add__(self, other):
-        return type(self)(self.mk_sequence() + other.mk_sequence())
-
-    def __sub__(self, other):
-        return type(self)(self.mk_sequence() - other.mk_sequence())
-
-    def __mul__(self, fac):
-        return type(self)(self.mk_sequence() * fac)
-
-    def append(self, arg):
-        data = type(self).subvert_object(arg)
-        for s, el in zip(self.sequences, data):
-            s.append(el)
-
-    def insert(self, pos, arg):
-        data = type(self).subvert_object(arg)
-        for s, el in zip(self.sequences, data):
-            s.insert(pos, el)
-
-    def extend(self, arg):
-        for el in arg:
-            self.append(el)
-
-    def reverse(self):
-        return type(self)(reversed(self.mk_sequence()))
-
-    def copy(self, by="parameter"):
-        if by == "parameter":
-            return self.copy_by_parameter()
-        elif by == "element":
-            return self.copy_by_element()
-        else:
-            msg = "copy-option can only be 'parameter' or 'element'."
-            raise ValueError(msg)
-
-    def copy_by_element(self):
-        return type(self)(item.copy() for item in self[:])
-
-    def copy_by_parameter(self):
-        parameters = (getattr(self, name).copy() for name
-                      in self._sub_sequences_class_names)
-        parameters = tuple(parameters)
-        return type(self).from_sequences(*parameters)
-
-    @property
-    def duration(self):
-        return time.Time(sum(element.duration for element in self))
-
-    def __eq__(self, other):
-        return self.mk_sequence() == other.mk_sequence()
+    def __iter__(self) -> iter:
+        return iter(self.__iterable)
 
 
 class SimultanEvent(ComplexEvent, muobjects.MUList):

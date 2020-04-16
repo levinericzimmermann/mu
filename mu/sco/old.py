@@ -7,7 +7,6 @@ from typing import Optional
 from typing import Tuple
 
 from mu.abstract import muobjects
-from mu.mel import ji
 from mu.mel import mel
 
 from mu.mel.abstract import AbstractPitch
@@ -149,7 +148,7 @@ class VibratoLine(object):
         return self.__period_size_line.copy()
 
     def calculate_pitch_size(self, period_position, max_up, max_down) -> float:
-        if self.direction is "up":
+        if self.direction == "up":
             max_cent = max_up
             min_cent = max_down
         else:
@@ -185,27 +184,50 @@ class VibratoLine(object):
 class Tone(abstract.UniformEvent):
     def __init__(
         self,
-        pitch: Optional[AbstractPitch],
-        delay: rhy.Unit,
+        pitch: Optional[AbstractPitch] = mel.TheEmptyPitch,
+        delay: rhy.Unit = 1,
         duration: Optional[rhy.Unit] = None,
         volume: Optional = None,
         glissando: GlissandoLine = None,
         vibrato: VibratoLine = None,
     ) -> None:
+
         if pitch is None:
-            pitch = mel.EmptyPitch()
+            pitch = mel.TheEmptyPitch
+
         self.pitch = pitch
-        if isinstance(delay, rhy.Unit) is False:
-            delay = rhy.Unit(delay)
+
         if not duration:
             duration = delay
-        elif isinstance(duration, rhy.Unit) is False:
-            duration = rhy.Unit(duration)
-        self._dur = duration
+
+        self.duration = duration
         self.delay = delay
         self.volume = volume
         self.glissando = glissando
         self.vibrato = vibrato
+
+    @staticmethod
+    def __return_correct_time_type(time_item) -> rhy.Unit:
+        if isinstance(time_item, rhy.Unit):
+            return time_item
+        else:
+            return rhy.Unit(time_item)
+
+    @property
+    def delay(self) -> rhy.Unit:
+        return self.__delay
+
+    @delay.setter
+    def delay(self, arg: rhy.Unit) -> None:
+        self.__delay = self.__return_correct_time_type(arg)
+
+    @property
+    def duration(self) -> rhy.Unit:
+        return self.__duration
+
+    @duration.setter
+    def duration(self, arg: rhy.Unit) -> None:
+        self.__duration = self.__return_correct_time_type(arg)
 
     def __hash__(self) -> int:
         return hash((self.pitch, self.delay, self.duration, self.volume))
@@ -221,6 +243,9 @@ class Tone(abstract.UniformEvent):
                 self.pitch == other.pitch,
                 self.duration == other.duration,
                 self.delay == other.delay,
+                self.volume == other.volume,
+                self.glissando == other.glissando,
+                self.vibrato == other.vibrato,
             )
         )
 
@@ -240,16 +265,16 @@ class Rest(Tone):
         if duration is None:
             duration = delay
 
-        self._dur = duration
+        self.duration = duration
         self.delay = delay
         self.volume = 0
 
     def __repr__(self):
-        return repr(self.delay)
+        return "Rest({})".format(repr(self.delay))
 
     @property
     def pitch(self):
-        return mel.EmptyPitch()
+        return mel.TheEmptyPitch
 
     @property
     def harmony(self):
@@ -264,14 +289,18 @@ class Rest(Tone):
         return None
 
     def copy(self):
-        return type(self)(self.delay.copy())
+        return type(self)(type(self.delay)(self.delay))
 
 
 class Chord(abstract.SimultanEvent):
     """A Chord contains simultanly played Tones."""
 
     def __init__(
-        self, harmony, delay: rhy.Unit, duration: Optional[rhy.Unit] = None, volume=None
+        self,
+        harmony: mel.Harmony = mel.Harmony([]),
+        delay: rhy.Unit = 1,
+        duration: Optional[rhy.Unit] = None,
+        volume=None,
     ) -> None:
         if isinstance(delay, rhy.Unit) is False:
             delay = rhy.Unit(delay)
@@ -322,8 +351,6 @@ class AbstractLine(abstract.MultiSequentialEvent):
     Examples of those events would be: Tone or Chord.
     """
 
-    _sub_sequences_class_names = ("pitch", "delay", "dur", "volume")
-
     def __init__(self, iterable, time_measure="relative"):
         abstract.MultiSequentialEvent.__init__(self, iterable)
         try:
@@ -333,16 +360,13 @@ class AbstractLine(abstract.MultiSequentialEvent):
         self._time_measure = time_measure
 
     def copy(self):
-        copied = abstract.MultiSequentialEvent.copy(self)
+        copied = super().copy()
         copied._time_measure = str(self._time_measure)
         return copied
 
     @property
     def time_measure(self):
         return self._time_measure
-
-    def __hash__(self):
-        return hash(tuple(hash(item) for item in self))
 
     def convert2absolute(self) -> "AbstractLine":
         """Change time dimension of the object.
@@ -351,11 +375,13 @@ class AbstractLine(abstract.MultiSequentialEvent):
         duration becomes the stoptime of the specific event.
         """
         copy = self.copy()
+
         if self.time_measure == "relative":
-            copy.delay = copy.delay.convert2absolute()
-            stop = ((d + s) for d, s in zip(copy.delay, copy.dur))
-            copy.dur = type(copy.dur)(stop)
+            copy.delay = rhy.Compound(copy.delay).convert2absolute()
+            stop = tuple((d + s) for d, s in zip(copy.delay, copy.dur))
+            copy.dur = stop
             copy._time_measure = "absolute"
+
         return copy
 
     def convert2relative(self):
@@ -366,20 +392,27 @@ class AbstractLine(abstract.MultiSequentialEvent):
         """
         copy = self.copy()
         if self.time_measure == "absolute":
-            copy.delay = copy.delay.convert2relative()
-            copy.dur = type(copy.dur)(
-                dur - delay for dur, delay in zip(self.dur, self.delay)
-            )
-            copy.delay.append(copy.dur[-1])
+            delay = rhy.Compound(copy.delay).convert2relative()
+            copy.dur = tuple(dur - delay for dur, delay in zip(self.dur, self.delay))
+            delay.append(copy.dur[-1])
+            copy.delay = delay
             copy._time_measure = "relative"
         return copy
 
     @property
     def freq(self) -> Tuple[float]:
-        return self.pitch.freq
+        return tuple(p.freq for p in self.pitch)
 
     @property
-    def duration(self):
+    def dur(self) -> abstract._LinkedList:
+        return self.__get_duration__()
+
+    @dur.setter
+    def dur(self, arg) -> None:
+        self.__set_duration__(arg)
+
+    @property
+    def duration(self) -> time.Time:
         if self.time_measure == "relative":
             return time.Time(sum(self.delay))
         else:
@@ -475,9 +508,9 @@ class AbstractLine(abstract.MultiSequentialEvent):
 
         new = type(self)(new)
 
-        if self.time_measure is "relative":
-            new.dur = type(new.dur)(du - de for du, de in zip(new.dur, new.delay))
-            new.delay = type(new.delay)(new.dur)
+        if self.time_measure == "relative":
+            new.dur = tuple(du - de for du, de in zip(new.dur, new.delay))
+            new.delay = tuple(new.dur)
 
         return new
 
@@ -507,56 +540,7 @@ class AbstractLine(abstract.MultiSequentialEvent):
 class Melody(AbstractLine):
     """A Melody contains sequentially played Pitches."""
 
-    _obj_class = Tone
-    _sub_sequences_class = (mel.Mel, rhy.Compound, rhy.Compound, list, list, list)
-    _sub_sequences_class_names = (
-        "pitch",
-        "delay",
-        "dur",
-        "volume",
-        "glissando",
-        "vibrato",
-    )
-
-    @classmethod
-    def subvert_object(cls, tone: Tone):
-        return (
-            tone.pitch,
-            tone.delay,
-            tone.duration,
-            tone.volume,
-            tone.glissando,
-            tone.vibrato,
-        )
-
-    @property
-    def freq(self) -> Tuple[float]:
-        return self.mel.freq
-
-    # @property
-    # def duration(self):
-    #     return float(sum(element.delay for element in self))
-
-    @property
-    def mel(self):
-        """Alias for backwards compatibility,"""
-        return self.pitch
-
-    @mel.setter
-    def mel(self, arg):
-        self.pitch = arg
-
-    @property
-    def rhy(self):
-        """Alias for backwards compatibility,"""
-        return self.delay
-
-    @rhy.setter
-    def rhy(self, arg):
-        self.delay = arg
-
-    def __hash__(self):
-        return hash(tuple(hash(t) for t in self))
+    _object = Tone()
 
     def tie_pauses(self):
         def sub(melody):
@@ -584,41 +568,10 @@ class Melody(AbstractLine):
         return self.tie_by(sub)
 
 
-class JIMelody(Melody):
-    _sub_sequences_class = (ji.JIMel, rhy.Compound, rhy.Compound, list, list, list)
-
-
 class Cadence(AbstractLine):
     """A Cadence contains sequentially played Harmonies."""
 
-    _obj_class = Chord
-    _sub_sequences_class = (mel.Cadence, rhy.Compound, rhy.Compound, list)
-
-    @property
-    def harmony(self):
-        """Alias for backwards compatibility."""
-        return self.pitch
-
-    @harmony.setter
-    def harmony(self, arg):
-        self.pitch = arg
-
-    @property
-    def rhy(self):
-        """Alias for backwards compatibility."""
-        return self.delay
-
-    @rhy.setter
-    def rhy(self, arg):
-        self.delay = arg
-
-    @classmethod
-    def subvert_object(cls, chord):
-        return chord.harmony, chord.delay, chord.duration, chord.volume
-
-    @property
-    def freq(self):
-        return self.harmony.freq
+    _object = Chord()
 
     def tie_pauses(self):
         def sub(melody):
@@ -643,10 +596,6 @@ class Cadence(AbstractLine):
             return new
 
         return self.tie_by(sub)
-
-
-class JICadence(Cadence):
-    _sub_sequences_class = (ji.JICadence, rhy.Compound, rhy.Compound, list)
 
 
 class PolyLine(abstract.SimultanEvent):
@@ -806,9 +755,10 @@ class PolyLine(abstract.SimultanEvent):
                     new.append(event)
             if new:
                 if new[0].delay > start:
-                    new.insert(0, Rest(start, start))
+                    new.insert(0, Rest(start, new[0].delay))
             else:
                 new.append(Rest(start, stop))
+
             polyline[i] = type(polyline[i])(new, "absolute")
 
         if hard_cut is False:
@@ -816,13 +766,14 @@ class PolyLine(abstract.SimultanEvent):
             if earliest < start:
                 for i, sub in enumerate(polyline):
                     if sub.delay[0] > earliest:
-                        sub.insert(0, Rest(earliest, earliest))
+                        sub.insert(0, Rest(earliest, sub.delay[0]))
                         polyline[i] = sub
 
-        if self.time_measure is "relative":
+        if self.time_measure == "relative":
             for sub in polyline:
-                sub.dur = type(sub.dur)(d - sub.delay[0] for d in sub.dur)
-                sub.delay = type(sub.delay)(d - sub.delay[0] for d in sub.delay)
+                sub.dur = tuple(d - sub.delay[0] for d in sub.dur)
+                sub.delay = tuple(d - sub.delay[0] for d in sub.delay)
+
             polyline = polyline.convert2relative()
 
         return polyline
@@ -962,7 +913,7 @@ class ToneSet(muobjects.MUSet):
         sorted_by_delay = sorted(list(self.copy()), key=lambda t: t.delay)
         first = sorted_by_delay[0].delay
         if first != 0:
-            sorted_by_delay.insert(0, Rest(0))
+            sorted_by_delay.insert(0, Rest(0, first))
         for t, t_after in zip(sorted_by_delay, sorted_by_delay[1:]):
             diff = t_after.delay - t.delay
             t.delay = rhy.Unit(diff)
