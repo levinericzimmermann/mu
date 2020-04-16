@@ -927,7 +927,7 @@ class Pianoteq(SysexTuningMidiFile):
             cmd.append("--fxp {} ".format(fxp))
 
         cmd.append("--midi {0}.mid --wav {0}.wav".format(name))
-        return subprocess.popen(" ".join(cmd), shell=True)
+        return subprocess.Popen(" ".join(cmd), shell=True)
 
 
 class Diva(NonSysexTuningMidiFile):
