@@ -905,7 +905,7 @@ class Pianoteq(SysexTuningMidiFile):
 
     def export2wav(
         self, name, nchnls=1, preset=None, fxp=None, sr=44100, verbose: bool = False
-    ):
+    ) -> subprocess.Popen:
         self.export("{0}.mid".format(name))
         cmd = [
             "./{}".format(self.software_path),
@@ -927,7 +927,7 @@ class Pianoteq(SysexTuningMidiFile):
             cmd.append("--fxp {} ".format(fxp))
 
         cmd.append("--midi {0}.mid --wav {0}.wav".format(name))
-        subprocess.call(" ".join(cmd), shell=True)
+        return subprocess.popen(" ".join(cmd), shell=True)
 
 
 class Diva(NonSysexTuningMidiFile):
