@@ -1112,7 +1112,9 @@ class Monzo(object):
             added = r(1, factor)
         else:
             added = r(factor, 1)
-        return n + added
+        p = n + added
+        p.multiply = self.multiply
+        return p
 
     @property
     def gender(self) -> bool:
