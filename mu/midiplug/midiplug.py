@@ -349,7 +349,7 @@ class MidiFile(abc.ABC):
         n_hits += self.delay_between_control_messages_and_note_on_message + 2
         self.__grid = tuple(i * gridsize for i in range(0, n_hits))
         self.__gridsize = gridsize
-        self.__grid_position_per_tone = MidiFile.detect_grid_position(
+        self.__grid_position_per_tone = self.detect_grid_position(
             sequence, self.__grid, self.__duration
         )
         self.__amount_available_midi_notes = len(available_midi_notes)

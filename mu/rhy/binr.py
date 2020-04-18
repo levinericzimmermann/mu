@@ -78,7 +78,7 @@ class Compound(rhy.AbstractRhythm):
     def from_generator(cls, period: int, size: int) -> "Compound":
         """Periodic repetitive rhythm maker."""
         assert period <= size
-        generator = tuple(range(0, size, period))
+        generator = tuple(range(0, size + period, period))
         return cls([b - a for a, b in zip(generator, generator[1:])])
 
     @classmethod
@@ -113,7 +113,7 @@ class Compound(rhy.AbstractRhythm):
         rhythm = Compound.convert_essence_and_multiply2rhythm(
             self.essence, self.multiply
         )
-        if self.representation is "relative":
+        if self.representation == "relative":
             return rhythm
         else:
             return tools.accumulate_from_zero(rhythm)[:-1]
@@ -270,7 +270,7 @@ class Compound(rhy.AbstractRhythm):
     @staticmethod
     def is_valid_essence(essence: int) -> bool:
         try:
-            return essence >= 0 and (int(essence) - essence) is 0
+            return essence >= 0 and (int(essence) - essence) == 0
         except TypeError:
             return False
 
