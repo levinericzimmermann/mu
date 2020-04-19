@@ -100,8 +100,11 @@ def brownian(x0, n, dt, delta, out=None, random_state=None):
     return out
 
 
-def np_scale(a, minima=0, maxima=15):
-    return np.interp(a, (a.min(), a.max()), (minima, maxima))
+def np_scale(a, minima=0, maxima=15) -> np.array:
+    if a:
+        return np.interp(a, (a.min(), a.max()), (minima, maxima))
+    else:
+        return np.array([])
 
 
 def scale(iterable: tuple, minima: float = 0, maxima=1) -> tuple:
