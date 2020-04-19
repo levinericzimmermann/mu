@@ -101,7 +101,7 @@ def brownian(x0, n, dt, delta, out=None, random_state=None):
 
 
 def np_scale(a, minima=0, maxima=15) -> np.array:
-    if a:
+    if len(a) > 0:
         return np.interp(a, (a.min(), a.max()), (minima, maxima))
     else:
         return np.array([])
