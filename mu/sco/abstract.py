@@ -232,8 +232,8 @@ class _LinkedList(object):
     def _insert(self, idx: int, arg):
         self.__iterable.insert(idx, arg)
 
-    def _append(self, idx: int, arg):
-        self.__iterable.append(idx, arg)
+    def _append(self, arg):
+        self.__iterable.append(arg)
 
     def __setitem__(self, idx, arg):
         self.__iterable[idx] = arg
