@@ -1631,8 +1631,12 @@ class Monzo(object):
         )
         return m0 + m1
 
-    def inverse(self) -> "Monzo":
-        return type(self)(list(map(lambda x: -x, self)), self.val_border)
+    def inverse(self, axis=None) -> "Monzo":
+        if axis is None:
+            return type(self)(list(map(lambda x: -x, self)), self.val_border)
+        else:
+            distance = self - axis
+            return axis - distance
 
     def shift(self, shiftval: int) -> "Monzo":
         return type(self)(Monzo._shift_vector(self, shiftval), self.val_border)
