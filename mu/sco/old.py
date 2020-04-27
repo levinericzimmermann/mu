@@ -33,6 +33,10 @@ class PitchInterpolation(interpolations.InterpolationEvent):
     def pitch(self):
         return self.__pitch
 
+    def __repr__(self) -> str:
+
+        return "PitchInter({}, {})".format(self.delay, self.pitch)
+
     def __hash__(self) -> int:
         return hash((hash(self.delay), hash(self.pitch), hash(self.interpolation_type)))
 
@@ -44,6 +48,13 @@ class PitchInterpolation(interpolations.InterpolationEvent):
     def interpolate(self, other, steps: int) -> tuple:
         cents0 = self.pitch.cents
         cents1 = other.pitch.cents
+
+        try:
+            assert cents0 is not None and cents1 is not None
+        except AssertionError:
+            msg = "{} or {} aren't valid pitches.".format(self.pitch, other.pitch)
+            raise TypeError(msg)
+
         return self.interpolation_type(cents0, cents1, steps)
 
 
@@ -84,6 +95,9 @@ class GlissandoLine(object):
 
     def __init__(self, pitch_line: interpolations.InterpolationLine):
         self.__pitch_line = pitch_line
+
+    def __repr__(self) -> str:
+        return "GlissandoLine({})".format(self.pitch_line)
 
     @property
     def pitch_line(self):

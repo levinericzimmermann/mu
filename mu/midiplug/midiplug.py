@@ -1,3 +1,5 @@
+"""midiplug helps generating midifiles for particular synthesizer."""
+
 from mu.mel.abstract import AbstractPitch
 from mu.mel import mel
 from mu.rhy import rhy
@@ -9,6 +11,7 @@ import abc
 import bisect
 import functools
 import itertools
+import logging
 import numbers
 import operator
 import os
@@ -20,6 +23,10 @@ import mido
 __directory = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(__directory, "", "../mel/12edo"), "r") as f:
     _12edo_freq = tuple(float(line[:-1]) for line in f.readlines())
+
+
+# TODO(Add proper documentation)
+# TODO(write expected types in methods arguments)
 
 
 class MidiTone(old.Tone):
@@ -432,11 +439,9 @@ class MidiFile(abc.ABC):
         pitch_bending_messages = []
         total_range = MidiFile.maximum_cent_deviation * 2
         # total_range = MidiFile.maximum_cent_deviation * 1
-        warn = Warning(
-            "Maximum pitch bending is {0} cents up or down!".format(
+        warn = "Maximum pitch bending is {0} cents up or down!".format(
                 MidiFile.maximum_pitch_bending
             )
-        )
         standardmessage0 = tuple(
             mido.Message("pitchwheel", channel=channel_number, pitch=0, time=0)
             for channel_number in self.available_channel
@@ -460,10 +465,10 @@ class MidiFile(abc.ABC):
                     ) / total_range
                     if pitch_percent > 1:
                         pitch_percent = 1
-                        raise warn
+                        logging.warn(warn)
                     if pitch_percent < 0:
                         pitch_percent = 0
-                        raise warn
+                        logging.warn(warn)
                     midi_pitch = int(MidiFile.maximum_pitch_bending * pitch_percent)
                     midi_pitch -= MidiFile.maximum_pitch_bending_positive
                     msg = mido.Message(
@@ -515,6 +520,7 @@ class MidiFile(abc.ABC):
             vibrato = mk_interpolation(tone.vibrato, size)
             resulting_cents = tuple(a + b for a, b in zip(glissando, vibrato))
             pitch_bending.append(resulting_cents)
+
         return tuple(pitch_bending)
 
     def mk_note_on_off_messages(self, sequence, keys) -> tuple:

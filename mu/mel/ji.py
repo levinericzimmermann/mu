@@ -2996,6 +2996,27 @@ class BlueprintHarmony(object):
         )
 
 
+def find_all_available_pitches_in_a_specified_range(
+    pitch: JIPitch, minima: JIPitch, maxima: JIPitch
+) -> tuple:
+    """Return pitches in all possible register between minima and maxima."""
+
+    p_norm = pitch.normalize()
+    min_norm = minima.normalize()
+    max_norm = maxima.normalize()
+    oct0 = minima.octave
+    oct1 = maxima.octave + 1
+
+    if p_norm.float < min_norm.float:
+        oct0 += 1
+    if p_norm.float > max_norm.float:
+        oct1 -= 1
+
+    assert oct0 != oct1
+
+    return tuple(p_norm.register(o) for o in range(oct0, oct1))
+
+
 def find_best_voice_leading(pitches: tuple, tonal_range: tuple) -> tuple:
     """Brute force searching for the best voice leading.
 
@@ -3003,22 +3024,6 @@ def find_best_voice_leading(pitches: tuple, tonal_range: tuple) -> tuple:
     with the smallest sum of cent differences between two
     succeeding pitches.
     """
-
-    def find_all_available_pitches_in_a_specified_range(
-        pitch: JIPitch, minima: JIPitch, maxima: JIPitch
-    ) -> tuple:
-        p_norm = pitch.normalize()
-        min_norm = minima.normalize()
-        max_norm = maxima.normalize()
-        oct0 = minima.octave
-        oct1 = maxima.octave + 1
-        if p_norm.float < min_norm.float:
-            oct0 += 1
-        if p_norm.float > max_norm.float:
-            oct1 -= 1
-
-        assert oct0 != oct1
-        return tuple(p_norm.register(o) for o in range(oct0, oct1))
 
     def brute_force_algorithm(pitches: tuple) -> tuple:
         element = None
