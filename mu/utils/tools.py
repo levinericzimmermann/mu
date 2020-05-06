@@ -1,4 +1,5 @@
 import bisect
+import decimal
 import functools
 import itertools
 import math
@@ -6,6 +7,11 @@ import operator
 
 import numpy as np
 from scipy.stats import norm
+
+try:
+    import quicktions as fractions
+except ImportError:
+    import fractions
 
 
 def accumulate_from_n(iterator: tuple, n: float) -> tuple:
@@ -348,3 +354,16 @@ def round_percentage(percentage_per_item: tuple, n: int) -> tuple:
         rounded_items[float_per_item.index(items_sorted_by_decimals[i])] += 1
 
     return tuple(rounded_items)
+
+
+# from https://stackoverflow.com/questions/7267226/range-for-floats/7267287
+def drange(x, y, jump):
+    while x < y:
+        yield float(x)
+        x += decimal.Decimal(jump)
+
+
+def frange(x: fractions.Fraction, y: fractions.Fraction, stepsize: fractions.Fraction):
+    while x < y:
+        yield x
+        x += stepsize

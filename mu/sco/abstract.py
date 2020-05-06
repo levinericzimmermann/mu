@@ -81,7 +81,11 @@ class MultiSequentialEvent(ComplexEvent):
                 setattr(self, cls.__format_hidden_attribute(attribute), arg)
 
                 for item, value in zip(self, arg):
-                    setattr(item, attribute, type(getattr(item, attribute))(value))
+                    try:
+                        value = type(getattr(item, attribute))(value)
+                    except TypeError:
+                        value = value
+                    setattr(item, attribute, value)
 
             return get_value, set_value
 

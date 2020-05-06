@@ -247,8 +247,15 @@ class Tone(abstract.UniformEvent):
         return hash((self.pitch, self.delay, self.duration, self.volume))
 
     def __repr__(self) -> str:
-        return str(
-            (repr(self.pitch), repr(self.delay), repr(self.duration), repr(self.volume))
+        return "Tone{}".format(
+            str(
+                (
+                    repr(self.pitch),
+                    repr(self.delay),
+                    repr(self.duration),
+                    repr(self.volume),
+                )
+            )
         )
 
     def __eq__(self, other: "Tone") -> bool:
