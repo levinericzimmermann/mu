@@ -1095,16 +1095,6 @@ class Monzo(object):
         )
         return res_pitch_for_concert_pitch_adjusted
 
-    @property
-    def octave(self) -> int:
-        fl = self.float
-        ref, exp = 2, 0
-        while ref ** exp <= fl:
-            exp += 1
-        while ref ** exp > fl:
-            exp -= 1
-        return exp
-
     def register(self, octave: int) -> "Monzo":
         n = self.normalize()
         factor = 2 ** abs(octave)

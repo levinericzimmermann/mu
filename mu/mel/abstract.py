@@ -43,6 +43,16 @@ class AbstractPitch(abc.ABC):
         raise NotImplementedError
 
     @property
+    def octave(self) -> int:
+        ct = self.cents
+        ref, exp = 1200, 0
+        while ref * exp <= ct:
+            exp += 1
+        while ref * exp > ct:
+            exp -= 1
+        return exp
+
+    @property
     def is_empty(self) -> bool:
         """Return True if pitch equals a Rest. Otherwise False."""
         return False

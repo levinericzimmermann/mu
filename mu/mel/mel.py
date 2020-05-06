@@ -102,7 +102,7 @@ class Mel(muobjects.MUList):
         self.multiply = 1
 
     @classmethod
-    def from_scl(cls, name: str, concert_pitch: float) -> "JIContainer":
+    def from_scl(cls, name: str, concert_pitch: float) -> "Mel":
         """Generating JIContainer from the scl file format.
 
         See: http://huygens-fokker.org/scala/scl_format.html

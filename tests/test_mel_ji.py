@@ -255,28 +255,6 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(m1 * m6, m4)
         self.assertEqual(m1 * m7, m5)
 
-    def test_octave(self):
-        m0 = ji.Monzo([0])
-        m1 = ji.Monzo([1])
-        m2 = ji.Monzo([2])
-        m3 = ji.Monzo([3])
-        m4 = ji.Monzo([-1])
-        m5 = ji.Monzo([-2])
-        m6 = ji.Monzo([-3])
-        m7 = ji.Monzo([-1, 1])
-        m8 = ji.Monzo([0, 1])
-        m9 = ji.Monzo([1, -1])
-        self.assertEqual(m0.octave, 0)
-        self.assertEqual(m1.octave, 1)
-        self.assertEqual(m2.octave, 2)
-        self.assertEqual(m3.octave, 3)
-        self.assertEqual(m4.octave, -1)
-        self.assertEqual(m5.octave, -2)
-        self.assertEqual(m6.octave, -3)
-        self.assertEqual(m7.octave, 0)
-        self.assertEqual(m8.octave, 1)
-        self.assertEqual(m9.octave, -1)
-
     def test_sum(self):
         m0 = ji.Monzo([0, -1, 1, 3, 2, -3])
         self.assertEqual(m0.summed(), 10)
@@ -612,6 +590,28 @@ class JIPitchTest(unittest.TestCase):
         self.assertEqual(ji.JIPitch.from_ratio(2, 1), ji.JIPitch((1,)))
         self.assertEqual(ji.JIPitch.from_ratio(1, 2), ji.JIPitch((-1,)))
         self.assertEqual(ji.JIPitch.from_monzo(-1), ji.JIPitch((-1,)))
+
+    def test_octave(self):
+        m0 = ji.JIPitch([0])
+        m1 = ji.JIPitch([1])
+        m2 = ji.JIPitch([2])
+        m3 = ji.JIPitch([3])
+        m4 = ji.JIPitch([-1])
+        m5 = ji.JIPitch([-2])
+        m6 = ji.JIPitch([-3])
+        m7 = ji.JIPitch([-1, 1])
+        m8 = ji.JIPitch([0, 1])
+        m9 = ji.JIPitch([1, -1])
+        self.assertEqual(m0.octave, 0)
+        self.assertEqual(m1.octave, 1)
+        self.assertEqual(m2.octave, 2)
+        self.assertEqual(m3.octave, 3)
+        self.assertEqual(m4.octave, -1)
+        self.assertEqual(m5.octave, -2)
+        self.assertEqual(m6.octave, -3)
+        self.assertEqual(m7.octave, 0)
+        self.assertEqual(m8.octave, 1)
+        self.assertEqual(m9.octave, -1)
 
     def test_comparsion(self):
         t0 = ji.r(1, 1)
@@ -1415,12 +1415,10 @@ class BlueprintHarmonyTest(unittest.TestCase):
             (BlueprintHarmonyTest.bp3, (1,)),
         )
         bph11 = ji.BlueprintHarmony(
-            (BlueprintHarmonyTest.bp0, (0,)),
-            (BlueprintHarmonyTest.bp0, (0,)),
+            (BlueprintHarmonyTest.bp0, (0,)), (BlueprintHarmonyTest.bp0, (0,))
         )
         bph12 = ji.BlueprintHarmony(
-            (BlueprintHarmonyTest.bp0, (1,)),
-            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp0, (1,)), (BlueprintHarmonyTest.bp0, (1,))
         )
 
         self.assertEqual(bph0, bph1)
@@ -1460,8 +1458,7 @@ class BlueprintHarmonyTest(unittest.TestCase):
 
     def test_n_pitch_repetitions(self):
         bph0 = ji.BlueprintHarmony(
-            (BlueprintHarmonyTest.bp0, (1,)),
-            (BlueprintHarmonyTest.bp0, (1,)),
+            (BlueprintHarmonyTest.bp0, (1,)), (BlueprintHarmonyTest.bp0, (1,))
         )
         bph1 = ji.BlueprintHarmony(
             (BlueprintHarmonyTest.bp0, (1,)),
@@ -1469,20 +1466,16 @@ class BlueprintHarmonyTest(unittest.TestCase):
             (BlueprintHarmonyTest.bp0, (1,)),
         )
         bph2 = ji.BlueprintHarmony(
-            (BlueprintHarmonyTest.bp1, (0, 1)),
-            (BlueprintHarmonyTest.bp1, (1, 0)),
+            (BlueprintHarmonyTest.bp1, (0, 1)), (BlueprintHarmonyTest.bp1, (1, 0))
         )
         bph3 = ji.BlueprintHarmony(
-            (BlueprintHarmonyTest.bp1, (0, 1)),
-            (BlueprintHarmonyTest.bp1, (0, 1)),
+            (BlueprintHarmonyTest.bp1, (0, 1)), (BlueprintHarmonyTest.bp1, (0, 1))
         )
         bph4 = ji.BlueprintHarmony(
-            (BlueprintHarmonyTest.bp2, (0, 1)),
-            (BlueprintHarmonyTest.bp2, (0, 1)),
+            (BlueprintHarmonyTest.bp2, (0, 1)), (BlueprintHarmonyTest.bp2, (0, 1))
         )
         bph5 = ji.BlueprintHarmony(
-            (BlueprintHarmonyTest.bp2, (0, 1)),
-            (BlueprintHarmonyTest.bp2, (1, 0)),
+            (BlueprintHarmonyTest.bp2, (0, 1)), (BlueprintHarmonyTest.bp2, (1, 0))
         )
 
         self.assertEqual(bph0.n_pitch_repetitions, 1)
