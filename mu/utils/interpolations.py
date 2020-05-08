@@ -23,7 +23,7 @@ class Interpolation(abc.ABC):
 
 class Linear(Interpolation):
     def __call__(self, x0: float, x1: float, n: int, dtype=float) -> tuple:
-        return tuple(np.linspace(x0, x1, n, dtype=dtype))
+        return tuple(np.linspace(float(x0), float(x1), int(n), dtype=dtype))
 
     def __hash__(self) -> int:
         return hash("LinearInterpolation")

@@ -27,7 +27,7 @@ class AbstractRhythm(abc.ABC):
 
 class Unit(AbstractRhythm, time.Time):
     def __repr__(self):
-        return time.Time.__repr__(self)
+        return "Unit({})".format(str(self))
 
     def flat(self):
         return Compound((self,))

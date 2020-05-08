@@ -58,11 +58,17 @@ def mutate_class(cls):
     methods = {key: method_decorator(key) for key, func in old_method}
     properties = {key: property_decorator(func)
                   for key, func in old_property}
+
     for k in methods:
         if k == "__getitem__":
             setattr(new_class, k, getitem)
         else:
             setattr(new_class, k, methods[k])
+
     for k in properties:
-        setattr(new_class, k, property(methods[k]))
+        try:
+            setattr(new_class, k, property(methods[k]))
+        except KeyError:
+            pass
+
     return new_class

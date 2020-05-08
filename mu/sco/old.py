@@ -934,9 +934,10 @@ class ToneSet(muobjects.MUSet):
 
     def pop_by_time(self, *time) -> "ToneSet":
         def test(tone, time):
-            start = tone.delay
-            duration = tone.duration
-            return time >= start and time < start + duration
+            time = float(time)
+            start = float(tone.delay)
+            duration = float(tone.duration)
+            return time >= start and time < (start + duration)
 
         return self.pop_by(test, time)
 

@@ -1,6 +1,11 @@
 import orderedset
 from mu.abstract import mutate
 
+try:
+    import quicktions as fractions
+except ImportError:
+    import fractions
+
 
 class MUList(mutate.mutate_class(list)):
     def reverse(self) -> "MUList":
@@ -25,6 +30,7 @@ class MUSet(mutate.mutate_class(set)):
 
 __MUFLoat = mutate.mutate_class(float)
 __MUInt = mutate.mutate_class(int)
+MUFraction = mutate.mutate_class(fractions.Fraction)
 
 
 class MUFloat(__MUFLoat):

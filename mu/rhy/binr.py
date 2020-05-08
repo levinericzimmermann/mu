@@ -259,7 +259,7 @@ class Compound(rhy.AbstractRhythm):
     @staticmethod
     def convert_rhythm2essence_and_multiply(rhythm: tuple) -> tuple:
         if rhythm:
-            rhythm_as_fraction = tuple(fractions.Fraction(r) for r in rhythm)
+            rhythm_as_fraction = tuple(rhy.Unit(r).fraction for r in rhythm)
             lcd = tools.lcm(*tuple(r.denominator for r in rhythm_as_fraction))
             int_rhythm = tuple(int(r * lcd) for r in rhythm_as_fraction)
             essence = Compound.convert_int_rhythm2essence(int_rhythm)
