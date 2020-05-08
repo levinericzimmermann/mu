@@ -6,7 +6,7 @@ except ImportError:
     import fractions
 
 
-class Time(object):
+class Time(float):
     def __init__(self, value: float):
         try:
             assert value >= 0
