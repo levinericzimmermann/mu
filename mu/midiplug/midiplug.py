@@ -283,6 +283,13 @@ class PyteqTone(MidiTone, metaclass=_SynthesizerMidiTone):
         "effect1_param6": ((0, 1), 108),
         "effect1_param7": ((0, 1), 109),
         "effect1_param8": ((0, 1), 110),
+        "mic_2_x_position": ((-10, 10), 111),
+        "mic_2_y_position": ((-6, 6), 112),
+        "mic_2_z_position": ((0, 3.5), 113),
+        "mic_2_azimuth": ((-180, 180), 114),
+        "mic_2_elevation": ((-180, 180), 115),
+        "mic_2_mic_switch": ((0, 1), 116),
+        "condiiton": ((0, 10), 117),
     }
 
 
@@ -694,7 +701,7 @@ class MidiFile(abc.ABC):
     @staticmethod
     def mk_pitch_sequence(
         sequence: tuple
-    ) -> "pitch_sequence, tuning_sequence, midi_dict":
+    ) -> tuple:
         pitch_sequence = tuple(t.pitch for t in sequence)
         tuning_sequence = tuple(t.tuning for t in sequence)
         if sequence:
