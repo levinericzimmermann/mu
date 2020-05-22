@@ -31,7 +31,7 @@ class ActivityLevel(object):
     # github.com/mdedwards/slippery-chicken/blob/master/activity-levels.lsp
     __activity_levels = (
         # 0
-        ((0,),),
+        ((0,), (0,), (0,)),
         # 1
         (
             (1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
@@ -87,7 +87,7 @@ class ActivityLevel(object):
             (1, 1, 1, 1, 1, 1, 1, 1, 0, 1),
         ),
         # 10
-        ((1,),),
+        ((1,), (1,), (1,)),
     )
 
     __allowed_range = tuple(range(11))

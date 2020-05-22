@@ -289,7 +289,6 @@ class PyteqTone(MidiTone, metaclass=_SynthesizerMidiTone):
         "mic_2_azimuth": ((-180, 180), 114),
         "mic_2_elevation": ((-180, 180), 115),
         "mic_2_mic_switch": ((0, 1), 116),
-        "condiiton": ((0, 10), 117),
     }
 
 
