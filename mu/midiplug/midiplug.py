@@ -920,7 +920,7 @@ class Pianoteq(SysexTuningMidiFile):
     ) -> subprocess.Popen:
         self.export("{0}.mid".format(name))
         cmd = [
-            "./{}".format(self.software_path),
+            "{}".format(self.software_path),
             "--rate {}".format(sr),
             "--bit-depth 32",
             "--midimapping complete",
