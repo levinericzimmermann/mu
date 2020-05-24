@@ -345,9 +345,14 @@ class PolyTest(unittest.TestCase):
         chord4 = old.Chord(ji.JIHarmony([self.p0, self.p2]), rhy.Unit(0.5))
         chord5 = old.Chord(ji.JIHarmony([self.p0]), rhy.Unit(0.5))
         expected = old.Cadence([chord0, chord1, chord2, chord3, chord4, chord4, chord5])
+
         result = self.poly2.chordify(
             harmony_class=ji.JIHarmony, cadence_class=old.Cadence, add_longer=True
         )
+
+        for ex, re in zip(expected, result):
+            print(ex, re)
+
         self.assertEqual(expected, result)
 
     def test_find_simultan_events(self):

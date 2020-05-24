@@ -1,8 +1,9 @@
 import abc
-import types
 
 from mu.abstract import muobjects
 from mu.time import time
+
+from mu.utils import tools
 
 
 class Event(abc.ABC):
@@ -89,7 +90,7 @@ class MultiSequentialEvent(ComplexEvent):
 
             return get_value, set_value
 
-        for name in cls.__find_attributes():
+        for name in cls._find_attributes():
             getter, setter = mk_property(name)
             getter_name = "__get_{}__".format(name)
             setter_name = "__set_{}__".format(name)
@@ -106,7 +107,7 @@ class MultiSequentialEvent(ComplexEvent):
 
     def __init__(self, iterable: list):
         self.__iterable = list(iterable)
-        self.__attributes = self.__find_attributes()
+        self.__attributes = self._find_attributes()
         for attribute in self.__attributes:
             data = [getattr(item, attribute) for item in self]
             linked_list = _LinkedList(self, attribute, data)
@@ -190,15 +191,8 @@ class MultiSequentialEvent(ComplexEvent):
         return type(self)(tuple(item.copy() for item in (self.__iterable * factor)))
 
     @classmethod
-    def __find_attributes(cls) -> tuple:
-        return tuple(
-            attribute
-            for attribute in dir(cls._object)
-            # no private attributes
-            if attribute[0] != "_"
-            # no methods
-            and not isinstance(getattr(cls._object, attribute), types.MethodType)
-        )
+    def _find_attributes(cls) -> tuple:
+        return tools.find_attributes_of_object(cls._object, True)
 
     @staticmethod
     def __format_hidden_attribute(attribute: str) -> str:

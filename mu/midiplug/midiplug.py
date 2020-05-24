@@ -2,7 +2,6 @@
 
 from mu.mel.abstract import AbstractPitch
 from mu.mel import mel
-from mu.rhy import rhy
 from mu.sco import old
 from mu.utils import infit
 from mu.utils import interpolations
@@ -16,7 +15,6 @@ import numbers
 import operator
 import os
 import subprocess
-from typing import Optional
 
 import mido
 
@@ -32,25 +30,8 @@ with open(os.path.join(__directory, "", "../mel/12edo"), "r") as f:
 class MidiTone(old.Tone):
     _init_args = {}
 
-    def __init__(
-        self,
-        pitch: Optional[AbstractPitch],
-        delay: rhy.Unit,
-        duration: Optional[rhy.Unit] = None,
-        volume: Optional = None,
-        glissando: old.GlissandoLine = None,
-        vibrato: old.VibratoLine = None,
-        tuning: tuple = tuple([]),
-    ) -> None:
-        old.Tone.__init__(
-            self,
-            pitch,
-            delay,
-            duration,
-            volume=volume,
-            glissando=glissando,
-            vibrato=vibrato,
-        )
+    def __init__(self, *args, tuning: tuple = tuple([]), **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         if tuning:
             self.tuning = tuple(tuning)
         else:
@@ -145,6 +126,7 @@ class _SynthesizerMidiTone(abc.ABCMeta):
             arg_names = cls.tone_args + tuple(self._init_args.keys())
             length_tone_args = len(cls.tone_args)
             length_args = len(args)
+
             for counter, arg_val, arg_name in zip(range(length_args), args, arg_names):
                 if counter > length_tone_args:
                     tolerance = self.__init_args[arg_name][0]
@@ -156,23 +138,22 @@ class _SynthesizerMidiTone(abc.ABCMeta):
                             arg_name, tolerance[0], tolerance[1]
                         )
                         raise ValueError(msg)
-                setattr(self, arg_name, arg_val)
+
+                    setattr(self, arg_name, arg_val)
 
             for arg_name in arg_names[length_args:]:
-                if arg_name not in kwargs.keys():
+                if arg_name not in kwargs.keys() and arg_name not in cls.tone_args:
                     kwargs.update({arg_name: None})
 
             self.__dict__.update(kwargs)
 
+            args = args[:len(cls.tone_args)]
+            kwargs = {arg: kwargs[arg] for arg in kwargs if arg in cls.tone_args}
+
             MidiTone.__init__(
                 self,
-                self.pitch,
-                self.delay,
-                self.duration,
-                self.volume,
-                self.glissando,
-                self.vibrato,
-                self.tuning,
+                *args,
+                **kwargs
             )
 
         attrs["__init__"] = auto_init
@@ -446,8 +427,8 @@ class MidiFile(abc.ABC):
         total_range = MidiFile.maximum_cent_deviation * 2
         # total_range = MidiFile.maximum_cent_deviation * 1
         warn = "Maximum pitch bending is {0} cents up or down!".format(
-                MidiFile.maximum_pitch_bending
-            )
+            MidiFile.maximum_pitch_bending
+        )
         standardmessage0 = tuple(
             mido.Message("pitchwheel", channel=channel_number, pitch=0, time=0)
             for channel_number in self.available_channel
@@ -698,9 +679,7 @@ class MidiFile(abc.ABC):
         return tuple(available_midi_notes[key] for key in converted_keys)
 
     @staticmethod
-    def mk_pitch_sequence(
-        sequence: tuple
-    ) -> tuple:
+    def mk_pitch_sequence(sequence: tuple) -> tuple:
         pitch_sequence = tuple(t.pitch for t in sequence)
         tuning_sequence = tuple(t.tuning for t in sequence)
         if sequence:

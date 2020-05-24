@@ -3,7 +3,6 @@ import math
 import operator
 
 from typing import Callable
-from typing import Optional
 from typing import Tuple
 
 from mu.abstract import muobjects
@@ -13,7 +12,9 @@ from mu.mel.abstract import AbstractPitch
 from mu.rhy import rhy
 from mu.sco import abstract
 from mu.time import time
+
 from mu.utils import interpolations
+from mu.utils import tools
 
 
 """This module represents musical structures that are based on discreet tones."""
@@ -195,13 +196,15 @@ class VibratoLine(object):
         return tuple(cents)
 
 
-class Tone(abstract.UniformEvent):
+class Ovent(abstract.UniformEvent):
+    _essential_attributes = ("pitch", "duration", "delay")
+
     def __init__(
         self,
-        pitch: Optional[AbstractPitch] = mel.TheEmptyPitch,
+        pitch: tuple = mel.TheEmptyPitch,
         delay: rhy.Unit = 1,
-        duration: Optional[rhy.Unit] = None,
-        volume: Optional = None,
+        duration: rhy.Unit = None,
+        volume: float = None,
         glissando: GlissandoLine = None,
         vibrato: VibratoLine = None,
     ) -> None:
@@ -221,68 +224,107 @@ class Tone(abstract.UniformEvent):
         self.vibrato = vibrato
 
     @staticmethod
-    def __return_correct_time_type(time_item) -> rhy.Unit:
+    def _return_correct_time_type(time_item) -> rhy.Unit:
         if isinstance(time_item, rhy.Unit):
             return time_item
         else:
             return rhy.Unit(time_item)
 
+    @classmethod
+    def _get_standard_attributes(cls) -> tuple:
+        return tools.find_attributes_of_object(cls())
+
+    @property
+    def pitch(self) -> list:
+        return self._pitch
+
+    @pitch.setter
+    def pitch(self, arg: list) -> None:
+        try:
+            arg = list(arg)
+        except TypeError:
+            arg = [arg]
+
+        self._pitch = arg
+
     @property
     def delay(self) -> rhy.Unit:
-        return self.__delay
+        return self._delay
 
     @delay.setter
     def delay(self, arg: rhy.Unit) -> None:
-        self.__delay = self.__return_correct_time_type(arg)
+        self._delay = self._return_correct_time_type(arg)
 
     @property
     def duration(self) -> rhy.Unit:
-        return self.__duration
+        return self._duration
 
     @duration.setter
     def duration(self, arg: rhy.Unit) -> None:
-        self.__duration = self.__return_correct_time_type(arg)
+        self._duration = self._return_correct_time_type(arg)
 
     def __hash__(self) -> int:
         return hash((self.pitch, self.delay, self.duration, self.volume))
 
     def __repr__(self) -> str:
-        return "Tone{}".format(
-            str(
-                (
-                    repr(self.pitch),
-                    repr(self.delay),
-                    repr(self.duration),
-                    repr(self.volume),
-                )
-            )
+        return "{}({})".format(
+            self.__class__.__name__,
+            str(tuple(repr(getattr(self, arg)) for arg in self._essential_attributes)),
         )
 
     def __eq__(self, other: "Tone") -> bool:
+        attributes0 = type(self)._get_standard_attributes()
+        try:
+            attributes1 = type(other)._get_standard_attributes()
+        except AttributeError:
+            return False
+
+        intersection = set(attributes0).intersection(attributes1)
+
+        for essential_attribute in self._essential_attributes:
+            try:
+                assert essential_attribute in intersection
+            except AssertionError:
+                return False
+
         return all(
-            (
-                self.pitch == other.pitch,
-                self.duration == other.duration,
-                self.delay == other.delay,
-                self.volume == other.volume,
-                self.glissando == other.glissando,
-                self.vibrato == other.vibrato,
-            )
+            tuple(getattr(self, attr) == getattr(other, attr) for attr in intersection)
         )
 
-    def copy(self) -> "Tone":
+    def copy(self) -> "Ovent":
         return type(self)(
-            self.pitch.copy(),
-            self.delay.copy(),
-            self.duration.copy(),
-            self.volume,
-            self.glissando,
-            self.vibrato,
+            **{arg: getattr(self, arg) for arg in type(self)._get_standard_attributes()}
         )
+
+
+class Tone(Ovent):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+    @property
+    def pitch(self) -> AbstractPitch:
+        return self._pitch
+
+    @pitch.setter
+    def pitch(self, arg: AbstractPitch) -> None:
+        if arg is None:
+            arg = mel.TheEmptyPitch
+        try:
+            assert isinstance(arg, AbstractPitch)
+        except AssertionError:
+            msg = "Pitch argument has to be either 'None' or a subclass of"
+            msg += " 'AbstractPitch' and not type '{}'!".format(type(arg))
+            raise TypeError(msg)
+
+        self._pitch = arg
 
 
 class Rest(Tone):
-    def __init__(self, delay: rhy.Unit, duration: rhy.Unit = None) -> None:
+    def __init__(
+        self, delay: rhy.Unit = 1, duration: rhy.Unit = None, *args, **kwargs
+    ) -> None:
+        super().__init__(*args, **kwargs)
+
         if duration is None:
             duration = delay
 
@@ -297,77 +339,16 @@ class Rest(Tone):
     def pitch(self):
         return mel.TheEmptyPitch
 
-    @property
-    def harmony(self):
-        return mel.Harmony((self.pitch,))
-
-    @property
-    def glissando(self):
-        return None
-
-    @property
-    def vibrato(self):
-        return None
-
-    def copy(self):
-        return type(self)(type(self.delay)(self.delay))
+    @pitch.setter
+    def pitch(self, arg):
+        pass
 
 
-class Chord(abstract.UniformEvent):
+class Chord(Ovent):
     """A Chord contains simultanly played Tones."""
 
-    def __init__(
-        self,
-        harmony: mel.Harmony = mel.Harmony([]),
-        delay: rhy.Unit = 1,
-        duration: Optional[rhy.Unit] = None,
-        volume=None,
-    ) -> None:
-        if isinstance(delay, rhy.Unit) is False:
-            delay = rhy.Unit(delay)
-        if not duration:
-            duration = delay
-        elif isinstance(duration, rhy.Unit) is False:
-            duration = rhy.Unit(duration)
-
-        self.pitch = harmony
-        self._dur = duration
-        self.delay = delay
-        self.volume = volume
-
-    @property
-    def harmony(self):
-        return self.pitch
-
-    @harmony.setter
-    def harmony(self, arg):
-        self.pitch = arg
-
-    @property
-    def duration(self):
-        return self._dur
-
-    @duration.setter
-    def duration(self, dur):
-        self._dur = dur
-
-    def __repr__(self):
-        return str((self.pitch, repr(self.delay), repr(self.duration)))
-
-    def copy(self) -> "Chord":
-        return type(self)(
-            self.pitch.copy(), self.delay.copy(), self.duration.copy(), self.volume
-        )
-
-    def __eq__(self, other: "Chord") -> bool:
-        return all(
-            (
-                self.pitch == other.pitch,
-                self.duration == other.duration,
-                self.delay == other.delay,
-                self.volume == other.volume,
-            )
-        )
+    def __init__(self, harmony: mel.Harmony = mel.Harmony([]), *args, **kwargs) -> None:
+        super().__init__(harmony, *args, **kwargs)
 
 
 class AbstractLine(abstract.MultiSequentialEvent):

@@ -4,6 +4,7 @@ import functools
 import itertools
 import math
 import operator
+import types
 
 import numpy as np
 from scipy.stats import norm
@@ -327,7 +328,7 @@ def find_all_indices_of_n(n, iterable: tuple) -> tuple:
     return tuple(idx for idx, item in enumerate(iterable) if item == n)
 
 
-def cyclic_perm(iterable: tuple) -> "generator":
+def cyclic_perm(iterable: tuple):
     """Cyclic permutation of an iterable. Return a generator object.
 
     Adapted function from the reply of Paritosh Singh here
@@ -367,3 +368,14 @@ def frange(x: fractions.Fraction, y: fractions.Fraction, stepsize: fractions.Fra
     while x < y:
         yield x
         x += stepsize
+
+
+def find_attributes_of_object(obj, omit_private_attributes: bool = True) -> tuple:
+    return tuple(
+        attribute
+        for attribute in dir(obj)
+        # no private attributes
+        if omit_private_attributes and attribute[0] != "_"
+        # no methods
+        and not isinstance(getattr(obj, attribute), types.MethodType)
+    )
