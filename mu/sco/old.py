@@ -1,3 +1,5 @@
+"""This module contains musical structures that are based on discreet tones and chords."""
+
 import functools
 import math
 import operator
@@ -15,9 +17,6 @@ from mu.time import time
 
 from mu.utils import interpolations
 from mu.utils import tools
-
-
-"""This module represents musical structures that are based on discreet tones."""
 
 
 class PitchInterpolation(interpolations.InterpolationEvent):
@@ -197,6 +196,8 @@ class VibratoLine(object):
 
 
 class Ovent(abstract.UniformEvent):
+    """An old Event - e.g. either a Chord or a Tone."""
+
     _essential_attributes = ("pitch", "duration", "delay")
 
     def __init__(
@@ -547,6 +548,12 @@ class AbstractLine(abstract.MultiSequentialEvent):
             else:
                 new.append(item)
         return type(self)(new)
+
+
+class OventLine(AbstractLine):
+    """A Melody contains sequentially played Ovents."""
+
+    _object = Ovent()
 
 
 class Melody(AbstractLine):

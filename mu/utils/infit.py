@@ -106,6 +106,18 @@ class Random(InfIt):
         return self.__random_module
 
 
+class Choice(Random):
+    def __init__(self, items: tuple, seed: int = 1):
+        super().__init__(seed)
+        self.__items = items
+
+    def __repr__(self) -> str:
+        return "Choice({})".format(self.__items)
+
+    def __next__(self) -> float:
+        return self.random_module.choice(self.__items)
+
+
 class Uniform(Random):
     def __init__(self, border0: float = 0, border1: float = 1, seed: int = 1):
         super().__init__(seed)

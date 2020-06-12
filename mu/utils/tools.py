@@ -23,22 +23,29 @@ def accumulate_from_zero(iterator: tuple) -> tuple:
     return accumulate_from_n(iterator, 0)
 
 
-def find_closest_index(item: float, data: tuple) -> int:
+def find_closest_index(item: float, data: tuple, key=None) -> int:
     """Return index of element in data with smallest difference to item"""
-    solution = bisect.bisect_left(data, item)
+
+    if key is not None:
+        research_data = tuple(map(key, data))
+
+    else:
+        research_data = tuple(data)
+
+    solution = bisect.bisect_left(research_data, item)
     if solution == len(data):
         return solution - 1
     elif solution == 0:
         return solution
     else:
         indices = (solution, solution - 1)
-        differences = tuple(abs(item - data[n]) for n in indices)
+        differences = tuple(abs(item - research_data[n]) for n in indices)
         return indices[differences.index(min(differences))]
 
 
-def find_closest_item(item: float, data: tuple) -> float:
+def find_closest_item(item: float, data: tuple, key=None) -> float:
     """Return element in data with smallest difference to item"""
-    return data[find_closest_index(item, data)]
+    return data[find_closest_index(item, data, key=key)]
 
 
 def brownian(x0, n, dt, delta, out=None, random_state=None):
