@@ -198,7 +198,7 @@ class VibratoLine(object):
 class Ovent(abstract.UniformEvent):
     """An old Event - e.g. either a Chord or a Tone."""
 
-    _essential_attributes = ("pitch", "duration", "delay")
+    _essential_attributes = ("pitch", "delay", "duration")
 
     def __init__(
         self,
@@ -211,7 +211,7 @@ class Ovent(abstract.UniformEvent):
     ) -> None:
 
         if pitch is None:
-            pitch = mel.TheEmptyPitch
+            pitch = []
 
         self.pitch = pitch
 
@@ -241,6 +241,9 @@ class Ovent(abstract.UniformEvent):
 
     @pitch.setter
     def pitch(self, arg: list) -> None:
+        if arg is mel.TheEmptyPitch:
+            arg = []
+
         try:
             arg = list(arg)
         except TypeError:
@@ -334,7 +337,7 @@ class Rest(Tone):
         self.volume = 0
 
     def __repr__(self):
-        return "Rest({})".format(repr(self.delay))
+        return "Rest({}, {})".format(repr(self.delay), repr(self.duration))
 
     @property
     def pitch(self):
@@ -459,7 +462,7 @@ class AbstractLine(abstract.MultiSequentialEvent):
 
         return self.tie_by(sub)
 
-    def discard_rests(self):
+    def discard_rests(self, max_rest_size_to_discard: rhy.Unit = None):
         def is_rest(pitch) -> bool:
             if isinstance(pitch, AbstractPitch):
                 return pitch.is_empty
@@ -472,7 +475,12 @@ class AbstractLine(abstract.MultiSequentialEvent):
             new = []
             for i, it0 in enumerate(line):
                 if i != 0:
-                    if is_rest(it0.pitch):
+                    tests = (is_rest(it0.pitch),)
+
+                    if max_rest_size_to_discard:
+                        tests += (it0.delay <= max_rest_size_to_discard,)
+
+                    if all(tests):
                         new[-1].delay += it0.delay
                         new[-1].duration += it0.duration
                     else:
@@ -551,9 +559,33 @@ class AbstractLine(abstract.MultiSequentialEvent):
 
 
 class OventLine(AbstractLine):
-    """A Melody contains sequentially played Ovents."""
+    """An OventLine contains sequentially played Ovents."""
 
     _object = Ovent()
+
+    def tie_pauses(self):
+        def sub(melody):
+            new = []
+            for i, it0 in enumerate(melody):
+                try:
+                    it1 = melody[i + 1]
+                except IndexError:
+                    new.append(it0)
+                    break
+
+                pitch_test = (it0.pitch == [], it1.pitch == [])
+
+                # if it0.duration == it0.delay and all(pitch_test):
+                if all(pitch_test):
+                    t_new = type(it0)(
+                        it0.pitch, it0.duration + it1.delay, it0.duration + it1.duration
+                    )
+                    return new + sub([t_new] + melody[i + 2 :])
+                else:
+                    new.append(it0)
+            return new
+
+        return self.tie_by(sub)
 
 
 class Melody(AbstractLine):

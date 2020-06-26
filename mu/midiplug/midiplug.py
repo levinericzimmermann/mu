@@ -5,6 +5,7 @@ from mu.mel import mel
 from mu.sco import old
 from mu.utils import infit
 from mu.utils import interpolations
+from mu.utils import tools
 
 import abc
 import bisect
@@ -147,14 +148,10 @@ class _SynthesizerMidiTone(abc.ABCMeta):
 
             self.__dict__.update(kwargs)
 
-            args = args[:len(cls.tone_args)]
+            args = args[: len(cls.tone_args)]
             kwargs = {arg: kwargs[arg] for arg in kwargs if arg in cls.tone_args}
 
-            MidiTone.__init__(
-                self,
-                *args,
-                **kwargs
-            )
+            MidiTone.__init__(self, *args, **kwargs)
 
         attrs["__init__"] = auto_init
         return super(_SynthesizerMidiTone, cls).__new__(cls, name, bases, attrs)
@@ -315,10 +312,176 @@ class DivaTone(MidiTone, metaclass=_SynthesizerMidiTone):
         return messages_per_tick
 
 
-class MidiFile(abc.ABC):
-    maximum_cent_deviation = 1200
+class SimpleMidiFile(object):
+    ticks_per_second = 1000
+    tick_size = 1 / ticks_per_second
+    maximum_cent_deviation = 200  # up and down; total range is 400 ct
+    total_range_cent_deviation = maximum_cent_deviation * 2
     maximum_pitch_bending = 16382
     maximum_pitch_bending_positive = 8191
+    pb_warn = "Maximum pitch bending is {} cents up or down!".format(
+        maximum_pitch_bending
+    )
+    note_on_msg_delay = 20
+    pitch_msg_delay = 20
+
+    # there are 16 midi channels
+    available_channel = tuple(i for i in range(16))
+    # available_midi_notes = tuple(range(128))
+
+    def __init__(self, sequence: tuple) -> None:
+        self._sequence = sequence
+        self._midi_file = self._convert2midi_file(sequence)
+
+    def _get_velocity(self, tone: old.Tone) -> int:
+        if tone.volume is not None:
+            typv = type(tone.volume)
+
+            if isinstance(tone.volume, numbers.Real):
+                volume = float(tone.volume)
+
+            elif isinstance(tone.volume, infit.InfIt):
+                volume = next(tone.volume)
+                try:
+                    assert isinstance(volume, numbers.Real)
+                except AssertionError:
+                    msg = "infit.InfIt object return bad type '{}'".format(type(volume))
+                    msg += " when trying to find a value for "
+                    msg += "the volume argument."
+                    raise ValueError(msg)
+
+            elif typv is interpolations.InterpolationLine:
+                volume = tone.volume(3, interpolation_type="points")[0]
+
+            else:
+                msg = "Unknown type '{}' for volume ".format(typv)
+                msg += "argument with the value '{}'".format(tone.volume)
+                raise NotImplementedError(msg)
+
+            velocity = int((volume / 1) * 127)
+        else:
+            velocity = 64
+
+        return velocity
+
+    def _convert_seconds2ticks(self, duration: float) -> int:
+        return int(duration // self.tick_size)
+
+    def _make_messages_for_one_tone(self, tone: old.Tone, channel_number: int) -> tuple:
+        freq = tone.pitch.freq
+        key = tools.find_closest_index(freq, _12edo_freq)
+        cent_deviation = mel.SimplePitch.hz2ct(_12edo_freq[key], freq)
+
+        if cent_deviation != 0:
+            pitch_percent = (
+                cent_deviation + self.maximum_cent_deviation
+            ) / self.total_range_cent_deviation
+
+            if pitch_percent > 1:
+                pitch_percent = 1
+                logging.warn(self.pb_warn)
+
+            if pitch_percent < 0:
+                pitch_percent = 0
+                logging.warn(self.pb_warn)
+
+            midi_pitch = int(self.maximum_pitch_bending * pitch_percent)
+            midi_pitch -= self.maximum_pitch_bending_positive
+
+        else:
+            midi_pitch = self.maximum_pitch_bending_positive
+
+        # time=18: adding small delay for avoiding pitch-bending effects
+        pw_msg = mido.Message(
+            "pitchwheel",
+            channel=channel_number,
+            pitch=midi_pitch,
+            time=self.pitch_msg_delay,
+        )
+
+        velocity = self._get_velocity(tone)
+        duration = (
+            self._convert_seconds2ticks(tone.duration)
+            - self.note_on_msg_delay
+            - self.pitch_msg_delay
+        )
+
+        note_on_msg = mido.Message(
+            "note_on",
+            note=key,
+            velocity=velocity,
+            time=self.note_on_msg_delay,
+            channel=channel_number,
+        )
+        note_off_msg = mido.Message(
+            "note_off",
+            note=key,
+            velocity=velocity,
+            time=duration,
+            channel=channel_number,
+        )
+
+        return pw_msg, note_on_msg, note_off_msg
+
+    def _make_empty_pitchwheel_msg(self, tone: old.Tone) -> mido.Message:
+        return mido.Message(
+            "pitchwheel",
+            channel=0,
+            pitch=self.maximum_pitch_bending_positive,
+            time=self._convert_seconds2ticks(tone.duration),
+        )
+
+    def _make_messages(self, sequence: tuple) -> tuple:
+        messages = []
+
+        channel_cycle = infit.Cycle(self.available_channel)
+        for tone in sequence:
+            if tone.pitch.is_empty:
+                messages.append(self._make_empty_pitchwheel_msg(tone))
+            else:
+                messages.extend(
+                    self._make_messages_for_one_tone(tone, next(channel_cycle))
+                )
+
+        return tuple(messages)
+
+    def _convert2midi_file(self, sequence: tuple) -> mido.MidiFile:
+        messages = self._make_messages(sequence)
+        midi_file = self._mk_midi_file(messages)
+        return midi_file
+
+    def _mk_midi_file(self, messages: tuple) -> mido.MidiFile:
+        mid = mido.MidiFile(type=0)
+        bpm = 120
+        ticks_per_minute = self.ticks_per_second * 60
+        ticks_per_beat = int(ticks_per_minute / bpm)
+        mid.ticks_per_beat = ticks_per_beat
+        track = mido.MidiTrack()
+        mid.tracks.append(track)
+        track.append(mido.MetaMessage("instrument_name", name="Acoustic Grand Piano"))
+
+        for i in self.available_channel:
+            track.append(mido.Message("program_change", program=0, time=0, channel=i))
+
+        for message in messages:
+            track.append(message)
+
+        return mid
+
+    def __repr__(self) -> str:
+        return "SimpleMidiFile({})".format(self._sequence)
+
+    def export(self, name: str = "test.mid") -> None:
+        """save content of object to midi-file."""
+        self._midi_file.save(name)
+
+
+class MidiFile(abc.ABC):
+    maximum_cent_deviation = 1200  # up and down; total range is 2400 ct
+    maximum_pitch_bending = 16382
+    maximum_pitch_bending_positive = 8191
+    ticks_per_second = 1000
+    grid_size = 1 / ticks_per_second
 
     delay_between_control_messages_and_note_on_message = 0
 
@@ -337,7 +500,7 @@ class MidiFile(abc.ABC):
         else:
             sequence = tuple(sequence)
         filtered_sequence = tuple(t for t in sequence if not t.pitch.is_empty)
-        gridsize = 0.001  # 1 milisecond
+        gridsize = self.grid_size
         self.__duration = float(sum(t.delay for t in sequence))
         n_hits = int(self.__duration // gridsize)
         n_hits += self.delay_between_control_messages_and_note_on_message + 2
@@ -374,7 +537,7 @@ class MidiFile(abc.ABC):
         self.__note_on_off_messages = self.mk_note_on_off_messages(
             filtered_sequence, self.keys
         )
-        self.__pitch_bending_per_tone = MidiFile.detect_pitch_bending_per_tone(
+        self.__pitch_bending_per_tone = self.detect_pitch_bending_per_tone(
             filtered_sequence, self.__gridsize, self.__grid_position_per_tone
         )
         self.__pitch_bending_per_channel = self.distribute_pitch_bends_on_channels(
@@ -479,9 +642,8 @@ class MidiFile(abc.ABC):
         pitch_bending_messages = tuple(reversed(pitch_bending_messages))
         return pitch_bending_messages
 
-    @staticmethod
     def detect_pitch_bending_per_tone(
-        sequence, gridsize: float, grid_position_per_tone: tuple
+        self, sequence, gridsize: float, grid_position_per_tone: tuple
     ) -> tuple:
         """Return tuple filled with tuples that contain cent deviation per step."""
 
@@ -522,7 +684,6 @@ class MidiFile(abc.ABC):
         for tone, key in zip(sequence, keys):
             if not tone.pitch.is_empty:
                 if tone.volume is not None:
-
                     typv = type(tone.volume)
 
                     if isinstance(tone.volume, numbers.Real):
@@ -549,7 +710,6 @@ class MidiFile(abc.ABC):
                         raise NotImplementedError(msg)
 
                     velocity = int((volume / 1) * 127)
-
                 else:
                     velocity = 64
 
@@ -609,8 +769,7 @@ class MidiFile(abc.ABC):
     def mk_midi_track(self, messages: tuple) -> mido.MidiFile:
         mid = mido.MidiFile(type=0)
         bpm = 120
-        ticks_per_second = 1000
-        ticks_per_minute = ticks_per_second * 60
+        ticks_per_minute = self.ticks_per_second * 60
         ticks_per_beat = int(ticks_per_minute / bpm)
         mid.ticks_per_beat = ticks_per_beat
         track = mido.MidiTrack()
@@ -919,6 +1078,43 @@ class Pianoteq(SysexTuningMidiFile):
 
         cmd.append("--midi {0}.mid --wav {0}.wav".format(name))
         return subprocess.Popen(" ".join(cmd), shell=True)
+
+
+class Bliss(NonSysexTuningMidiFile):
+    available_channel = (0,)  # only use one channel since it's monophonic anwyway
+
+    def __init__(self, sequence: tuple, **kwargs):
+        super().__init__(sequence, tuple(range(128), **kwargs))
+
+    def detect_pitch_bending_per_tone(
+        self, sequence, gridsize: float, grid_position_per_tone: tuple
+    ) -> tuple:
+        """Return tuple filled with tuples that contain cent deviation per step."""
+
+        def mk_interpolation(obj, size):
+
+            if obj:
+                obj = list(obj.interpolate(gridsize))
+            else:
+                obj = []
+
+            while len(obj) > size:
+                obj = obj[:-1]
+
+            while len(obj) < size:
+                obj.append(0)
+
+            return obj
+
+        pitch_bending = []
+        for tone, start_end in zip(sequence, grid_position_per_tone):
+            size = start_end[1] - start_end[0]
+            glissando = mk_interpolation(tone.glissando, size)
+            vibrato = mk_interpolation(tone.vibrato, size)
+            resulting_cents = tuple(a + b for a, b in zip(glissando, vibrato))
+            pitch_bending.append(resulting_cents)
+
+        return tuple(pitch_bending)
 
 
 class Diva(NonSysexTuningMidiFile):

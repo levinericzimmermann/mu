@@ -306,6 +306,50 @@ def backtracking(elements: tuple, tests: tuple, return_indices: bool = False) ->
         return res
 
 
+def complex_backtracking(
+    elements_per_item: tuple, tests: tuple, return_indices: bool = False
+) -> tuple:
+    """Backtracking algorithm function where each item has a different set of elements."""
+
+    def convert_indices2elements(indices: tuple) -> tuple:
+        resulting_elements = []
+        for idx, elements in zip(indices, elements_per_item):
+            resulting_elements.append(elements[idx])
+        return tuple(resulting_elements)
+
+    def is_valid(indices: tuple) -> bool:
+        resulting_elements = convert_indices2elements(tuple(element_indices))
+        return all(tuple(test(resulting_elements) for test in tests))
+
+    amount_available_elements_per_item = tuple(
+        len(elements) for elements in elements_per_item
+    )
+    amount_available_items = len(elements_per_item)
+    element_indices = [0]
+    while True:
+        if is_valid(tuple(element_indices)):
+            if len(element_indices) < amount_available_items:
+                element_indices.append(0)
+            else:
+                break
+        else:
+            while (
+                element_indices[-1] + 1
+                == amount_available_elements_per_item[len(element_indices) - 1]
+            ):
+                element_indices = element_indices[:-1]
+                if len(element_indices) == 0:
+                    raise ValueError("No solution found")
+
+            element_indices[-1] += 1
+
+    res = convert_indices2elements(element_indices)
+    if return_indices:
+        return res, element_indices
+    else:
+        return res
+
+
 def fib(x: int) -> int:
     """Fast fibonacci function
 
