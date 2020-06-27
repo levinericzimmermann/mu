@@ -4,6 +4,7 @@ import functools
 import itertools
 import math
 import operator
+import os
 import types
 
 import numpy as np
@@ -41,6 +42,14 @@ def find_closest_index(item: float, data: tuple, key=None) -> int:
         indices = (solution, solution - 1)
         differences = tuple(abs(item - research_data[n]) for n in indices)
         return indices[differences.index(min(differences))]
+
+
+def igmkdir(path: str) -> None:
+    """mkdir that ignores FileExistsError."""
+    try:
+        os.mkdir(path)
+    except FileExistsError:
+        pass
 
 
 def find_closest_item(item: float, data: tuple, key=None) -> float:
