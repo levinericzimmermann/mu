@@ -323,7 +323,7 @@ class SimpleMidiFile(object):
         maximum_pitch_bending
     )
     note_on_msg_delay = 20
-    pitch_msg_delay = 20
+    pitch_msg_delay = 1
 
     # there are 16 midi channels
     available_channel = tuple(i for i in range(16))
@@ -392,11 +392,15 @@ class SimpleMidiFile(object):
             midi_pitch = self.maximum_pitch_bending_positive
 
         # time=18: adding small delay for avoiding pitch-bending effects
-        pw_msg = mido.Message(
-            "pitchwheel",
-            channel=channel_number,
-            pitch=midi_pitch,
-            time=self.pitch_msg_delay,
+
+        messages = []
+        messages.append(
+            mido.Message(
+                "pitchwheel",
+                channel=channel_number,
+                pitch=midi_pitch,
+                time=self.pitch_msg_delay,
+            )
         )
 
         velocity = self._get_velocity(tone)
@@ -406,28 +410,34 @@ class SimpleMidiFile(object):
             - self.pitch_msg_delay
         )
 
-        note_on_msg = mido.Message(
-            "note_on",
-            note=key,
-            velocity=velocity,
-            time=self.note_on_msg_delay,
-            channel=channel_number,
-        )
-        note_off_msg = mido.Message(
-            "note_off",
-            note=key,
-            velocity=velocity,
-            time=duration,
-            channel=channel_number,
+        messages.append(
+            mido.Message(
+                "note_on",
+                note=key,
+                velocity=velocity,
+                time=self.note_on_msg_delay,
+                channel=channel_number,
+            )
         )
 
-        return pw_msg, note_on_msg, note_off_msg
+        for n in range(duration - 1):
+            messages.append(
+                mido.Message(
+                    "pitchwheel", channel=channel_number, pitch=midi_pitch, time=1
+                )
+            )
 
-    def _make_empty_pitchwheel_msg(self, tone: old.Tone) -> mido.Message:
+        messages.append(
+            mido.Message(
+                "note_off", note=key, velocity=velocity, time=1, channel=channel_number
+            )
+        )
+
+        return tuple(messages)
+
+    def _make_empty_msg(self, tone: old.Tone) -> mido.Message:
         return mido.Message(
-            "pitchwheel",
-            channel=0,
-            pitch=self.maximum_pitch_bending_positive,
+            "sysex",
             time=self._convert_seconds2ticks(tone.duration),
         )
 
@@ -437,7 +447,7 @@ class SimpleMidiFile(object):
         channel_cycle = infit.Cycle(self.available_channel)
         for tone in sequence:
             if tone.pitch.is_empty:
-                messages.append(self._make_empty_pitchwheel_msg(tone))
+                messages.append(self._make_empty_msg(tone))
             else:
                 messages.extend(
                     self._make_messages_for_one_tone(tone, next(channel_cycle))

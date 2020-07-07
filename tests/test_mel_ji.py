@@ -444,12 +444,15 @@ class MonzoTest(unittest.TestCase):
         self.assertEqual(p2.virtual_root, p2_vr)
 
     def test_abs(self):
-        p0 = ji.JIPitch((1, -1), 2)
-        p1 = ji.JIPitch((2, -2), 2)
-        p2 = ji.JIPitch((1, 1), 2)
-        p3 = ji.JIPitch((2, 2), 2)
-        self.assertEqual(abs(p0), p2)
-        self.assertEqual(abs(p1), p3)
+        p0 = ji.r(2, 1)
+        p1 = ji.r(1, 2)
+        p2 = ji.r(7, 6)
+        p3 = ji.r(6, 7)
+        p4 = ji.r(10, 3)
+        p5 = ji.r(3, 10)
+        self.assertEqual(abs(p1), p0)
+        self.assertEqual(abs(p3), p2)
+        self.assertEqual(abs(p5), p4)
 
     def test_normalize(self):
         p0 = ji.JIPitch((0, 1), 1)

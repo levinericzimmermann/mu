@@ -773,7 +773,7 @@ class Monzo(object):
 
     @property
     def _val(self) -> tuple:
-        r"""Return ascending list of primes, until the highest Prime, which the Object contains.
+        r"""Return ascending list of primes, until the highest contained Prime.
 
         This Method ignores the val_border / _val_shift
         property of an Object.
@@ -1004,7 +1004,7 @@ class Monzo(object):
         return float(self.float)
 
     def simplify(self):
-        """Change all elements in self._vector to 0, whose index is bigger than self._val_shift.
+        """Set all elements in self._vector to 0 with a bigger index than self._val_shift.
 
         >>> monzo0 = Monzo((1, -1), val_border=1)
         >>> monzo0.val_border = 2
@@ -1413,7 +1413,7 @@ class Monzo(object):
 
     @property
     def is_symmetric(self):
-        absolute = abs(self)
+        absolute = type(self)(tuple(abs(v) for v in self), val_border=self.val_border)
         maxima = max(absolute)
         return all(x == maxima for x in filter(lambda x: x != 0, absolute))
 
@@ -1581,8 +1581,11 @@ class Monzo(object):
         return self.__math(other, lambda x, y: x ** y)
 
     def __abs__(self):
-        monzo = tuple(abs(v) for v in iter(self))
-        return type(self)(monzo, val_border=self.val_border)
+        if self.numerator > self.denominator:
+            return self.copy()
+        else:
+            monzo = tuple(-v for v in iter(self))
+            return type(self)(monzo, val_border=self.val_border)
 
     def scalar(self, factor):
         """Return the scalar-product of a Monzo and its factor."""
@@ -1784,7 +1787,7 @@ class JIContainer(object):
         with open(name, "r") as f:
             lines = f.read().splitlines()
             # deleting comments
-            lines = tuple(l for l in lines if l and l[0] != "!")
+            lines = tuple(line for line in lines if line and line[0] != "!")
             description = lines[0]
             pitches = lines[2:]
             estimated_amount_pitches = int(lines[1])
@@ -1793,10 +1796,10 @@ class JIContainer(object):
             try:
                 assert estimated_amount_pitches == real_amount_pitches
             except AssertionError:
-                msg = "'{0}' contains {1} pitches ".format(
+                msg = "'{}' contains {} pitches ".format(
                     description, real_amount_pitches
                 )
-                msg += "while {2} pitches are expected.".format(
+                msg += "while {} pitches are expected.".format(
                     estimated_amount_pitches
                 )
                 raise ValueError(msg)
