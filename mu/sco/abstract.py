@@ -65,9 +65,6 @@ class ComplexEvent(Event):
 class MultiSequentialEvent(ComplexEvent):
     _object = None
 
-    # TODO(remove bug when melody[0].delay = 100, melody.delay[0] != 100 -> you have to
-    # update linked list before calling them)
-
     def __new__(cls, *args, **kwargs):
         def mk_property(attribute: str):
             def get_value(self) -> list:
@@ -156,6 +153,21 @@ class MultiSequentialEvent(ComplexEvent):
 
         for idx in indices:
             self.__update_nth_index_of_linked_lists(idx)
+
+    def __delitem__(self, idx: int) -> None:
+        # remove item from compound list
+        del self.__iterable[idx]
+
+        # remove item from seperated lists
+        if isinstance(idx, slice):
+            indices = tuple(range(*idx.indices(len(self))))
+        else:
+            indices = (idx,)
+
+        for idx in indices:
+            for attribute in self.__attributes:
+                formated_attribute = self.__format_hidden_attribute(attribute)
+                del getattr(self, formated_attribute)._LinkedList__iterable[idx]
 
     def __update_nth_index_of_linked_lists(self, idx: int) -> None:
         for attribute in self.__attributes:

@@ -1,5 +1,6 @@
 """This module contains musical structures that are based on discreet tones and chords."""
 
+import abc
 import functools
 import math
 import operator
@@ -491,6 +492,10 @@ class AbstractLine(abstract.MultiSequentialEvent):
 
         return self.tie_by(sub)
 
+    @abc.abstractmethod
+    def _make_rest(self, delay: float, duration: float) -> "Rest":
+        raise NotImplementedError
+
     def cut_up_by_time(
         self, start: rhy.Unit, stop: rhy.Unit, add_earlier=False, hard_cut=True
     ) -> "AbstractLine":
@@ -523,9 +528,9 @@ class AbstractLine(abstract.MultiSequentialEvent):
 
         if new:
             if new[0].delay > start:
-                new.insert(0, Rest(start, new[0].delay))
+                new.insert(0, self._make_rest(start, new[0].delay))
         else:
-            new.append(Rest(start, stop))
+            new.append(self._make_rest(start, stop))
 
         new = type(self)(new)
 
@@ -563,6 +568,9 @@ class OventLine(AbstractLine):
 
     _object = Ovent()
 
+    def _make_rest(self, delay: float, duration: float) -> "Rest":
+        return type(self._object)(delay=delay, duration=duration, pitch=[])
+
     def tie_pauses(self):
         def sub(melody):
             new = []
@@ -592,6 +600,9 @@ class Melody(AbstractLine):
     """A Melody contains sequentially played Pitches."""
 
     _object = Tone()
+
+    def _make_rest(self, delay: float, duration: float) -> "Rest":
+        return Rest(delay=delay, duration=duration)
 
     def tie_pauses(self):
         def sub(melody):
@@ -623,6 +634,9 @@ class Cadence(AbstractLine):
     """A Cadence contains sequentially played Harmonies."""
 
     _object = Chord()
+
+    def _make_rest(self, delay: float, duration: float) -> "Rest":
+        return type(self._object)(delay=delay, duration=duration, pitch=[])
 
     def tie_pauses(self):
         def sub(melody):
