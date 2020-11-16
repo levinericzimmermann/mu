@@ -439,3 +439,14 @@ def find_attributes_of_object(obj, omit_private_attributes: bool = True) -> tupl
         # no methods
         and not isinstance(getattr(obj, attribute), types.MethodType)
     )
+
+
+def db2a(db: float) -> float:
+    return 10 ** (db / 20)
+
+
+def a2db(a: float) -> float:
+    try:
+        return 20 * math.log(a, 10)
+    except ValueError:
+        return -120

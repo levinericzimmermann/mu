@@ -106,6 +106,10 @@ class InterpolationEvent(object):
     def delay(self):
         return self.__delay
 
+    @delay.setter
+    def delay(self, value: int) -> None:
+        self.__delay = value
+
     @property
     def interpolation_type(self):
         return self.__interpolation_type

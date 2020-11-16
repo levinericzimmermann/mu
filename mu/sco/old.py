@@ -352,8 +352,8 @@ class Rest(Tone):
 class Chord(Ovent):
     """A Chord contains simultanly played Tones."""
 
-    def __init__(self, harmony: mel.Harmony = mel.Harmony([]), *args, **kwargs) -> None:
-        super().__init__(harmony, *args, **kwargs)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
 
 
 class AbstractLine(abstract.MultiSequentialEvent):

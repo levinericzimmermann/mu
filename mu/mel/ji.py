@@ -1671,19 +1671,29 @@ class JIPitch(Monzo, abstract.AbstractPitch):
         return tuple(self)
 
     def __add__(self, other) -> "JIPitch":
-        return JIPitch(Monzo.__add__(self, other), self.val_border)
+        return JIPitch(
+            Monzo.__add__(self, other), self.val_border, multiply=self.multiply
+        )
 
     def __sub__(self, other) -> "JIPitch":
-        return JIPitch(Monzo.__sub__(self, other), self.val_border)
+        return JIPitch(
+            Monzo.__sub__(self, other), self.val_border, multiply=self.multiply
+        )
 
     def __mul__(self, other) -> "JIPitch":
-        return JIPitch(Monzo.__mul__(self, other), self.val_border)
+        return JIPitch(
+            Monzo.__mul__(self, other), self.val_border, multiply=self.multiply
+        )
 
     def __div__(self, other) -> "JIPitch":
-        return JIPitch(Monzo.__div__(self, other), self.val_border)
+        return JIPitch(
+            Monzo.__div__(self, other), self.val_border, multiply=self.multiply
+        )
 
     def __pow__(self, val) -> "JIPitch":
-        return JIPitch(Monzo.__pow__(self, val), self.val_border)
+        return JIPitch(
+            Monzo.__pow__(self, val), self.val_border, multiply=self.multiply
+        )
 
     def __hash__(self):
         return hash(self._vec)
@@ -1799,9 +1809,7 @@ class JIContainer(object):
                 msg = "'{}' contains {} pitches ".format(
                     description, real_amount_pitches
                 )
-                msg += "while {} pitches are expected.".format(
-                    estimated_amount_pitches
-                )
+                msg += "while {} pitches are expected.".format(estimated_amount_pitches)
                 raise ValueError(msg)
 
         return cls((r(1, 1),) + tuple(convert2pitch(p) for p in pitches))
