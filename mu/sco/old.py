@@ -196,7 +196,36 @@ class VibratoLine(object):
         return tuple(cents)
 
 
-class Ovent(abstract.UniformEvent):
+class TimedEvent(abstract.UniformEvent):
+    def __init__(self, duration: rhy.Unit = 1,) -> None:
+        self.duration = duration
+
+    @classmethod
+    def _get_standard_attributes(cls) -> tuple:
+        return tools.find_attributes_of_object(cls())
+
+    @staticmethod
+    def _return_correct_time_type(time_item: float) -> rhy.Unit:
+        if isinstance(time_item, rhy.Unit):
+            return time_item
+        else:
+            return rhy.Unit(time_item)
+
+    @property
+    def duration(self) -> rhy.Unit:
+        return self._duration
+
+    @duration.setter
+    def duration(self, arg: rhy.Unit) -> None:
+        self._duration = self._return_correct_time_type(arg)
+
+    def copy(self) -> "TimedEvent":
+        return type(self)(
+            **{arg: getattr(self, arg) for arg in type(self)._get_standard_attributes()}
+        )
+
+
+class Ovent(TimedEvent):
     """An old Event - e.g. either a Chord or a Tone."""
 
     _essential_attributes = ("pitch", "delay", "duration")
@@ -219,22 +248,11 @@ class Ovent(abstract.UniformEvent):
         if not duration:
             duration = delay
 
-        self.duration = duration
         self.delay = delay
         self.volume = volume
         self.glissando = glissando
         self.vibrato = vibrato
-
-    @staticmethod
-    def _return_correct_time_type(time_item) -> rhy.Unit:
-        if isinstance(time_item, rhy.Unit):
-            return time_item
-        else:
-            return rhy.Unit(time_item)
-
-    @classmethod
-    def _get_standard_attributes(cls) -> tuple:
-        return tools.find_attributes_of_object(cls())
+        super().__init__(duration)
 
     @property
     def pitch(self) -> list:
@@ -260,14 +278,6 @@ class Ovent(abstract.UniformEvent):
     def delay(self, arg: rhy.Unit) -> None:
         self._delay = self._return_correct_time_type(arg)
 
-    @property
-    def duration(self) -> rhy.Unit:
-        return self._duration
-
-    @duration.setter
-    def duration(self, arg: rhy.Unit) -> None:
-        self._duration = self._return_correct_time_type(arg)
-
     def __hash__(self) -> int:
         return hash((self.pitch, self.delay, self.duration, self.volume))
 
@@ -277,7 +287,7 @@ class Ovent(abstract.UniformEvent):
             str(tuple(repr(getattr(self, arg)) for arg in self._essential_attributes)),
         )
 
-    def __eq__(self, other: "Tone") -> bool:
+    def __eq__(self, other: "Ovent") -> bool:
         attributes0 = type(self)._get_standard_attributes()
         try:
             attributes1 = type(other)._get_standard_attributes()
@@ -294,11 +304,6 @@ class Ovent(abstract.UniformEvent):
 
         return all(
             tuple(getattr(self, attr) == getattr(other, attr) for attr in intersection)
-        )
-
-    def copy(self) -> "Ovent":
-        return type(self)(
-            **{arg: getattr(self, arg) for arg in type(self)._get_standard_attributes()}
         )
 
 
@@ -324,7 +329,7 @@ class Tone(Ovent):
         self._pitch = arg
 
 
-class Rest(Tone):
+class Rest(Ovent):
     def __init__(
         self, delay: rhy.Unit = 1, duration: rhy.Unit = None, *args, **kwargs
     ) -> None:
@@ -342,18 +347,11 @@ class Rest(Tone):
 
     @property
     def pitch(self):
-        return mel.TheEmptyPitch
+        return []
 
     @pitch.setter
     def pitch(self, arg):
         pass
-
-
-class Chord(Ovent):
-    """A Chord contains simultanly played Tones."""
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
 
 
 class AbstractLine(abstract.MultiSequentialEvent):
@@ -549,15 +547,13 @@ class AbstractLine(abstract.MultiSequentialEvent):
         return self.cut_up_by_time(item_start, item_stop, hard_cut, add_earlier)
 
     def split(self):
-        """Split items to Item-Rest pairs if their delay is longer than their duration.
-
-        """
+        """Split items to Item-Rest pairs if their delay is longer than their duration."""
         new = []
         for item in self:
             diff = item.delay - item.duration
             if diff > 0:
                 new.append(type(item)(item.pitch, item.duration, volume=item.volume))
-                new.append(Rest(diff))
+                new.append(self.make_rest(diff))
             else:
                 new.append(item)
         return type(self)(new)
@@ -596,75 +592,8 @@ class OventLine(AbstractLine):
         return self.tie_by(sub)
 
 
-class Melody(AbstractLine):
-    """A Melody contains sequentially played Pitches."""
-
-    _object = Tone()
-
-    def _make_rest(self, delay: float, duration: float) -> "Rest":
-        return Rest(delay=delay, duration=duration)
-
-    def tie_pauses(self):
-        def sub(melody):
-            new = []
-            for i, it0 in enumerate(melody):
-                try:
-                    it1 = melody[i + 1]
-                except IndexError:
-                    new.append(it0)
-                    break
-                pitch_test = (
-                    it0.pitch == mel.EmptyPitch(),
-                    it1.pitch == mel.EmptyPitch(),
-                )
-                # if it0.duration == it0.delay and all(pitch_test):
-                if all(pitch_test):
-                    t_new = type(it0)(
-                        it0.pitch, it0.duration + it1.delay, it0.duration + it1.duration
-                    )
-                    return new + sub([t_new] + melody[i + 2 :])
-                else:
-                    new.append(it0)
-            return new
-
-        return self.tie_by(sub)
-
-
-class Cadence(AbstractLine):
-    """A Cadence contains sequentially played Harmonies."""
-
-    _object = Chord()
-
-    def _make_rest(self, delay: float, duration: float) -> "Rest":
-        return type(self._object)(delay=delay, duration=duration, pitch=[])
-
-    def tie_pauses(self):
-        def sub(melody):
-            new = []
-            for i, it0 in enumerate(melody):
-                try:
-                    it1 = melody[i + 1]
-                except IndexError:
-                    new.append(it0)
-                    break
-                pitch_test = (
-                    all(p == mel.EmptyPitch() for p in it0.pitch),
-                    all(p == mel.EmptyPitch() for p in it1.pitch),
-                )
-                if all(pitch_test):
-                    t_new = type(it0)(
-                        it0.pitch, it0.duration + it1.delay, it0.duration + it1.duration
-                    )
-                    return new + sub([t_new] + melody[i + 2 :])
-                else:
-                    new.append(it0)
-            return new
-
-        return self.tie_by(sub)
-
-
 class PolyLine(abstract.SimultanEvent):
-    """A Container for Melody and Cadence - Objects."""
+    """A Container for OventLine - Objects."""
 
     @staticmethod
     def find_simultan_events_in_absolute_polyline(polyline, polyidx, itemidx):
@@ -698,6 +627,11 @@ class PolyLine(abstract.SimultanEvent):
         copied._time_measure = str(self._time_measure)
         return copied
 
+    def make_rest(self, delay: float, duration: float = None) -> Rest:
+        if duration is None:
+            duration = delay
+        return Rest(delay=rhy.Unit(delay), duration=rhy.Unit(delay))
+
     def fill(self) -> "PolyLine":
         """Add Rests until each Voice has the same length.
 
@@ -708,7 +642,7 @@ class PolyLine(abstract.SimultanEvent):
         for v in poly:
             summed = sum(v.delay)
             if summed < total:
-                v.append(Rest(rhy.Unit(total - summed)))
+                v.append(self.make_rest(rhy.Unit(total - summed)))
         return poly
 
     @property
@@ -757,7 +691,7 @@ class PolyLine(abstract.SimultanEvent):
         for m_rest in poly0[length1:]:
             voices.append(m_rest.copy())
         for m_rest in other[length0:]:
-            m_rest = type(m_rest)([Rest(poly0.duration)]) + m_rest
+            m_rest = type(m_rest)([self.make_rest(poly0.duration)]) + m_rest
             voices.append(m_rest.copy())
         res = type(self)(voices)
         res = res.fill()
@@ -820,9 +754,9 @@ class PolyLine(abstract.SimultanEvent):
                     new.append(event)
             if new:
                 if new[0].delay > start:
-                    new.insert(0, Rest(start, new[0].delay))
+                    new.insert(0, self.make_rest(start, new[0].delay))
             else:
-                new.append(Rest(start, stop))
+                new.append(self.make_rest(start, stop))
 
             polyline[i] = type(polyline[i])(new, "absolute")
 
@@ -831,7 +765,7 @@ class PolyLine(abstract.SimultanEvent):
             if earliest < start:
                 for i, sub in enumerate(polyline):
                     if sub.delay[0] > earliest:
-                        sub.insert(0, Rest(earliest, sub.delay[0]))
+                        sub.insert(0, self.make_rest(earliest, sub.delay[0]))
                         polyline[i] = sub
 
         if self.time_measure == "relative":
@@ -851,13 +785,9 @@ class PolyLine(abstract.SimultanEvent):
         item_stop = item.duration
         return self.cut_up_by_time(item_start, item_stop, hard_cut, add_earlier)
 
-
-class Polyphon(PolyLine):
-    """Container for Melody - Objects."""
-
     def chordify(
-        self, cadence_class=Cadence, harmony_class=mel.Harmony, add_longer=False
-    ) -> Cadence:
+        self, cadence_class=OventLine, harmony_class=mel.Harmony, add_longer=False
+    ) -> OventLine:
         """Return chordal reduction of polyphonic music.
 
         Each change of a pitch results in a new chord.
@@ -883,7 +813,7 @@ class Polyphon(PolyLine):
             pitch = event.pitch
             volume = event.volume
             for idx in indices:
-                harmonies[idx].append(pitch)
+                harmonies[idx].extend(pitch)
                 if volume is not None:
                     volumes[idx].append(volume)
 
@@ -891,7 +821,7 @@ class Polyphon(PolyLine):
         volumes = [sum(v) / len(v) if v else None for v in volumes]
 
         return cadence_class(
-            Chord(harmony_class(h), r, r, volume=v)
+            Ovent(harmony_class(h), r, r, volume=v)
             for h, r, v in zip(harmonies, rhythms, volumes)
         )
 
@@ -909,8 +839,6 @@ class Instrument(object):
 
 
 class Ensemble(muobjects.MUDict):
-    melody_class = Melody
-
     def get_instrument_by_pitch(self, pitch):
         """return all Instruments, which could play the asked pitch"""
         possible = []
@@ -922,11 +850,11 @@ class Ensemble(muobjects.MUDict):
 
 class ToneSet(muobjects.MUSet):
     @classmethod
-    def from_melody(cls, melody: Melody) -> "ToneSet":
-        return cls.from_polyphon(Polyphon([melody]))
+    def from_melody(cls, melody: OventLine) -> "ToneSet":
+        return cls.from_polyphon(PolyLine([melody]))
 
     @classmethod
-    def from_polyphon(cls, polyphon: Polyphon) -> "ToneSet":
+    def from_polyphon(cls, polyphon: PolyLine) -> "ToneSet":
         new_set = cls()
         for melody in polyphon:
             d = 0
@@ -938,13 +866,13 @@ class ToneSet(muobjects.MUSet):
         return new_set
 
     @classmethod
-    def from_cadence(cls, cadence: Cadence) -> "ToneSet":
+    def from_cadence(cls, cadence: OventLine) -> "ToneSet":
         new_set = cls()
         d = 0
         for chord in cadence:
             delay = float(chord.delay)
             for p in chord.pitch:
-                t = Tone(p, rhy.Unit(d), chord.duration, chord.volume)
+                t = Ovent([p], rhy.Unit(d), chord.duration, chord.volume)
                 new_set.add(t)
             d += delay
         return new_set
@@ -975,7 +903,7 @@ class ToneSet(muobjects.MUSet):
 
         return self.pop_by(test, time)
 
-    def convert2melody(self) -> Melody:
+    def convert2ovent_line(self) -> OventLine:
         sorted_by_delay = sorted(list(self.copy()), key=lambda t: t.delay)
         first = sorted_by_delay[0].delay
         if first != 0:
@@ -984,14 +912,14 @@ class ToneSet(muobjects.MUSet):
             diff = t_after.delay - t.delay
             t.delay = rhy.Unit(diff)
         sorted_by_delay[-1].delay = rhy.Unit(sorted_by_delay[-1].duration)
-        return Melody(sorted_by_delay)
+        return OventLine(sorted_by_delay)
 
-    def convert2cadence(self) -> Cadence:
+    def convert2cadence(self) -> OventLine:
         sorted_by_delay = sorted(list(self.copy()), key=lambda t: t.delay)
         first = sorted_by_delay[0].delay
         if first != 0:
             sorted_by_delay.insert(0, Rest(0))
-        cadence = Cadence([])
+        cadence = OventLine([])
         harmony = mel.Harmony([])
         for t, t_after in zip(sorted_by_delay, sorted_by_delay[1:] + [0]):
             try:
@@ -1000,7 +928,7 @@ class ToneSet(muobjects.MUSet):
                 diff = t.duration
             harmony.add(t.pitch)
             if diff != 0:
-                cadence.append(Chord(harmony, rhy.Unit(diff), rhy.Unit(t.duration)))
+                cadence.append(Ovent(harmony, rhy.Unit(diff), rhy.Unit(t.duration)))
                 harmony = mel.Harmony([])
         cadence[-1].delay = rhy.Unit(sorted_by_delay[-1].duration)
-        return Cadence(cadence)
+        return OventLine(cadence)

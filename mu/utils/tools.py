@@ -1,3 +1,5 @@
+"""This module provides several useful small functions."""
+
 import bisect
 import decimal
 import functools
@@ -450,3 +452,11 @@ def a2db(a: float) -> float:
         return 20 * math.log(a, 10)
     except ValueError:
         return -120
+
+
+def round_to_next_power_of_n(x: float, n: int) -> float:
+    return pow(n, math.ceil(math.log(x) / math.log(n)))
+
+
+def round_to_next_power_of_2(x: float) -> float:
+    return round_to_next_power_of_n(x, 2)

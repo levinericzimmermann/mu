@@ -43,6 +43,9 @@ def comparable_monzo_decorator(func: Callable) -> Callable:
     return wrap
 
 
+CONCERT_PITCH = 440  # default concert pitch on a=440 Hz
+
+
 class Monzo(object):
     r"""A Monzo is a representation or notation of a musical interval in just intonation.
 
@@ -96,7 +99,11 @@ class Monzo(object):
         return hash((self._val_shift, self._vec))
 
     @classmethod
-    def from_ratio(cls, num: int, den: int, val_border=1, multiply=1) -> Type["Monzo"]:
+    def from_ratio(
+        cls, num: int, den: int, val_border: int = 1, multiply: float = None
+    ) -> Type["Monzo"]:
+        if multiply is None:
+            multiply = CONCERT_PITCH
         obj = cls(cls.ratio2monzo(Fraction(num, den), cls._val_shift))
         obj.val_border = val_border
         obj.multiply = multiply
@@ -111,7 +118,11 @@ class Monzo(object):
             return cls.from_ratio(int(num), int(den))
 
     @classmethod
-    def from_monzo(cls, *arg, val_border=1, multiply=1) -> Type["Monzo"]:
+    def from_monzo(
+        cls, *arg, val_border: int = 1, multiply: float = None
+    ) -> Type["Monzo"]:
+        if multiply is None:
+            multiply = CONCERT_PITCH
         obj = cls(arg, val_border)
         obj.multiply = multiply
         return obj
@@ -1648,7 +1659,10 @@ class Monzo(object):
 class JIPitch(Monzo, abstract.AbstractPitch):
     multiply = 1
 
-    def __init__(self, iterable, val_border=1, multiply=1):
+    def __init__(self, iterable, val_border: int = 1, multiply: float = None):
+        if multiply is None:
+            multiply = CONCERT_PITCH
+
         Monzo.__init__(self, iterable, val_border)
         self.multiply = multiply
 
@@ -3080,9 +3094,9 @@ def find_best_voice_leading(pitches: tuple, tonal_range: tuple) -> tuple:
 """
 
 
-def r(num: int, den: int, val_border: int = 1, multiply: float = 1) -> JIPitch:
+def r(num: int, den: int, val_border: int = 1, multiply: float = None) -> JIPitch:
     return JIPitch.from_ratio(num, den, val_border, multiply)
 
 
-def m(*num: int, val_border: int = 1, multiply: float = 1) -> JIPitch:
+def m(*num: int, val_border: int = 1, multiply: float = None) -> JIPitch:
     return JIPitch.from_monzo(*num, val_border=val_border, multiply=multiply)
