@@ -28,7 +28,7 @@ with open(os.path.join(__directory, "", "../mel/12edo"), "r") as f:
 # TODO(write expected types in methods arguments)
 
 
-class MidiOvent(old.Ovent):
+class MidiTone(old.Tone):
     _init_args = {}
 
     def __init__(self, *args, tuning: tuple = tuple([]), **kwargs) -> None:
@@ -57,12 +57,12 @@ class MidiOvent(old.Ovent):
         )
 
     def control_messages(self, channel: int, n_points: int) -> list:
-        """Generate control messages for a particular ovent.
+        """Generate control messages for a particular tone.
 
-        Since ovents can be distributed on different midi channels, the respective
+        Since tones can be distributed on different midi channels, the respective
         channel has to be submitted. Furthermore the function needs to know how many
-        points the ovent lasts in the respective grid for control messages that
-        dynamically change within the ovent.
+        points the tone lasts in the respective grid for control messages that
+        dynamically change within the tone.
 
         Return list of lists where each sublist represents one tick. Each
         tick contains control messages that are supposed to get send at this
@@ -109,11 +109,12 @@ class MidiOvent(old.Ovent):
         return list(list(tick) for tick in messages_per_tick)
 
 
-class _SynthesizerMidiOvent(abc.ABCMeta):
-    """Metaclass for Ovent - objects that are intented to generate midi output."""
+class _SynthesizerMidiTone(abc.ABCMeta):
+    """Metaclass for Tone - objects that are intented to generate midi output."""
 
-    ovent_args = (
+    tone_args = (
         "pitch",
+        "delay",
         "duration",
         "volume",
         "glissando",
@@ -123,12 +124,12 @@ class _SynthesizerMidiOvent(abc.ABCMeta):
 
     def __new__(cls, name, bases, attrs):
         def auto_init(self, *args, **kwargs):
-            arg_names = cls.ovent_args + tuple(self._init_args.keys())
-            length_ovent_args = len(cls.ovent_args)
+            arg_names = cls.tone_args + tuple(self._init_args.keys())
+            length_tone_args = len(cls.tone_args)
             length_args = len(args)
 
             for counter, arg_val, arg_name in zip(range(length_args), args, arg_names):
-                if counter > length_ovent_args:
+                if counter > length_tone_args:
                     tolerance = self.__init_args[arg_name][0]
                     try:
                         assert arg_val <= tolerance[0]
@@ -142,22 +143,22 @@ class _SynthesizerMidiOvent(abc.ABCMeta):
                     setattr(self, arg_name, arg_val)
 
             for arg_name in arg_names[length_args:]:
-                if arg_name not in kwargs.keys() and arg_name not in cls.ovent_args:
+                if arg_name not in kwargs.keys() and arg_name not in cls.tone_args:
                     kwargs.update({arg_name: None})
 
             self.__dict__.update(kwargs)
 
-            args = args[: len(cls.ovent_args)]
-            kwargs = {arg: kwargs[arg] for arg in kwargs if arg in cls.ovent_args}
+            args = args[: len(cls.tone_args)]
+            kwargs = {arg: kwargs[arg] for arg in kwargs if arg in cls.tone_args}
 
-            MidiOvent.__init__(self, *args, **kwargs)
+            MidiTone.__init__(self, *args, **kwargs)
 
         attrs["__init__"] = auto_init
-        return super(_SynthesizerMidiOvent, cls).__new__(cls, name, bases, attrs)
+        return super(_SynthesizerMidiTone, cls).__new__(cls, name, bases, attrs)
 
 
-class PyteqOvent(MidiOvent, metaclass=_SynthesizerMidiOvent):
-    """Ovent object to work with Pianoteq"""
+class PyteqTone(MidiTone, metaclass=_SynthesizerMidiTone):
+    """Tone object to work with Pianoteq"""
 
     _init_args = {
         "unison_width": ((0, 20), 2),
@@ -269,8 +270,8 @@ class PyteqOvent(MidiOvent, metaclass=_SynthesizerMidiOvent):
     }
 
 
-class DivaOvent(MidiOvent, metaclass=_SynthesizerMidiOvent):
-    """Ovent object to work with U-He Diva."""
+class DivaTone(MidiTone, metaclass=_SynthesizerMidiTone):
+    """Tone object to work with U-He Diva."""
 
     # control value 2 in voice 1 is already used for fine_tune_cents
     # (making sure the right pitch get played)
@@ -301,7 +302,7 @@ class DivaOvent(MidiOvent, metaclass=_SynthesizerMidiOvent):
 
     def control_messages(self, channel: int, n_points: int, midi_key: int) -> tuple:
         messages_per_tick = super().control_messages(channel, n_points)
-        cent_deviation = AbstractPitch.ratio2ct(self.pitch[0].freq / _12edo_freq[midi_key])
+        cent_deviation = AbstractPitch.ratio2ct(self.pitch.freq / _12edo_freq[midi_key])
         assert cent_deviation > -100 and cent_deviation < 100
         percentage = (cent_deviation + 100) / 200
         value = int(percentage * 127)
@@ -332,15 +333,15 @@ class SimpleMidiFile(object):
         self._sequence = sequence
         self._midi_file = self._convert2midi_file(sequence)
 
-    def _get_velocity(self, ovent: old.Ovent) -> int:
-        if ovent.volume is not None:
-            typv = type(ovent.volume)
+    def _get_velocity(self, tone: old.Tone) -> int:
+        if tone.volume is not None:
+            typv = type(tone.volume)
 
-            if isinstance(ovent.volume, numbers.Real):
-                volume = float(ovent.volume)
+            if isinstance(tone.volume, numbers.Real):
+                volume = float(tone.volume)
 
-            elif isinstance(ovent.volume, infit.InfIt):
-                volume = next(ovent.volume)
+            elif isinstance(tone.volume, infit.InfIt):
+                volume = next(tone.volume)
                 try:
                     assert isinstance(volume, numbers.Real)
                 except AssertionError:
@@ -350,11 +351,11 @@ class SimpleMidiFile(object):
                     raise ValueError(msg)
 
             elif typv is interpolations.InterpolationLine:
-                volume = ovent.volume(3, interpolation_type="points")[0]
+                volume = tone.volume(3, interpolation_type="points")[0]
 
             else:
                 msg = "Unknown type '{}' for volume ".format(typv)
-                msg += "argument with the value '{}'".format(ovent.volume)
+                msg += "argument with the value '{}'".format(tone.volume)
                 raise NotImplementedError(msg)
 
             velocity = int((volume / 1) * 127)
@@ -366,8 +367,8 @@ class SimpleMidiFile(object):
     def _convert_seconds2ticks(self, duration: float) -> int:
         return int(duration // self.tick_size)
 
-    def _make_messages_for_one_ovent(self, ovent: old.Tone, channel_number: int) -> tuple:
-        freq = ovent.pitch[0].freq
+    def _make_messages_for_one_tone(self, tone: old.Tone, channel_number: int) -> tuple:
+        freq = tone.pitch.freq
         key = tools.find_closest_index(freq, _12edo_freq)
         cent_deviation = mel.SimplePitch.hz2ct(_12edo_freq[key], freq)
 
@@ -402,9 +403,9 @@ class SimpleMidiFile(object):
             )
         )
 
-        velocity = self._get_velocity(ovent)
+        velocity = self._get_velocity(tone)
         duration = (
-            self._convert_seconds2ticks(ovent.duration)
+            self._convert_seconds2ticks(tone.duration)
             - self.note_on_msg_delay
             - self.pitch_msg_delay
         )
@@ -434,22 +435,19 @@ class SimpleMidiFile(object):
 
         return tuple(messages)
 
-    def _make_empty_msg(self, ovent: old.Tone) -> mido.Message:
-        return mido.Message(
-            "sysex",
-            time=self._convert_seconds2ticks(ovent.duration),
-        )
+    def _make_empty_msg(self, tone: old.Tone) -> mido.Message:
+        return mido.Message("sysex", time=self._convert_seconds2ticks(tone.duration),)
 
     def _make_messages(self, sequence: tuple) -> tuple:
         messages = []
 
         channel_cycle = infit.Cycle(self.available_channel)
-        for ovent in sequence:
-            if ovent.pitch.is_empty:
-                messages.append(self._make_empty_msg(ovent))
+        for tone in sequence:
+            if tone.pitch.is_empty:
+                messages.append(self._make_empty_msg(tone))
             else:
                 messages.extend(
-                    self._make_messages_for_one_ovent(ovent, next(channel_cycle))
+                    self._make_messages_for_one_tone(tone, next(channel_cycle))
                 )
 
         return tuple(messages)
@@ -508,25 +506,25 @@ class MidiFile(abc.ABC):
             sequence = MidiFile.discard_pauses_and_tie_sequence(tuple(sequence))
         else:
             sequence = tuple(sequence)
-        filtered_sequence = tuple(t for t in sequence if t.pitch)
+        filtered_sequence = tuple(t for t in sequence if not t.pitch.is_empty)
         gridsize = self.grid_size
-        self.__duration = float(sum(t.duration for t in sequence))
+        self.__duration = float(sum(t.delay for t in sequence))
         n_hits = int(self.__duration // gridsize)
         n_hits += self.delay_between_control_messages_and_note_on_message + 2
         self.__grid = tuple(i * gridsize for i in range(0, n_hits))
         self.__gridsize = gridsize
-        self.__grid_position_per_ovent = self.detect_grid_position(
+        self.__grid_position_per_tone = self.detect_grid_position(
             sequence, self.__grid, self.__duration
         )
         self.__amount_available_midi_notes = len(available_midi_notes)
         self.__sequence = sequence
         self.__overlapping_dict = MidiFile.mk_overlapping_dict(filtered_sequence)
         self.__midi_keys_dict = MidiFile.mk_midi_key_dictionary(
-            set(t.pitch[0] for t in filtered_sequence),
+            set(t.pitch for t in filtered_sequence),
             available_midi_notes,
             self.__amount_available_midi_notes,
         )
-        self.keys = MidiFile.distribute_ovents_on_midi_keys(
+        self.keys = MidiFile.distribute_tones_on_midi_keys(
             filtered_sequence,
             self.__amount_available_midi_notes,
             available_midi_notes,
@@ -538,21 +536,21 @@ class MidiFile(abc.ABC):
         self.__tuning_sequence = pitch_data[1]
         self.__midi_pitch_dictionary = pitch_data[2]
 
-        n_points_per_ovent = tuple(b - a for a, b in self.__grid_position_per_ovent)
-        self.__control_messages = self.mk_control_messages_per_ovent(
-            filtered_sequence, n_points_per_ovent
+        n_points_per_tone = tuple(b - a for a, b in self.__grid_position_per_tone)
+        self.__control_messages = self.mk_control_messages_per_tone(
+            filtered_sequence, n_points_per_tone
         )
 
         self.__note_on_off_messages = self.mk_note_on_off_messages(
             filtered_sequence, self.keys
         )
-        self.__pitch_bending_per_ovent = self.detect_pitch_bending_per_ovent(
-            filtered_sequence, self.__gridsize, self.__grid_position_per_ovent
+        self.__pitch_bending_per_tone = self.detect_pitch_bending_per_tone(
+            filtered_sequence, self.__gridsize, self.__grid_position_per_tone
         )
         self.__pitch_bending_per_channel = self.distribute_pitch_bends_on_channels(
-            self.__pitch_bending_per_ovent,
+            self.__pitch_bending_per_tone,
             self.__grid,
-            self.__grid_position_per_ovent,
+            self.__grid_position_per_tone,
             self.__gridsize,
         )
         self.__filtered_sequence = filtered_sequence
@@ -569,22 +567,23 @@ class MidiFile(abc.ABC):
         new = []
         first = True
         for event in sequence:
-            if first is False and not event.pitch:
-                information = event.duration
+            if first is False and event.pitch == mel.TheEmptyPitch:
+                information = event.delay
                 new[-1].duration += information
+                new[-1].delay += information
             else:
                 new.append(event)
             first = False
         return tuple(new)
 
     def distribute_pitch_bends_on_channels(
-        self, pitch_bends_per_ovent, grid, grid_position_per_ovent, gridsize
+        self, pitch_bends_per_tone, grid, grid_position_per_tone, gridsize
     ) -> tuple:
         channels = itertools.cycle(range(len(self.available_channel)))
         pitches_per_channels = list(
             list(0 for j in range(len(grid))) for i in self.available_channel
         )
-        for position, pitch_bends in zip(grid_position_per_ovent, pitch_bends_per_ovent):
+        for position, pitch_bends in zip(grid_position_per_tone, pitch_bends_per_tone):
             channel = next(channels)
             start = (
                 position[0] + self.delay_between_control_messages_and_note_on_message
@@ -650,8 +649,8 @@ class MidiFile(abc.ABC):
         pitch_bending_messages = tuple(reversed(pitch_bending_messages))
         return pitch_bending_messages
 
-    def detect_pitch_bending_per_ovent(
-        self, sequence, gridsize: float, grid_position_per_ovent: tuple
+    def detect_pitch_bending_per_tone(
+        self, sequence, gridsize: float, grid_position_per_tone: tuple
     ) -> tuple:
         """Return tuple filled with tuples that contain cent deviation per step."""
 
@@ -671,17 +670,17 @@ class MidiFile(abc.ABC):
             return obj
 
         pitch_bending = []
-        for ovent, start_end in zip(sequence, grid_position_per_ovent):
+        for tone, start_end in zip(sequence, grid_position_per_tone):
             size = start_end[1] - start_end[0]
-            glissando = mk_interpolation(ovent.glissando, size)
-            vibrato = mk_interpolation(ovent.vibrato, size)
+            glissando = mk_interpolation(tone.glissando, size)
+            vibrato = mk_interpolation(tone.vibrato, size)
             resulting_cents = tuple(a + b for a, b in zip(glissando, vibrato))
             pitch_bending.append(resulting_cents)
 
         return tuple(pitch_bending)
 
     def mk_note_on_off_messages(self, sequence, keys) -> tuple:
-        """Generate Note on / off messages for every ovent.
+        """Generate Note on / off messages for every tone.
 
         Resulting tuple has the form:
         ((note_on0, note_off0), (note_on1, note_off1), ...)
@@ -689,16 +688,16 @@ class MidiFile(abc.ABC):
         assert len(sequence) == len(keys)
         channels = itertools.cycle(self.available_channel)
         messages = []
-        for ovent, key in zip(sequence, keys):
-            if ovent.pitch:
-                if ovent.volume is not None:
-                    typv = type(ovent.volume)
+        for tone, key in zip(sequence, keys):
+            if not tone.pitch.is_empty:
+                if tone.volume is not None:
+                    typv = type(tone.volume)
 
-                    if isinstance(ovent.volume, numbers.Real):
-                        volume = float(ovent.volume)
+                    if isinstance(tone.volume, numbers.Real):
+                        volume = float(tone.volume)
 
-                    elif isinstance(ovent.volume, infit.InfIt):
-                        volume = next(ovent.volume)
+                    elif isinstance(tone.volume, infit.InfIt):
+                        volume = next(tone.volume)
                         try:
                             assert isinstance(volume, numbers.Real)
                         except AssertionError:
@@ -710,11 +709,11 @@ class MidiFile(abc.ABC):
                             raise ValueError(msg)
 
                     elif typv is interpolations.InterpolationLine:
-                        volume = ovent.volume(3, interpolation_type="points")[0]
+                        volume = tone.volume(3, interpolation_type="points")[0]
 
                     else:
                         msg = "Unknown type '{}' for volume ".format(typv)
-                        msg += "argument with the value '{}'".format(ovent.volume)
+                        msg += "argument with the value '{}'".format(tone.volume)
                         raise NotImplementedError(msg)
 
                     velocity = int((volume / 1) * 127)
@@ -748,29 +747,30 @@ class MidiFile(abc.ABC):
                 # if pos is len(points) + 1
                 return pos - 1
 
-        durations = tuple(float(ovent.duration) for ovent in sequence)
-        starts = tuple(itertools.accumulate((0,) + durations))[:-1]
+        delays = tuple(float(tone.delay) for tone in sequence)
+        starts = tuple(itertools.accumulate((0,) + delays))[:-1]
+        durations = tuple(float(tone.duration) for tone in sequence)
         endings = tuple(s + d for s, d in zip(starts, durations))
         start_points = tuple(find_closest_point(grid, s) for s in starts)
         end_points = tuple(find_closest_point(grid, e) for e in endings)
         zipped = tuple(zip(start_points, end_points))
         return tuple(
             start_end
-            for start_end, ovent in zip(zipped, sequence)
-            if ovent.pitch
+            for start_end, tone in zip(zipped, sequence)
+            if not tone.pitch.is_empty
         )
 
     @property
     def sequence(self) -> tuple:
         return tuple(self.__sequence)
 
-    def mk_control_messages_per_ovent(
-        self, sequence: tuple, n_points_per_ovent: tuple
+    def mk_control_messages_per_tone(
+        self, sequence: tuple, n_points_per_tone: tuple
     ) -> tuple:
         channels = itertools.cycle(self.available_channel)
         return tuple(
-            ovent.control_messages(next(channels), n_points)
-            for ovent, n_points in zip(sequence, n_points_per_ovent)
+            tone.control_messages(next(channels), n_points)
+            for tone, n_points in zip(sequence, n_points_per_tone)
         )
 
     def mk_midi_track(self, messages: tuple) -> mido.MidiFile:
@@ -793,17 +793,23 @@ class MidiFile(abc.ABC):
 
     @staticmethod
     def mk_overlapping_dict(sequence) -> dict:
-        durations = tuple(float(t.duration) for t in sequence)
-        absolute_durations = tuple(
-            b - a for a, b in zip(durations, durations[1:] + (sum(durations),))
+        delays = tuple(float(t.delay) for t in sequence)
+        absolute_delays = tuple(
+            b - a for a, b in zip(delays, delays[1:] + (sum(delays),))
         )
         overlapping_dict = {i: [] for i, t in enumerate(sequence)}
-        for i, ovent in enumerate(sequence):
-            pass
+        for i, tone in enumerate(sequence):
+            if tone.delay < tone.duration:
+                ending = delays[i] + tone.duration
+                for j, abs_delay in enumerate(absolute_delays[i + 1 :]):
+                    if abs_delay < ending:
+                        overlapping_dict[i + j + 1].append(i)
+                    else:
+                        break
         return overlapping_dict
 
     @staticmethod
-    def distribute_ovents_on_midi_keys(
+    def distribute_tones_on_midi_keys(
         sequence,
         amount_available_midi_notes,
         available_midi_notes,
@@ -815,32 +821,32 @@ class MidiFile(abc.ABC):
 
         def is_alright(keys, overlapping_dict) -> bool:
             converted_keys = convert_keys(keys)
-            for ovent in tuple(overlapping_dict.keys())[: len(keys)]:
-                simultan_ovents = overlapping_dict[ovent]
+            for tone in tuple(overlapping_dict.keys())[: len(keys)]:
+                simultan_tones = overlapping_dict[tone]
                 current_keys = tuple(
-                    converted_keys[idx] for idx in simultan_ovents + [ovent]
+                    converted_keys[idx] for idx in simultan_tones + [tone]
                 )
                 if len(current_keys) - len(set(current_keys)) != 0:
                     return False
             return True
 
         keys = [0]
-        amount_ovents = len(sequence)
-        while len(keys) < amount_ovents:
+        amount_tones = len(sequence)
+        while len(keys) < amount_tones:
             if is_alright(keys, overlapping_dict) is True:
                 keys.append(0)
             else:
                 while keys[-1] + 1 == amount_available_midi_notes:
                     keys = keys[:-1]
                     if len(keys) == 0:
-                        raise ValueError("No solution found! Too many simultan ovents.")
+                        raise ValueError("No solution found! Too many simultan tones.")
                 keys[-1] += 1
         converted_keys = convert_keys(keys)
         return tuple(available_midi_notes[key] for key in converted_keys)
 
     @staticmethod
     def mk_pitch_sequence(sequence: tuple) -> tuple:
-        pitch_sequence = tuple(t.pitch[0] for t in sequence)
+        pitch_sequence = tuple(t.pitch for t in sequence)
         tuning_sequence = tuple(t.tuning for t in sequence)
         if sequence:
             pitches = set(
@@ -856,7 +862,7 @@ class MidiFile(abc.ABC):
         return {
             pitch: pitch.convert2midi_tuning()
             for pitch in pitches
-            if pitch 
+            if pitch != mel.TheEmptyPitch
         }
 
     @staticmethod
@@ -864,7 +870,7 @@ class MidiFile(abc.ABC):
         pitches: set, available_midi_notes, amount_available_midi_notes
     ) -> dict:
         def evaluate_rating(pitch):
-            freq = pitch[0].freq
+            freq = pitch.freq
             closest = bisect.bisect_right(available_frequencies, freq) - 1
             higher = tuple(range(closest + 1, amount_available_midi_notes))
             lower = tuple(range(closest - 1, -1, -1))
@@ -885,7 +891,7 @@ class MidiFile(abc.ABC):
         self,
         filtered_sequence: tuple,
         gridsize: float,
-        grid_position_per_ovent: tuple,
+        grid_position_per_tone: tuple,
         control_messages,
         note_on_off_messages,
         pitch_bending_per_channel,
@@ -904,7 +910,7 @@ class MidiFile(abc.ABC):
             note_on_off_messages,
             control_messages,
             tuning_messages,
-            grid_position_per_ovent,
+            grid_position_per_tone,
         ):
             note_on, note_off = note_on_off
             start, stop = grid_position
@@ -940,7 +946,7 @@ class MidiFile(abc.ABC):
         messages = self.mk_complete_messages(
             self.__filtered_sequence,
             self.__gridsize,
-            self.__grid_position_per_ovent,
+            self.__grid_position_per_tone,
             self.__control_messages,
             self.__note_on_off_messages,
             self.__pitch_bending_per_channel,
@@ -958,28 +964,28 @@ class SysexTuningMidiFile(MidiFile):
         self, sequence, keys, available_midi_notes, overlapping_dict, midi_pitch_dict
     ) -> tuple:
         def check_for_available_midi_notes(
-            available_midi_notes, overlapping_dict, keys, ovent_index
+            available_midi_notes, overlapping_dict, keys, tone_index
         ) -> tuple:
             """Return tuple with two elements:
 
-            1. midi_number for playing ovent
+            1. midi_number for playing tone
             2. remaining available midi numbers for retuning
             """
-            played_key = keys[ovent_index]
-            busy_keys = tuple(keys[idx] for idx in tuple(overlapping_dict[ovent_index]))
+            played_key = keys[tone_index]
+            busy_keys = tuple(keys[idx] for idx in tuple(overlapping_dict[tone_index]))
             busy_keys += (played_key,)
             remaining_keys = tuple(
                 key for key in available_midi_notes if key not in busy_keys
             )
             return (played_key, remaining_keys)
 
-        def mk_tuning_messages_for_ovent(ovent, local_midi_notes) -> tuple:
-            if ovent.pitch != mel.TheEmptyPitch:
-                midi_pitch = midi_pitch_dict[ovent.pitch]
+        def mk_tuning_messages_for_tone(tone, local_midi_notes) -> tuple:
+            if tone.pitch != mel.TheEmptyPitch:
+                midi_pitch = midi_pitch_dict[tone.pitch]
                 played_midi_note, remaining_midi_notes = local_midi_notes
-                tuning = ovent.tuning
+                tuning = tone.tuning
                 if not tuning:
-                    tuning = (ovent.pitch,)
+                    tuning = (tone.pitch,)
                 tuning = list(tuning)
                 amount_remaining_midi_notes = len(remaining_midi_notes)
                 tuning_gen = itertools.cycle(tuning)
@@ -1014,17 +1020,17 @@ class SysexTuningMidiFile(MidiFile):
             else:
                 return tuple([])
 
-        available_midi_notes_per_ovent = tuple(
+        available_midi_notes_per_tone = tuple(
             check_for_available_midi_notes(
                 available_midi_notes, overlapping_dict, keys, i
             )
             for i in range(len(sequence))
         )
-        tuning_messages_per_ovent = tuple(
-            mk_tuning_messages_for_ovent(ovent, local_midi_notes)
-            for ovent, local_midi_notes in zip(sequence, available_midi_notes_per_ovent)
+        tuning_messages_per_tone = tuple(
+            mk_tuning_messages_for_tone(tone, local_midi_notes)
+            for tone, local_midi_notes in zip(sequence, available_midi_notes_per_tone)
         )
-        return tuning_messages_per_ovent
+        return tuning_messages_per_tone
 
 
 class NonSysexTuningMidiFile(MidiFile):
@@ -1034,8 +1040,8 @@ class NonSysexTuningMidiFile(MidiFile):
         self, sequence, keys, available_midi_notes, overlapping_dict, midi_pitch_dict
     ) -> tuple:
         """Make empty tuning messages."""
-        tuning_messages_per_ovent = tuple(tuple([]) for ovent in zip(sequence))
-        return tuning_messages_per_ovent
+        tuning_messages_per_tone = tuple(tuple([]) for tone in zip(sequence))
+        return tuning_messages_per_tone
 
 
 class Pianoteq(SysexTuningMidiFile):
@@ -1087,8 +1093,8 @@ class Bliss(NonSysexTuningMidiFile):
     def __init__(self, sequence: tuple, **kwargs):
         super().__init__(sequence, tuple(range(128), **kwargs))
 
-    def detect_pitch_bending_per_ovent(
-        self, sequence, gridsize: float, grid_position_per_ovent: tuple
+    def detect_pitch_bending_per_tone(
+        self, sequence, gridsize: float, grid_position_per_tone: tuple
     ) -> tuple:
         """Return tuple filled with tuples that contain cent deviation per step."""
 
@@ -1108,10 +1114,10 @@ class Bliss(NonSysexTuningMidiFile):
             return obj
 
         pitch_bending = []
-        for ovent, start_end in zip(sequence, grid_position_per_ovent):
+        for tone, start_end in zip(sequence, grid_position_per_tone):
             size = start_end[1] - start_end[0]
-            glissando = mk_interpolation(ovent.glissando, size)
-            vibrato = mk_interpolation(ovent.vibrato, size)
+            glissando = mk_interpolation(tone.glissando, size)
+            vibrato = mk_interpolation(tone.vibrato, size)
             resulting_cents = tuple(a + b for a, b in zip(glissando, vibrato))
             pitch_bending.append(resulting_cents)
 
@@ -1124,11 +1130,11 @@ class Diva(NonSysexTuningMidiFile):
     def __init__(self, sequence: tuple, **kwargs):
         super().__init__(sequence, tuple(range(128), **kwargs))
 
-    def mk_control_messages_per_ovent(
-        self, sequence: tuple, n_points_per_ovent: tuple
+    def mk_control_messages_per_tone(
+        self, sequence: tuple, n_points_per_tone: tuple
     ) -> tuple:
         channels = itertools.cycle(self.available_channel)
         return tuple(
-            ovent.control_messages(next(channels), n_points, key)
-            for ovent, n_points, key in zip(sequence, n_points_per_ovent, self.keys)
+            tone.control_messages(next(channels), n_points, key)
+            for tone, n_points, key in zip(sequence, n_points_per_tone, self.keys)
         )
