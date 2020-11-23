@@ -10,6 +10,7 @@ import os
 import types
 
 import numpy as np
+from scipy.signal import gaussian as _gaussian
 from scipy.stats import norm
 
 try:
@@ -460,3 +461,9 @@ def round_to_next_power_of_n(x: float, n: int) -> float:
 
 def round_to_next_power_of_2(x: float) -> float:
     return round_to_next_power_of_n(x, 2)
+
+
+def gaussian_window(size_per_half: int = 50) -> tuple:
+    return tuple(
+        map(float, _gaussian(1 + (math.ceil(size_per_half) * 2), size_per_half / 3))
+    )
