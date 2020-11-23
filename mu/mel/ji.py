@@ -1117,6 +1117,23 @@ class Monzo(object):
         p.multiply = self.multiply
         return p
 
+    def move_to_closest_register(self, reference: "Monzo") -> "Monzo":
+        reference_register = reference.octave
+
+        best = None
+        for adaption in range(-1, 2):
+            candidate = self.register(reference_register + adaption)
+            difference = abs((candidate - reference).cents)
+            set_best = True
+            if best and difference > best[1]:
+                set_best = False
+
+            if set_best:
+                best = (candidate, difference)
+
+        best[0].multiply = self.multiply
+        return best[0]
+
     @property
     def gender(self) -> bool:
         """Return the gender (bool) of a Monzo or JIPitch - object.
