@@ -178,8 +178,11 @@ class Compound(rhy.AbstractRhythm):
         return self.copy()
 
     def append(self, value: float) -> None:
+        self.extend([value])
+
+    def extend(self, values: list) -> None:
         essence, multiply = Compound.convert_rhythm2essence_and_multiply(
-            list(self) + [value]
+            list(self) + list(values)
         )
         self.essence = essence
         self.multiply = multiply
