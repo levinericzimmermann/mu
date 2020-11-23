@@ -277,7 +277,7 @@ class Ovent(abstract.UniformEvent):
             str(tuple(repr(getattr(self, arg)) for arg in self._essential_attributes)),
         )
 
-    def __eq__(self, other: "Tone") -> bool:
+    def __eq__(self, other: "Ovent") -> bool:
         attributes0 = type(self)._get_standard_attributes()
         try:
             attributes1 = type(other)._get_standard_attributes()
@@ -421,12 +421,21 @@ class AbstractLine(abstract.MultiSequentialEvent):
         return tuple(p.freq for p in self.pitch)
 
     @property
-    def dur(self) -> abstract._LinkedList:
+    def durations(self) -> abstract._LinkedList:
         return self.__get_duration__()
+
+    @durations.setter
+    def durations(self, arg) -> None:
+        self.__set_duration__(arg)
+
+    @property
+    def dur(self) -> abstract._LinkedList:
+        """only for backward compatibility"""
+        return self.durations
 
     @dur.setter
     def dur(self, arg) -> None:
-        self.__set_duration__(arg)
+        self.durations = arg
 
     @property
     def duration(self) -> time.Time:
@@ -435,7 +444,34 @@ class AbstractLine(abstract.MultiSequentialEvent):
         else:
             return time.Time(self.dur[-1])
 
-    def tie_by(self, function):
+    def find_responsible_element(self, absolute_time_position: float):
+        """Return element that is playing at the asked moment."""
+
+        assert absolute_time_position >= 0
+
+        if self.time_measure == "absolute":
+            absolute_line = self
+        else:
+            absolute_line = self.convert2absolute()
+
+        abs_start_positions = absolute_line.delay
+        abs_end_positions = absolute_line.dur
+
+        closest_index = tools.find_closest_index(
+            absolute_time_position, abs_start_positions
+        )
+        if abs_start_positions[closest_index] > absolute_time_position:
+            closest_index -= 1
+
+        if abs_end_positions[closest_index] < absolute_time_position:
+            msg = "Can't find any element at position {}.".format(
+                absolute_time_position
+            )
+            raise IndexError(msg)
+
+        return self[closest_index]
+
+    def tie_by(self, function: callable) -> "AbstractLine":
         tied = function(list(self))
         copied = self.copy()
         for i, item in enumerate(tied):
@@ -555,7 +591,7 @@ class AbstractLine(abstract.MultiSequentialEvent):
             diff = item.delay - item.duration
             if diff > 0:
                 new.append(type(item)(item.pitch, item.duration, volume=item.volume))
-                new.append(Rest(diff))
+                new.append(self._make_rest(diff))
             else:
                 new.append(item)
         return type(self)(new)
@@ -706,7 +742,7 @@ class PolyLine(abstract.SimultanEvent):
         for v in poly:
             summed = sum(v.delay)
             if summed < total:
-                v.append(Rest(rhy.Unit(total - summed)))
+                v.append(self._make_rest(rhy.Unit(total - summed)))
         return poly
 
     @property
@@ -755,7 +791,7 @@ class PolyLine(abstract.SimultanEvent):
         for m_rest in poly0[length1:]:
             voices.append(m_rest.copy())
         for m_rest in other[length0:]:
-            m_rest = type(m_rest)([Rest(poly0.duration)]) + m_rest
+            m_rest = type(m_rest)([self._make_rest(poly0.duration)]) + m_rest
             voices.append(m_rest.copy())
         res = type(self)(voices)
         res = res.fill()
@@ -818,9 +854,9 @@ class PolyLine(abstract.SimultanEvent):
                     new.append(event)
             if new:
                 if new[0].delay > start:
-                    new.insert(0, Rest(start, new[0].delay))
+                    new.insert(0, self._make_rest(start, new[0].delay))
             else:
-                new.append(Rest(start, stop))
+                new.append(self._make_rest(start, stop))
 
             polyline[i] = type(polyline[i])(new, "absolute")
 
@@ -829,7 +865,7 @@ class PolyLine(abstract.SimultanEvent):
             if earliest < start:
                 for i, sub in enumerate(polyline):
                     if sub.delay[0] > earliest:
-                        sub.insert(0, Rest(earliest, sub.delay[0]))
+                        sub.insert(0, self._make_rest(earliest, sub.delay[0]))
                         polyline[i] = sub
 
         if self.time_measure == "relative":
@@ -849,12 +885,12 @@ class PolyLine(abstract.SimultanEvent):
         item_stop = item.duration
         return self.cut_up_by_time(item_start, item_stop, hard_cut, add_earlier)
 
-
-class Polyphon(PolyLine):
-    """Container for Melody - Objects."""
-
     def chordify(
-        self, cadence_class=Cadence, harmony_class=mel.Harmony, add_longer=False
+        self,
+        cadence_class=OventLine,
+        harmony_class=list,
+        add_longer=False,
+        add_events_method=lambda harmony, pitch: harmony.extend(pitch),
     ) -> Cadence:
         """Return chordal reduction of polyphonic music.
 
@@ -881,7 +917,7 @@ class Polyphon(PolyLine):
             pitch = event.pitch
             volume = event.volume
             for idx in indices:
-                harmonies[idx].append(pitch)
+                add_events_method(harmonies[idx], pitch)
                 if volume is not None:
                     volumes[idx].append(volume)
 
@@ -891,6 +927,20 @@ class Polyphon(PolyLine):
         return cadence_class(
             Chord(harmony_class(h), r, r, volume=v)
             for h, r, v in zip(harmonies, rhythms, volumes)
+        )
+
+
+class Polyphon(PolyLine):
+    """Container for Melody - Objects."""
+
+    def chordify(
+        self, cadence_class=Cadence, harmony_class=mel.Harmony, add_longer=False
+    ) -> Cadence:
+        return super().chordify(
+            cadence_class,
+            harmony_class,
+            add_longer,
+            add_events_method=lambda harmony, pitch: harmony.append(pitch),
         )
 
 

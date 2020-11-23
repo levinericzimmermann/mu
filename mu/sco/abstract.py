@@ -122,7 +122,10 @@ class MultiSequentialEvent(ComplexEvent):
         return str(self.__iterable)
 
     def __eq__(self, other) -> bool:
-        return self[:] == other[:]
+        try:
+            return self[:] == other[:]
+        except TypeError:
+            return False
 
     def __len__(self) -> int:
         return len(self.__iterable)
