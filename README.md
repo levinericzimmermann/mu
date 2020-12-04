@@ -1,5 +1,7 @@
 # mu
 
+**MU is deprecated and has been replaced by [mutwo](https://github.com/mutwo-org/mutwo).**
+
 [![Build Status](https://travis-ci.org/levinericzimmermann/mu.svg?branch=master)](https://travis-ci.org/levinericzimmermann/mu)
 [![Coverage Status](https://coveralls.io/repos/github/levinericzimmermann/mu/badge.svg?branch=master)](https://coveralls.io/github/levinericzimmermann/mu?branch=master)
 
